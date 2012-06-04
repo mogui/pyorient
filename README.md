@@ -1,6 +1,6 @@
 # pyorient v0.1
 
-pyorient is a wrapper over the c library [**liborient**](https://github.com/dam2k/liborient) which is a client for the Binary Protocol of the **NoSQL Graph-Document DBMS** [**OrientDB**](http://www.orientdb.org/)
+pyorient is a wrapper over the c library [**liborient**](https://github.com/dam2k/liborient) which is a client for the Binary Protocol of the **NoSQL Graph-Document DBMS** [**OrientDB**](http://www.orientdb.org/) (at version 1.0.1)
 
 This software is in development stage. Do not use it in production environments if you do not know what you are doing.
 
@@ -47,7 +47,7 @@ change the file `tests.cfg` with valid credential of a running OrientDB instance
 
 ## Getting started
 
-Refer to the [wiki pages](http://asd.it) and tests for the methods exposed by the module.
+Refer to the [wiki pages](https://github.com/mogui/pyorient/wiki/pyorient-commands-API) and tests for the methods exposed by the module.
 
 #### Imports
 

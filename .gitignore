@@ -32,4 +32,5 @@ build/*
 .DS_Store
 ._.DS_Store
 single.py
+singletest.py
 wiki
