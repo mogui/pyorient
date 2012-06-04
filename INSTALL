@@ -1,0 +1,24 @@
+INSTALL
+
+
+### Prerequisites
+
+- Python 2.6.5 or higher (tested from this, could work with previous version) 
+- liborient [by dam2k](https://github.com/dam2k/liborient)
+
+### Building and Installing
+	
+tar pyorient-*.tar.gz
+cd pyorient-*
+[optionally] edit config.cfg if you've installed liborient in a non standard path 
+python setup.py build
+sudo python setup.py install
+
+#### Linux
+
+If you install liborient to a location other than the default (/usr/local) on Linux, you may need to do one of the following:
+
+- Set LD_LIBRARY_PATH to point to the lib directory of liborient.
+- Build the extension using the --rpath flag:   
+
+python setup.py build_ext --rpath=/opt/lib

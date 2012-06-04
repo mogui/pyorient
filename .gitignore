@@ -25,3 +25,11 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+*.swp
+*.so
+build/*
+.DS_Store
+._.DS_Store
+single.py
+wiki
