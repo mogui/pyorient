@@ -15,35 +15,37 @@
 #   limitations under the License.
 
 __author__ = 'mogui'
-
 import base64
-import _pyorient
 
 from OrientDB import *
 from OrientException import *
 from OrientTypes import *
 
-#
-# Module constants
-#
 
 # cluster costants
-CLUSTER_PHYSICAL = _pyorient.CLUSTER_PHYSICAL
-CLUSTER_LOGICAL = _pyorient.CLUSTER_LOGICAL
-CLUSTER_MEMORY = _pyorient.CLUSTER_MEMORY
-CLUSTER_DEFAULT_SIZE = _pyorient.CLUSTER_DEFAULT_SIZE
+CLUSTER_PHYSICAL     = "PHYSICAL"
+CLUSTER_LOGICAL      = "LOGICAL"
+CLUSTER_MEMORY       = "MEMORY"
+CLUSTER_DEFAULT_SIZE = -1
 
-# command costants
-QUERY_SYNC = _pyorient.QUERY_SYNC
-QUERY_ASYNC = _pyorient.QUERY_ASYNC
+# Commands costants
+QUERY_SYNC  = "com.orientechnologies.orient.core.sql.query.OSQLSynchQuery"
+QUERY_ASYNC = "com.orientechnologies.orient.core.sql.query.OSQLAsynchQuery"
+QUERY_CMD   = "com.orientechnologies.orient.core.sql.OCommandSQL"
 
-# debug levels constants
-PARANOID = _pyorient.PARANOID
-DEBUG = _pyorient.DEBUG
-NOTICE = _pyorient.NOTICE
-INFO = _pyorient.INFO
-NORMAL = _pyorient.NORMAL
-WARNING = _pyorient.WARNING
-CRITICAL = _pyorient.CRITICAL
-FATAL = _pyorient.FATAL
-SILENT = _pyorient.SILENT
+# Debug levels constants
+PARANOID = 9
+DEBUG    = 8
+NOTICE   = 7
+INFO     = 6
+NORMAL   = 5
+WARNING  = 4
+CRITICAL = 3
+FATAL    = 2
+SILENT   = 1
+
+
+
+
+
+

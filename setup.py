@@ -16,67 +16,16 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-import os
+from setuptools import setup
 
-from distutils.core import setup, Extension, Command
-from glob import glob
-from test import getTestConfig
-from unittest import TextTestRunner, TestLoader, TestSuite
-
-
-class TestCommand(Command):
-    description = "custom clean command that forcefully removes dist/build directories"
-    user_options = []
-
-    def initialize_options(self):
-        self.cwd = None
-
-    def finalize_options(self):
-        self.cwd = os.getcwd()
-
-    def run(self):
-        assert os.getcwd() == self.cwd, 'Must be in package root: %s' % self.cwd
-        # os.system('rm -rf ./build ./dist')
-        testfiles = []
-        c = getTestConfig()
-
-        for t in glob(os.path.join(self.cwd, 'test', '*.py')):
-            if t.split('/')[-1].startswith('test_'):
-                if c['canroot'] or (not t.endswith('session.py') and not t.endswith('dbroot.py')):
-                    testfiles.append('.'.join(
-                        ['test', os.path.splitext(os.path.basename(t))[0]]))
-        tests = TestLoader().loadTestsFromNames(testfiles)
-        TextTestRunner(verbosity=2).run(tests)
-
-
-class CleanCommand(Command):
-    user_options = []
-
-    def initialize_options(self):
-        self.cwd = None
-
-    def finalize_options(self):
-        self.cwd = os.getcwd()
-
-    def run(self):
-        assert os.getcwd() == self.cwd, 'Must be in package root: %s' % self.cwd
-        os.system('rm -rf ./build ./dist _pyorient.so ./*.pyc ./test/*.pyc')
-
-
-setup(
-    name='pyorient',
+setup(name='pyorient',
     version='0.1.0',
     author='Niko Usai',
     author_email='mogui83@gmail.com',
     url='http://mogui.it',
-    description='OrientDB client liborient wrapper',
-    long_description=open('DESCRIPTION').read(),
+    description='OrientDB client library',
+    long_description=open('README.md').read(),
     license='LICENSE',
-    cmdclass={'test': TestCommand, 'clean': CleanCommand},
-    packages=['pyorient'],
-    ext_modules=[Extension(
-        '_pyorient',
-        ['src/pyorientmodule.c'],
-        libraries=['orient'],
-    )]
+    packages = ['pyorient'],
+    install_requires = ['nose'],
 )
