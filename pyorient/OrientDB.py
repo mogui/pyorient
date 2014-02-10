@@ -24,9 +24,12 @@ STRING  = 7
 RECORD  = 8
 
 
+
+
 def dlog(msg):
   if os.environ['DEBUG']:
     print "[DEBUG]:: %s" % msg
+
 
 class OrientSocket(object):
   """docstring for OrientSocket"""
@@ -38,31 +41,78 @@ class OrientSocket(object):
       raise PyOrientConnectionException("Socket Error: %s" % e)
     self.buffer = ''
 
+  #
+  # Read basic types from socket
+  #
+  def readBool(self):
+    return self.readByte() == 1 # 1 = true, 0 = false
+
+  def readByte(self):
+    return ord(self.s.recv(1))
+
   def readShort(self):
     return struct.unpack('!h', self.s.recv(2))[0]
 
   def readInt(self):
     return struct.unpack('!i', self.s.recv(4))[0]
 
-  def readByte(self):
-    return ord(self.s.recv(1))
+  def readLong(self):
+    return struct.unpack('!q', self.s.recv(8))[0]
 
-  def readBool(self):
-    return self.readByte() == 1 # 1 = true, 0 = false
+  def readBytes(self):
+    l = self.readInt()
+    if l == -1:
+      return None
+    return self.s.recv(l)
 
-  def putInt(self, num):
-      self.buffer += struct.pack("!i", num)
+  def readString(self):
+    return self.readBytes()
 
-  def putShort(self, num):
-      self.buffer +=  struct.pack("!h", num)
+  def readRecord(self):
+    pass
 
-  def putString(self, string):
-    self.putInt(len(string))
-    self.buffer += string
+  def readStrings(self):
+    n = self.readInt()
+    a = []
+    for i in range(0, n):
+      a.append(self.readString())
+    return a
+
+  #
+  # Write basic types on socket
+  #
+  def putBool(self, b):
+    self.buffer += chr(1) if b else chr(0)
 
   def putByte(self, c):
     self.buffer += c
 
+  def putShort(self, num):
+      self.buffer +=  struct.pack("!h", num)
+
+  def putInt(self, num):
+      self.buffer += struct.pack("!i", num)
+
+  def putLong(self, num):
+    self.buffer += struct.pack("!q", num)
+
+  def putBytes(self, bytes):
+    self.putInt(len(bytes))
+    self.buffer += bytes
+
+  def putString(self, string):
+    self.putBytes(string)
+
+  def putRecord(self):
+    pass
+
+  def putStrings(self, strings):
+    for s in strings:
+      self.putString(s)
+
+  #
+  # Send and flush the buffer
+  #
   def send(self):
     self.s.send(self.buffer)
     self.buffer = ''
@@ -94,14 +144,16 @@ class OrientDB(object):
   # take a list of fields, it autoguess by the type for string and int
   # otherwise it expects a tuple with the right type
   #
-  def callCommand(self, operation, fields):
+  def makeRequest(self, operation, fields):
 
-    dlog("calling %d:%s" % (ord(operation), fields))
+    dlog("Making request: (%d) %s" % (ord(operation), fields))
 
     # write operation
     self.conn.putByte(operation)
+
     # write current session
     self.conn.putInt(self.session_id)
+
     # iterate commands
     for field in fields:
       if isinstance(field, str):
@@ -125,17 +177,26 @@ class OrientDB(object):
   # giving back the raw content of the response
   #
   def parseResponse(self, types):
-    status = not self.conn.readBool() # (0=OK, 1=ERROR)
-    session_id = self.conn.readInt()
-    if session_id != self.session_id:
-      raise PyOrientException("Wrong Session ID") # really?! is it needed?
+    # get status (0=OK, 1=ERROR)
+    status = not self.conn.readBool()
 
-    error = None
+    # get session id
+    session_id = self.conn.readInt()
+    # todo: check that session is the same??
+
+    errors = []
 
     if not status:
-      # todo: here parse error and return it
+      # Parse the error
+      while self.conn.readBool():
+        exception_class = self.conn.readString()
+        exception_message = self.conn.readString()
+        errors.append((exception_class, exception_message))
+
+      # null all the expected returns
       content = [None for t in types]
-      return tuple([status, error] + content)
+
+      return tuple([status, errors] + content)
 
     content = []
 
@@ -145,17 +206,19 @@ class OrientDB(object):
       elif t == SHORT:
         content.append(self.conn.readShort())
 
-    return tuple([status, error] + content)
+    return tuple([status, errors] + content)
 
 
-  #
-  # COMMANDS IMPLEMENTATIONS
-  #
-  #
+  # ------------------------ #
+  # COMMANDS IMPLEMENTATIONS #
+  # ------------------------ #
 
-  #
+
+  # REQUEST_SHUTDOWN
+  def shutdown(self):
+    pass
+
   # CONNECT
-  #
   def connect(self, user, pwd):
 
     # int the connection
@@ -166,20 +229,65 @@ class OrientDB(object):
     # todo: decide whether give up if protocol is not supported
 
     # packing command
-    self.callCommand(CONNECT, ["OrientDB Python client (pyorient)", "1.0", (SHORT, 19), "", user, pwd])
+    self.makeRequest(CONNECT, ["OrientDB Python client (pyorient)", "1.0", (SHORT, 19), "", user, pwd])
 
-    ok, error, session_id = self.parseResponse([INT])
+    ok, errors, session_id = self.parseResponse([INT])
     if not ok:
-      raise PyOrientConnectionException("Error during connection, no session returned")
+      raise PyOrientConnectionException("Error during connection", errors)
 
-    dlog(session_id)
+    dlog("Session ID: %s" % session_id)
     return session_id
 
-
+  # DB_OPEN
   def db_open(self, dbname, user, pwd):
     pass
 
 
+  # REQUEST_CONNECT
+  # REQUEST_DB_OPEN
+  # REQUEST_DB_CREATE
+  # REQUEST_DB_CLOSE
+  # REQUEST_DB_EXIST
+  # REQUEST_DB_DROP
+  # REQUEST_DB_SIZE
+  # REQUEST_DB_COUNTRECORDS
+  # REQUEST_DATACLUSTER_ADD
+  # REQUEST_DATACLUSTER_DROP
+  # REQUEST_DATACLUSTER_COUNT
+  # REQUEST_DATACLUSTER_DATARANGE
+  # REQUEST_DATACLUSTER_COPY
+  # REQUEST_DATACLUSTER_LH_CLUSTER_IS_USED
+  # REQUEST_DATASEGMENT_ADD
+  # REQUEST_DATASEGMENT_DROP
+  # REQUEST_RECORD_METADATA
+  # REQUEST_RECORD_LOAD
+  # REQUEST_RECORD_CREATE
+  # REQUEST_RECORD_UPDATE
+  # REQUEST_RECORD_DELETE
+  # REQUEST_RECORD_COPY
+  # REQUEST_POSITIONS_HIGHER
+  # REQUEST_POSITIONS_LOWER
+  # REQUEST_RECORD_CLEAN_OUT
+  # REQUEST_POSITIONS_FLOOR
+  # REQUEST_COUNT
+  # REQUEST_COMMAND
+  # REQUEST_POSITIONS_CEILING
+  # REQUEST_TX_COMMIT
+  # REQUEST_CONFIG_GET
+  # REQUEST_CONFIG_SET
+  # REQUEST_CONFIG_LIST
+  # REQUEST_DB_RELOAD
+  # REQUEST_DB_LIST
+  # REQUEST_PUSH_RECORD
+  # REQUEST_PUSH_DISTRIB_CONFIG
+  # REQUEST_DB_COPY
+  # REQUEST_REPLICATION
+  # REQUEST_CLUSTER
+  # REQUEST_DB_TRANSFER
+  # REQUEST_DB_FREEZE
+  # REQUEST_DB_RELEASE
+  # REQUEST_DATACLUSTER_FREEZE
+  # REQUEST_DATACLUSTER_RELEASE
 
 
 

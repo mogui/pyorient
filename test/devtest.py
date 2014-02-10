@@ -14,7 +14,7 @@
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
 
-from pyorient import OrientDB
+from pyorient import OrientDB, PyOrientException
 #from . import getTestConfig
 
 #c = getTestConfig()
@@ -23,6 +23,17 @@ from pyorient import OrientDB
 def test_simpleconnection():
   db = OrientDB('127.0.0.1', 2424, "root", "root")
   assert db.session_id > 0
+
+def test_wrongconnect():
+  db = OrientDB('127.0.0.1', 2424)
+  try:
+    db.connect("root", "asder")
+  except PyOrientException, e:
+    print "Exc: %s" % e
+    assert True
+  else:
+    assert False
+
 
 # def test_dbopen():
 #   db = OrientDB('127.0.0.1', 2424, "root", "root")
