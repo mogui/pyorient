@@ -34,8 +34,15 @@ def test_wrongconnect():
   else:
     assert False
 
-
-# def test_dbopen():
+# def test_shutdown():
 #   db = OrientDB('127.0.0.1', 2424, "root", "root")
-#   db.dbopen(dbname)
-#   assert db.session_id > 0
+#   db.shutdown("root", "root")
+
+def test_dbopen():
+  db = OrientDB('127.0.0.1', 2424)
+  clusters = db.db_open("GratefulDeadConcerts", "admin", "admin")
+  assert clusters != None
+  print "Server:      %s" % db.release
+  print "Info on db:  %s" % clusters
+  assert db.session_id > 0
+

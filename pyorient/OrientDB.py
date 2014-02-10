@@ -8,6 +8,10 @@ from ORecordCoder import ORecordDecoder, ORecordEncoder
 from OrientException import PyOrientConnectionException, PyOrientException
 import socket
 
+# DB Type
+DB_DOCUMENT = 'document'
+DB_GRAPH    = 'graph'   # since version 8 todo: check with server protocol number returned
+
 # Operations
 SHUTDOWN    = chr(1)
 CONNECT     = chr(2)
@@ -124,18 +128,19 @@ class OrientSocket(object):
 class OrientDB(object):
   # init
   def __init__(self, host, port, user=None, pwd=None, autoconnect=True):
+    self.conn = None
     self.server = {
       'host': host,
       'port': port
     }
-
+    self.release = None
     self.isConnected = False
     self.session_id = -1
 
     # If autoconnect is false
     # or we didn't give credential we don't immediately connect
     if autoconnect and user and pwd:
-      self.session_id = self.connect(user, pwd)
+      self.connect(user, pwd)
       if(self.session_id < 0):
         raise PyOrientConnectionException("Not connected to DB")
 
@@ -173,10 +178,9 @@ class OrientDB(object):
     self.conn.send()
 
   #
-  # Parse a response from the server
-  # giving back the raw content of the response
+  # Parse status and eventual errors
   #
-  def parseResponse(self, types):
+  def parseStatus(self):
     # get status (0=OK, 1=ERROR)
     status = not self.conn.readBool()
 
@@ -193,9 +197,18 @@ class OrientDB(object):
         exception_message = self.conn.readString()
         errors.append((exception_class, exception_message))
 
+    return tuple([status, errors])
+
+  #
+  # Parse a response from the server
+  # giving back the raw content of the response
+  #
+  def parseResponse(self, types):
+
+    status, errors = self.parseStatus()
+    if not status:
       # null all the expected returns
       content = [None for t in types]
-
       return tuple([status, errors] + content)
 
     content = []
@@ -210,13 +223,19 @@ class OrientDB(object):
 
 
   # ------------------------ #
-  # COMMANDS IMPLEMENTATIONS #
+  # REQUESTS IMPLEMENTATIONS #
   # ------------------------ #
 
-
   # REQUEST_SHUTDOWN
-  def shutdown(self):
-    pass
+  def shutdown(self, user, pwd):
+    # todo: make this check a function decorator
+    if not self.isConnected:
+      raise PyOrientConnectionException("You must be connected to issue this command", [])
+
+    self.makeRequest(SHUTDOWN, [user, pwd])
+
+    # we do not have any respons efor this command :P
+
 
   # CONNECT
   def connect(self, user, pwd):
@@ -236,15 +255,62 @@ class OrientDB(object):
       raise PyOrientConnectionException("Error during connection", errors)
 
     dlog("Session ID: %s" % session_id)
+    self.isConnected = True
+    self.session_id = session_id
     return session_id
 
+
   # DB_OPEN
-  def db_open(self, dbname, user, pwd):
-    pass
+  def db_open(self, dbname, user, pwd, dbtype=DB_DOCUMENT):
+    # if not init the connection
+    if not self.conn:
+      self.conn = OrientSocket(self.server['host'], int(self.server['port']))
+      # retrieve protocol version
+      self.protocolVersion = self.conn.readShort()
+
+    self.makeRequest(DB_OPEN, [
+      "OrientDB Python client (pyorient)",
+      "1.0",
+      (SHORT, 19),
+      "",
+      dbname,
+      dbtype,
+      user,
+      pwd])
+
+    # I don't use the helper method parseResponse cause dbopen response is fucken strange !
+    status, errors = self.parseStatus()
+    if not status:
+      # null all the expected returns
+      return tuple([status, errors, None, None, None])
+
+    # Response: (session-id:int)(num-of-clusters:short)[(cluster-name:string)(cluster-id:short)(cluster-type:string)(cluster-dataSegmentId:short)] (cluster-config:bytes)(orientdb-release:string)
+
+    # read session
+    self.session_id = self.conn.readInt()
+    self.isConnected = True
+
+    num_ofcluster = self.conn.readShort()
+    clusters = []
+
+    for n in range(0, num_ofcluster):
+      cluster_name = self.conn.readString()
+      cluster_id = self.conn.readShort()
+      cluster_type = self.conn.readString()
+      cluster_segmentDataId = self.conn.readShort()
+      clusters.append({
+        "name": cluster_name,
+        "id": cluster_id,
+        "type": cluster_type,
+        "segment": cluster_segmentDataId
+        })
+
+    cluster_config = self.conn.readBytes() #always null
+    self.release = self.conn.readString()
+
+    return clusters
 
 
-  # REQUEST_CONNECT
-  # REQUEST_DB_OPEN
   # REQUEST_DB_CREATE
   # REQUEST_DB_CLOSE
   # REQUEST_DB_EXIST
