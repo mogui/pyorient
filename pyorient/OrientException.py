@@ -7,7 +7,13 @@ class PyOrientException(Exception):
     self.errors = errors
 
   def __str__(self):
-    return "%s - %s" % (self.message, self.errors[0][1])
+    if  self.errors:
+        return "%s - %s" % (self.message, self.errors[0][1])
+    else:
+        return Exception.__str__(self)
 
 class PyOrientConnectionException(PyOrientException):
+  pass
+
+class PyOrientDatabaseException(PyOrientException):
   pass

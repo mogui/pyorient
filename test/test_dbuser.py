@@ -18,7 +18,7 @@ from __future__ import print_function
 
 import pyorient
 import unittest
-import time
+
 from . import getTestConfig
 
 class DbUserTestCase(unittest.TestCase):
@@ -28,40 +28,38 @@ class DbUserTestCase(unittest.TestCase):
     dbname = c['existing_db']
     
     def setUp(self):
-        self.ordb = pyorient.OrientDB(self.c['host'], self.c['port'], self.c['useru'],self.c['userp'])
+        self.ordb = pyorient.OrientDB(self.c['host'], self.c['port'])
 
     def tearDown(self):
         try:
-            self.ordb.dbclose()
+            self.ordb.db_close()
         except pyorient.PyOrientException, e:
             print("tryed close db but: (PyOrientException) %s" % e)
-        
-        self.ordb.close()
               
     def test_dbopen_existing(self):
-        ret = self.ordb.dbopen(self.dbname)
-        self.assertEqual(ret, 0, "Db not opened error %d" % ret)
-        
+        ret = self.ordb.db_open(self.dbname, self.c['useru'], self.c['userp'])
+        self.assertGreater(len(ret), 0, "Db not opened error" )
+
     def test_dbopen_existing_inline(self):
-        ret = self.ordb.dbopen(self.dbname, self.c['useru'],self.c['userp'])
-        self.assertEqual(ret, 0, "Db not opened with inline credential error %d" % ret)
+        ret = self.ordb.db_open(self.dbname, self.c['useru'], self.c['userp'])
+        self.assertGrater(len(ret), 0, "Db not opened with inline credential error %d" % ret)
 
     def test_dbopen_existing_inline_wrong(self):
-        self.assertRaises(pyorient.PyOrientException, self.ordb.dbopen , self.dbname, "adminassd", "asdadmin")
+        self.assertRaises(pyorient.PyOrientException, self.ordb.db_open , self.dbname, "adminassd", "asdadmin")
 
     def test_dbsize(self):
-        ret = self.ordb.dbopen(self.dbname)
-        dim = self.ordb.dbsize()
+        ret = self.ordb.db_open(self.dbname,self.c['useru'], self.c['userp'])
+        dim = self.ordb.db_size()
         self.assertTrue(dim >= 0, "Size returned negative value %d"% dim)
 
     def test_dbcountrecords(self):
-        ret = self.ordb.dbopen(self.dbname)
-        recordnum = self.ordb.dbcountrecords()
+        ret = self.ordb.db_open(self.dbname, self.c['useru'], self.c['userp'])
+        recordnum = self.ordb.db_countrecords()
         if recordnum > 0:
             print("\n\tNumber of records in DB %d" % recordnum)
         self.assertTrue(recordnum >= 0, "Number of records couldn't be negative")
 
     def test_dbreload(self):
-        ret = self.ordb.dbopen(self.dbname)
-        ret = self.ordb.dbreload()
+        ret = self.ordb.db_open(self.dbname, self.c['useru'], self.c['userp'])
+        ret = self.ordb.db_reload()
         self.assertEqual(ret, 0, "Problem in reloading database")
