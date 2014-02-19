@@ -16,42 +16,41 @@
 
 import pyorient
 import unittest
-import time
 from . import getTestConfig
 
 class DbRootTestCase(unittest.TestCase):
-    ordb = None
-    c = getTestConfig()
-    dbname = c['new_db']
-    
     def setUp(self):
-        self.ordb = pyorient.OrientDB(self.c['host'], self.c['port'], self.c['rootu'],self.c['rootp'])
+        self.c = getTestConfig()
+        self.dbname = self.c['new_db']
+        self.existing = self.c['existing_db']
+        self.ordb = pyorient.OrientDB(self.c['host'], self.c['port'], self.c['rootu'], self.c['rootp'])
         try:
-            ret = self.ordb.dbdelete(self.dbname)
+            self.ordb.db_drop(self.dbname)
         except:
             pass
 
     def tearDown(self):
-        self.ordb.close()
         try:
-            ret = self.ordb.dbdelete(self.dbname)
+            self.ordb.db_close()
+            self.ordb.db_drop(self.dbname)
         except:
             pass
-        
+
     def test_dbcreate(self):
-        ret = self.ordb.dbcreate(self.dbname)
+        ret = self.ordb.db_create(self.dbname)
         self.assertTrue(ret >= 0, "Db not created error %s" % ret)
-        ret = self.ordb.dbdelete(self.dbname)
-        
+        ret = self.ordb.db_drop(self.dbname)
+
     def test_dbexists(self):
-        self.ordb.dbcreate(self.dbname)
-        ret = self.ordb.dbexists(self.dbname)
-        self.assertEqual(ret, 1, "Db does not exists error %d" % ret)
-        ret2 = self.ordb.dbexists("fake_db")
-        self.assertEqual(ret2, 0, "Fake Db exists error %d" % ret2)
-        self.ordb.dbdelete(self.dbname)
+
+        ret = self.ordb.db_exists(self.existing)
+        self.assertTrue(ret, "Db does not exists error")
+        ret2 = self.ordb.db_exists("fake_db")
+        self.assertFalse(ret2, "Fake Db exists error")
 
     def test_dbdelete(self):
-        ret = self.ordb.dbcreate(self.dbname)
-        self.assertEqual(ret, 0, "Db not cdeleted error %d" % ret)
-        ret = self.ordb.dbdelete(self.dbname)
+        self.ordb.db_create(self.dbname)
+        self.ordb.db_drop(self.dbname)
+        ex = self.ordb.db_exists(self.dbname)
+        self.assertFalse(ex, "Db not deleted error")
+
