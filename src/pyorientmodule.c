@@ -136,7 +136,7 @@ void custom_debug(const char *message) {
 /*
  * set debug level module wide
  */
-static PyObject *pyorient_setDebugLevel(PyObject *self, PyObject *args) {
+static PyObject *pyorient_setDebugLevel(PyObject *self, PyObject *args, PyObject *kwargs) {
 
     int ok = PyArg_ParseTuple(args, "i", &debug_level);
     if (!ok){
@@ -150,7 +150,7 @@ static PyObject *pyorient_setDebugLevel(PyObject *self, PyObject *args) {
 /*
  * Set debug callback
  */
-static PyObject *pyorient_setLoggingCallback(PyObject *self, PyObject *args) {
+static PyObject *pyorient_setLoggingCallback(PyObject *self, PyObject *args, PyObject *kwargs) {
     PyObject *result = NULL;
     PyObject *temp;
 
@@ -723,8 +723,8 @@ static PyObject *pyorient_recordload(PyObject *self, PyObject *args, PyObject *k
 /* MODULE INIT ------------------------------------------------ */
 static PyMethodDef _pyorient_methods[] = {
 
-    { "setDebugLevel", (PyCFunction)pyorient_setDebugLevel, METH_VARARGS, NULL },
-    { "setLoggingCallback", (PyCFunction)pyorient_setLoggingCallback, METH_VARARGS, NULL },
+    { "setDebugLevel", (PyCFunction)pyorient_setDebugLevel, METH_VARARGS | METH_KEYWORDS, NULL },
+    { "setLoggingCallback", (PyCFunction)pyorient_setLoggingCallback, METH_VARARGS | METH_KEYWORDS, NULL },
 
     { "connect", (PyCFunction)pyorient_connect, METH_VARARGS, NULL },
     { "shutdown", (PyCFunction)pyorient_shutdown, METH_VARARGS | METH_KEYWORDS, NULL },

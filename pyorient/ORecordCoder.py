@@ -85,8 +85,9 @@ class ORecordEncoder(object):
         return raw
 
     def parseValue(self, value):
-
-        if isinstance(value, str):
+        if isinstance(value, unicode):
+            ret =  u'"'+value+u'"'
+        elif isinstance(value, str):
             ret =  '"'+value+'"'
         elif isinstance(value, int):
             ret = str(value)

@@ -68,9 +68,8 @@ class OrientDB(object):
     def recordcreate(self, cluster_id, record, **kwargs):
         if not isinstance(record, OrientRecord):
             record = OrientRecord(record)
-        
         parser = ORecordEncoder(record)
-        raw_record = parser.getRaw()
+        raw_record = str(parser.getRaw().encode('utf-8'))
         ret = _pyorient.recordcreate(cluster_id, raw_record, **kwargs)
 
         return ret
