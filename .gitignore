@@ -37,3 +37,4 @@ wiki
 orientdb-community-1.6.4
 .builddev
 .idea
+localTest/*
