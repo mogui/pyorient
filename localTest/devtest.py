@@ -91,8 +91,8 @@ def test_create_destroy():
     assert (ret >= 0)
 
 
-test_simpleconnection()
-test_dbopen()
+# test_simpleconnection()
+# test_dbopen()
 test_wrongconnect()
-test_create_destroy()
-test_reload()
+# test_create_destroy()
+# test_reload()

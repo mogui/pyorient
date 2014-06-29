@@ -8,16 +8,7 @@ from OrientException import *
 from OrientSocket import OrientSocket
 from OrientPrimitives import *
 from OrientOperations import *
-
-
-def dlog( msg ):
-    # add check for DEBUG key because KeyError Exception is not caught
-    # and if no DEBUG key is set, the driver crash with no reason when
-    # connection starts
-    if 'DEBUG' in os.environ:
-        if os.environ['DEBUG']:
-            print "[DEBUG]:: %s" % msg
-
+from utils import *
 
 #
 # need connection decorator
@@ -45,6 +36,13 @@ def need_db_opened(wrapp):
 # OrientDB
 #
 class OrientDB(object):
+
+    def reset_buffer(self):
+        self.conn.buffer_reset()
+
+    def log_binary(self):
+            self.conn.buffer_dump_string()
+            self.conn.buffer_reset()
 
     # init
     def __init__(self, host, port, user=None, pwd=None, autoconnect=True):
@@ -105,6 +103,9 @@ class OrientDB(object):
 
         # retrieve protocol version
         self.protocol_version = self.conn.read_short()
+
+        # Log version number binary
+        self.log_binary()
         # todo: decide whether give up if protocol is not supported
 
         # packing command
@@ -119,11 +120,14 @@ class OrientDB(object):
 
         ok, errors, session_id = self.conn.parse_response([INT])
         if not ok:
+            self.log_binary()
             raise PyOrientConnectionException("Error during connection", errors)
 
         dlog("Session ID: %s" % session_id)
         self.is_connected = True
         self.conn.set_session_id( session_id )
+
+        self.log_binary()
         return session_id
 
     # DB_OPEN
@@ -148,6 +152,7 @@ class OrientDB(object):
         status, errors = self.conn.parse_status()
         if not status:
             # null all the expected returns
+            self.log_binary()
             raise PyOrientConnectionException( status, errors )
 
         # Response:
@@ -187,6 +192,7 @@ class OrientDB(object):
         cluster_config = self.conn.read_bytes()  # always null
         self.release = self.conn.read_string()
 
+        self.log_binary()
         return clusters
 
     # REQUEST_DB_CREATE
@@ -194,12 +200,14 @@ class OrientDB(object):
     def db_create(self, db_name, dbtype=DB_TYPE_DOCUMENT, storage_type=STORAGE_TYPE_LOCAL):
         self.conn.make_request(DB_CREATE, [db_name, dbtype, storage_type])
         ok, errors = self.conn.parse_response()
+        self.log_binary()
         return ok
 
     # REQUEST_DB_CLOSE
     @need_db_opened
     def db_close(self):
         self.conn.make_request(DB_CLOSE)
+        self.log_binary()
         return True
 
     # REQUEST_DB_EXIST
@@ -218,7 +226,7 @@ class OrientDB(object):
             self.conn.make_request(DB_EXIST, [dbname, server_storage_type])
 
         ok, errors, exists = self.conn.parse_response([BOOLEAN])
-
+        self.log_binary()
         return exists
 
     # REQUEST_DB_RELOAD
@@ -229,6 +237,7 @@ class OrientDB(object):
         status, errors = self.conn.parse_status()
         if not status:
             # null all the expected returns
+            self.log_binary()
             raise PyOrientCommandException( "Reload Failed", errors )
 
         # Response:
@@ -257,6 +266,7 @@ class OrientDB(object):
                 "type": cluster_type,
                 "segment": cluster_segment_data_id
             })
+        self.log_binary()
         return clusters
 
     # REQUEST_DB_DROP
@@ -273,6 +283,7 @@ class OrientDB(object):
             self.conn.make_request(DB_DROP, [dbname, server_storage_type])
 
         ok, errors = self.conn.parse_response([])
+        self.log_binary()
         return ok
 
     # REQUEST_DB_SIZE
@@ -280,6 +291,7 @@ class OrientDB(object):
     def db_size(self):
         self.conn.make_request(DB_SIZE)
         ok, errors, size = self.conn.parse_response([LONG])
+        self.log_binary()
         return size
 
     # REQUEST_DB_COUNTRECORDS
@@ -287,6 +299,7 @@ class OrientDB(object):
     def db_count_records(self):
         self.conn.make_request(DB_COUNTRECORDS)
         ok, errors, count = self.conn.parse_response([LONG])
+        self.log_binary()
         return count
 
     # REQUEST_DATACLUSTER_ADD

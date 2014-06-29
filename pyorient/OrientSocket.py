@@ -3,12 +3,15 @@ import socket
 from OrientPrimitives import *
 from OrientException import PyOrientConnectionException
 
-import os
+from utils import *
 
 class OrientSocket(object):
     """docstring for OrientSocket"""
 
     def __init__(self, host, port):
+
+        dlog("Trying to connect...")
+
         self.s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
             self.s.connect((host, port))
@@ -17,24 +20,24 @@ class OrientSocket(object):
         self.buffer = ''
         self.__session_id = -1
         self.__binary_buffer = ''
-        self.__buffer = []
+        self.__array_buffer = {'response': [], 'request': []}
 
-    def reset_buffer(self):
-        self.__buffer = []
+    def buffer_reset(self):
+        if is_debug_active():
+            self.__array_buffer = {'response': [], 'request': []}
 
-    def append_buffer(self, string):
-        self.__buffer.append( string )
+    def buffer_append(self, string, direction='response' ):
+        if is_debug_active():
+            self.__array_buffer[direction].append( string )
 
-    def flush_string_buffer(self):
-        self.__binary_buffer = ''.join([repr(num) for num in xrange(len(self.__buffer))])
-        if 'DEBUG' in os.environ:
-            if os.environ['DEBUG']:
-                import sys
-                if os.path.realpath( '../localTest' ) not in sys.path:
-                    sys.path.insert( 0, os.path.realpath( '../localTest' ) )
-                import hexdump
-                hexdump.hexdump( self.__binary_buffer )
-
+    def buffer_dump_string(self):
+        if is_debug_active():
+            import hexdump
+            print "\nRequest :"
+            hexdump.hexdump( ''.join(self.__array_buffer['request']) )
+            print "\nResponse:"
+            hexdump.hexdump( ''.join(self.__array_buffer['response']) )
+            print "\n"
 
     def set_session_id(self, session_id):
         self.__session_id = session_id
@@ -49,22 +52,32 @@ class OrientSocket(object):
         return self.read_byte() == 1  # 1 = true, 0 = false
 
     def read_byte(self):
-        return ord(self.s.recv(1))
+        _byte = self.s.recv(1)
+        self.buffer_append(_byte)
+        return ord(_byte)
 
     def read_short(self):
-        return struct.unpack('!h', self.s.recv(2))[0]
+        _short = self.s.recv(2)
+        self.buffer_append(_short)
+        return struct.unpack('!h', _short)[0]
 
     def read_int(self):
-        return struct.unpack('!i', self.s.recv(4))[0]
+        _int = self.s.recv(4)
+        self.buffer_append(_int)
+        return struct.unpack('!i', _int)[0]
 
     def read_long(self):
-        return struct.unpack('!q', self.s.recv(8))[0]
+        _long = self.s.recv(8)
+        self.buffer_append(_long)
+        return struct.unpack('!q', _long)[0]
 
     def read_bytes(self):
         l = self.read_int()
         if l == -1:
             return None
-        return self.s.recv(l)
+        _raw_bytes = self.s.recv(l)
+        self.buffer_append(_raw_bytes)
+        return _raw_bytes
 
     def read_string(self):
         return self.read_bytes()
@@ -85,22 +98,32 @@ class OrientSocket(object):
     # Write basic types on socketparse_status
     #
     def put_bool(self, b):
-        self.buffer += chr(1) if b else chr(0)
+        _bool = chr(1) if b else chr(0)
+        self.buffer_append( _bool, 'request' )
+        self.buffer += _bool
 
     def put_byte(self, c):
+        self.buffer_append( c, 'request' )
         self.buffer += c
 
-    def put_short(self, num):
-        self.buffer += struct.pack("!h", num)
+    def put_short(self, _short):
+        _short = struct.pack("!h", _short)
+        self.buffer_append( _short, 'request' )
+        self.buffer += _short
 
     def put_int(self, num):
-        self.buffer += struct.pack("!i", num)
+        _int = struct.pack("!i", num)
+        self.buffer_append( _int, 'request' )
+        self.buffer += _int
 
     def put_long(self, num):
-        self.buffer += struct.pack("!q", num)
+        _long = struct.pack("!q", num)
+        self.buffer_append( _long, 'request' )
+        self.buffer += _long
 
     def put_bytes(self, _bytes):
         self.put_int(len(_bytes))
+        self.buffer_append( _bytes, 'request' )
         self.buffer += _bytes
 
     def put_string(self, string):
