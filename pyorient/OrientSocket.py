@@ -3,6 +3,7 @@ import socket
 from OrientPrimitives import *
 from OrientException import PyOrientConnectionException
 
+import os
 
 class OrientSocket(object):
     """docstring for OrientSocket"""
@@ -15,6 +16,25 @@ class OrientSocket(object):
             raise PyOrientConnectionException( "Socket Error: %s" % e, e.errno )
         self.buffer = ''
         self.__session_id = -1
+        self.__binary_buffer = ''
+        self.__buffer = []
+
+    def reset_buffer(self):
+        self.__buffer = []
+
+    def append_buffer(self, string):
+        self.__buffer.append( string )
+
+    def flush_string_buffer(self):
+        self.__binary_buffer = ''.join([repr(num) for num in xrange(len(self.__buffer))])
+        if 'DEBUG' in os.environ:
+            if os.environ['DEBUG']:
+                import sys
+                if os.path.realpath( '../localTest' ) not in sys.path:
+                    sys.path.insert( 0, os.path.realpath( '../localTest' ) )
+                import hexdump
+                hexdump.hexdump( self.__binary_buffer )
+
 
     def set_session_id(self, session_id):
         self.__session_id = session_id
