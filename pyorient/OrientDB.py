@@ -38,9 +38,14 @@ DB_TYPE_GRAPH       = 'graph'
 STORAGE_TYPE_LOCAL  = 'local'
 STORAGE_TYPE_MEMORY = 'memory'
 
-def dlog(msg):
-    if os.environ['DEBUG']:
-        print "[DEBUG]:: %s" % msg
+
+def dlog( msg ):
+    # add check for DEBUG key because KeyError Exception is not caught
+    # and if no DEBUG key is set, the driver crash with no reason when
+    # connection starts
+    if 'DEBUG' in os.environ:
+        if os.environ['DEBUG']:
+            print "[DEBUG]:: %s" % msg
 
 
 class OrientSocket(object):
