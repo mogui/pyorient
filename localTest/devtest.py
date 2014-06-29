@@ -34,7 +34,7 @@ from pyorient import OrientDB, PyOrientException
 
 def test_simpleconnection():
     db = OrientDB('127.0.0.1', 2424, "admin", "admin")
-    assert db.session_id > 0
+    assert db.conn.get_session_id() > 0
 
 
 def test_wrongconnect():
@@ -57,6 +57,9 @@ def test_dbopen():
     try:
         db = OrientDB( '127.0.0.1', 2424, "admin", "admin" )
         e = db.db_exists( "GratefulDeadConcerts" )
+        if e:
+            e = db.db_open( "GratefulDeadConcerts", "admin", "admin" )
+
         # print "%r" % e
     except Exception as e:
         print "%r" % type(e)
@@ -65,15 +68,30 @@ def test_dbopen():
     assert e
 
 
+def test_reload():
+    db = OrientDB( '127.0.0.1', 2424, "admin", "admin" )
+    ret = db.db_open( "GratefulDeadConcerts", "admin", "admin" )
+    assert ret
+    ret = db.db_reload()
+    print "%r" % ret
+    assert ret[0]
+
+
 def test_create_destroy():
     db = OrientDB( '127.0.0.1', 2424, "admin", "admin" )
+
+    if db.db_exists( "GratefulDeadConcerts" ):
+        ret = db.db_drop('mock_db')
+        assert (ret >= 0)
+
     ret = db.db_create('mock_db')
-    assert (ret >= 0, "Db not created error %s" % ret)
+    assert (ret >= 0)
     ret = db.db_drop('mock_db')
     assert (ret >= 0)
 
 
-test_simpleconnection()
-test_dbopen()
-test_wrongconnect()
-test_create_destroy()
+# test_simpleconnection()
+# test_dbopen()
+# test_wrongconnect()
+# test_create_destroy()
+# test_reload()

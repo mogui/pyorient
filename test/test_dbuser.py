@@ -35,14 +35,14 @@ class DbUserTestCase(unittest.TestCase):
             self.ordb.db_close()
         except pyorient.PyOrientException, e:
             print("tryed close db but: (PyOrientException) %s" % e)
-              
+
     def test_dbopen_existing(self):
         ret = self.ordb.db_open(self.dbname, self.c['useru'], self.c['userp'])
-        self.assertGreater(len(ret), 0, "Db not opened error" )
+        assert len(ret) > 0
 
     def test_dbopen_existing_inline(self):
         ret = self.ordb.db_open(self.dbname, self.c['useru'], self.c['userp'])
-        self.assertGrater(len(ret), 0, "Db not opened with inline credential error %d" % ret)
+        assert len(ret) > 0
 
     def test_dbopen_existing_inline_wrong(self):
         self.assertRaises(pyorient.PyOrientException, self.ordb.db_open , self.dbname, "adminassd", "asdadmin")
@@ -54,12 +54,13 @@ class DbUserTestCase(unittest.TestCase):
 
     def test_dbcountrecords(self):
         ret = self.ordb.db_open(self.dbname, self.c['useru'], self.c['userp'])
-        recordnum = self.ordb.db_countrecords()
+        recordnum = self.ordb.db_count_records()
         if recordnum > 0:
             print("\n\tNumber of records in DB %d" % recordnum)
         self.assertTrue(recordnum >= 0, "Number of records couldn't be negative")
 
     def test_dbreload(self):
         ret = self.ordb.db_open(self.dbname, self.c['useru'], self.c['userp'])
+        assert ret
         ret = self.ordb.db_reload()
-        self.assertEqual(ret, 0, "Problem in reloading database")
+        assert ret[0]  # , "Problem in reloading database")
