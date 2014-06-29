@@ -17,6 +17,7 @@
 import os
 import sys
 
+os.environ['DEBUG'] = "1"
 
 if os.path.realpath( '../' ) not in sys.path:
     sys.path.insert( 0, os.path.realpath( '../' ) )
@@ -73,7 +74,7 @@ def test_reload():
     ret = db.db_open( "GratefulDeadConcerts", "admin", "admin" )
     assert ret
     ret = db.db_reload()
-    print "%r" % ret
+    # print "%r" % ret
     assert ret[0]
 
 
@@ -90,8 +91,8 @@ def test_create_destroy():
     assert (ret >= 0)
 
 
-# test_simpleconnection()
-# test_dbopen()
-# test_wrongconnect()
-# test_create_destroy()
-# test_reload()
+test_simpleconnection()
+test_dbopen()
+test_wrongconnect()
+test_create_destroy()
+test_reload()
