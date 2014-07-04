@@ -302,43 +302,101 @@ class OrientDB(object):
         self.log_binary()
         return count
 
-    # REQUEST_DATACLUSTER_ADD
-    # REQUEST_DATACLUSTER_DROP
-    # REQUEST_DATACLUSTER_COUNT
-    # REQUEST_DATACLUSTER_DATARANGE
-    # REQUEST_DATACLUSTER_COPY
-    # REQUEST_DATACLUSTER_LH_CLUSTER_IS_USED
-    # REQUEST_DATASEGMENT_ADD
-    # REQUEST_DATASEGMENT_DROP
-    # REQUEST_RECORD_METADATA
-    # REQUEST_RECORD_LOAD
-    # REQUEST_RECORD_CREATE
-    # REQUEST_RECORD_UPDATE
-    # REQUEST_RECORD_DELETE
-    # REQUEST_RECORD_COPY
-    # REQUEST_POSITIONS_HIGHER
-    # REQUEST_POSITIONS_LOWER
-    # REQUEST_RECORD_CLEAN_OUT
-    # REQUEST_POSITIONS_FLOOR
-    # REQUEST_COUNT
-    # REQUEST_COMMAND
-    # REQUEST_POSITIONS_CEILING
-    # REQUEST_TX_COMMIT
-    # REQUEST_CONFIG_GET
-    # REQUEST_CONFIG_SET
-    # REQUEST_CONFIG_LIST
-    # REQUEST_DB_RELOAD
-    # REQUEST_DB_LIST
-    # REQUEST_PUSH_RECORD
-    # REQUEST_PUSH_DISTRIB_CONFIG
-    # REQUEST_DB_COPY
-    # REQUEST_REPLICATION
-    # REQUEST_CLUSTER
-    # REQUEST_DB_TRANSFER
-    # REQUEST_DB_FREEZE
-    # REQUEST_DB_RELEASE
-    # REQUEST_DATACLUSTER_FREEZE
-    # REQUEST_DATACLUSTER_RELEASE
+    @need_db_opened
+    def command(self, query, limit = 20, fetchplan="*:-1", async=False,
+                **kwargs):
+        """docstring for command"""
+
+        if async:
+            mod_byte = (BYTE, 'a' )  # QUERY_ASYNC
+        else:
+            mod_byte = (BYTE, 's' )  # QUERY_SYNC
+
+        # raw_result = _pyorient.command(query, limit, **kwargs)
+
+        # BYTE INT(4) BYTE // ??
+        self.conn.make_request( REQUEST_COMMAND,
+                                ( mod_byte, 101, QUERY_SYNC, query,
+                                  -1, "*:0", 0 ) )
+
+        raw_result = self.conn.parse_status()
+
+        print raw_result
+
+        # if is a list --> status = l
+        recType = chr( self.conn.read_byte() )
+        print "%r" % recType
+
+        res = []
+        if recType == 'l':
+            numRecs = self.conn.read_int()
+            print "%r" % numRecs
+            for x in range(numRecs):
+                rec = []
+                rec.append( self.conn.read_short() )
+                rec.append( self.conn.read_byte() )
+                rec.append( self.conn.read_short() )
+                rec.append( self.conn.read_long() )
+                rec.append( self.conn.read_int() )
+                rec.append( self.conn.read_bytes() )
+
+                res.append(rec)
+
+        print "%r" % res
+
+        # raw_result = self.conn.parse_response()
+        # if kwargs.get('raw', False):
+        #     return raw_result
+        #
+        # ret = []
+        #
+        # for raw_record in raw_result:
+        #     parser = ORecordDecoder(raw_record)
+        #     record = OrientRecord(parser.data, o_class=parser.className)
+        #     ret.append(record)
+        #
+        # return ret
+
+        self.log_binary()
+        return raw_result
+
+        # REQUEST_DATACLUSTER_ADD
+        # REQUEST_DATACLUSTER_DROP
+        # REQUEST_DATACLUSTER_COUNT
+        # REQUEST_DATACLUSTER_DATARANGE
+        # REQUEST_DATACLUSTER_COPY
+        # REQUEST_DATACLUSTER_LH_CLUSTER_IS_USED
+        # REQUEST_DATASEGMENT_ADD
+        # REQUEST_DATASEGMENT_DROP
+        # REQUEST_RECORD_METADATA
+        # REQUEST_RECORD_LOAD
+        # REQUEST_RECORD_CREATE
+        # REQUEST_RECORD_UPDATE
+        # REQUEST_RECORD_DELETE
+        # REQUEST_RECORD_COPY
+        # REQUEST_POSITIONS_HIGHER
+        # REQUEST_POSITIONS_LOWER
+        # REQUEST_RECORD_CLEAN_OUT
+        # REQUEST_POSITIONS_FLOOR
+        # REQUEST_COUNT
+        # REQUEST_COMMAND
+        # REQUEST_POSITIONS_CEILING
+        # REQUEST_TX_COMMIT
+        # REQUEST_CONFIG_GET
+        # REQUEST_CONFIG_SET
+        # REQUEST_CONFIG_LIST
+        # REQUEST_DB_RELOAD
+        # REQUEST_DB_LIST
+        # REQUEST_PUSH_RECORD
+        # REQUEST_PUSH_DISTRIB_CONFIG
+        # REQUEST_DB_COPY
+        # REQUEST_REPLICATION
+        # REQUEST_CLUSTER
+        # REQUEST_DB_TRANSFER
+        # REQUEST_DB_FREEZE
+        # REQUEST_DB_RELEASE
+        # REQUEST_DATACLUSTER_FREEZE
+        # REQUEST_DATACLUSTER_RELEASE
 
 
 

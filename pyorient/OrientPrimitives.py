@@ -15,3 +15,8 @@ DB_TYPE_GRAPH       = 'graph'
 
 STORAGE_TYPE_LOCAL  = 'local'
 STORAGE_TYPE_MEMORY = 'memory'
+
+# Commands costants
+QUERY_SYNC  = "com.orientechnologies.orient.core.sql.query.OSQLSynchQuery"
+QUERY_ASYNC = "com.orientechnologies.orient.core.sql.query.OSQLAsynchQuery"
+QUERY_CMD   = "com.orientechnologies.orient.core.sql.OCommandSQL"
