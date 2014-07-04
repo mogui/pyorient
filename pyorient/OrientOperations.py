@@ -9,3 +9,5 @@ DB_DROP         = chr(7)
 DB_SIZE         = chr(8)
 DB_COUNTRECORDS = chr(9)
 DB_RELOAD       = chr(73)
+
+REQUEST_COMMAND = chr(41)

@@ -141,6 +141,12 @@ class OrientSocket(object):
     # Send and flush the buffer
     #
     def send(self):
+
+        rfile = open("out.bin","w")
+        rfile.write( self.buffer )
+        # rfile.write("\n\n")
+
+
         self.s.send(self.buffer)
         self.buffer = ''
 

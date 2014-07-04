@@ -91,8 +91,25 @@ def test_create_destroy():
     assert (ret >= 0)
 
 
+def test_select():
+    try:
+        db = OrientDB( '127.0.0.1', 2424, "admin", "admin" )
+        e = db.db_exists( "GratefulDeadConcerts" )
+        if e:
+            e = db.db_open( "GratefulDeadConcerts", "admin", "admin" )
+
+        db.command( "select * from Person" )
+
+        # print "%r" % e
+    except Exception as e:
+        print "%r" % type(e)
+        print "%r" % e.message
+        quit(0)
+    assert e
+
 # test_simpleconnection()
 # test_dbopen()
-test_wrongconnect()
+# test_wrongconnect()
 # test_create_destroy()
 # test_reload()
+test_select()
