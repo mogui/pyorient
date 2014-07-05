@@ -57,11 +57,11 @@ def test_wrongconnect():
 def test_dbopen():
     try:
         db = OrientDB( '127.0.0.1', 2424, "admin", "admin" )
-        e = db.db_exists( "GratefulDeadConcerts" )
-        if e:
-            e = db.db_open( "GratefulDeadConcerts", "admin", "admin" )
+        # e = db.db_exists( "GratefulDeadConcerts" )
+        # if e:
+        e = db.db_open( "GratefulDeadConcerts", "admin", "admin" )
 
-        # print "%r" % e
+        print "%r" % e
     except Exception as e:
         print "%r" % type(e)
         print "%r" % e.message
@@ -107,9 +107,9 @@ def test_select():
         quit(0)
     assert e
 
-test_simpleconnection()
-# test_dbopen()
+# test_simpleconnection()
+test_dbopen()
 # test_wrongconnect()
 # test_create_destroy()
 # test_reload()
-test_select()
+# test_select()
