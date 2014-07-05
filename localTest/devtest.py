@@ -49,7 +49,7 @@ def test_wrongconnect():
         assert False
 
 
-# def test_shutdown():
+# def test_shutdown():.ClassName
 #   db = OrientDB('127.0.0.1', 2424, "root", "root")
 #   db.shutdown("root", "root")
 
@@ -107,7 +107,7 @@ def test_select():
         quit(0)
     assert e
 
-# test_simpleconnection()
+test_simpleconnection()
 # test_dbopen()
 # test_wrongconnect()
 # test_create_destroy()
