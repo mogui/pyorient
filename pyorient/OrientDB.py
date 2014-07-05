@@ -1,13 +1,12 @@
 # import re
 # import json
-import os
 # from OrientTypes import OrientRecordLink, OrientRecord, OrientBinaryObject
 # from ORecordCoder import ORecordDecoder, ORecordEncoder
 from OrientException import *
 
-from OrientSocket import OrientSocket
-from OrientPrimitives import *
-from OrientOperations import *
+from OrientSocket_bkp import OrientSocket
+from pyorient.Messages.Fields.OrientPrimitives import *
+from pyorient.Messages.Fields.OrientOperations import *
 from utils import *
 
 #
