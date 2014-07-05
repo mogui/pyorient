@@ -132,7 +132,7 @@ def dump(binary):
     '''
     hexstr = binascii.hexlify(binary)
     if PY3K:
-        hexstr = hexstr.decode('ascii')
+        hexstr = hexstr._decode_body('ascii')
     return ' '.join(chunks(hexstr.upper(), 2))
 
 
@@ -243,7 +243,7 @@ def restore(dump):
         if PY3K:
             result += bytes.fromhex(line)
         else:
-            result += line.decode('hex')
+            result += line._decode_body('hex')
 
     return result
 

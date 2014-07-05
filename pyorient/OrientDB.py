@@ -166,10 +166,10 @@ class OrientDB(object):
         # (cluster-config:bytes)
         # (orientdb-release:string)
 
-        # # read session, but we already have one from connect, thrash it
+        # # read session, but we already have one from connect, trash it
         _session_id = self.conn.read_int()
         # print "%r" % _session_id
-        assert _session_id == self.conn.get_session_id()
+        # assert _session_id == self.conn.get_session_id()
 
         self.is_connected = True
         self.opened_db = db_name

@@ -1,8 +1,10 @@
 class OrientRecord(object):
-    """Object that represent an Orient Document / Record"""
+    """
+    Object that represent an Orient Document / Record
 
-    __rid = None  # @BUG now it is unvalorized due to lack in c shit
-    __version = None  # same as above
+    """
+    __rid = None        
+    __version = None    
     __o_class = None
 
     rid = property(lambda self: self.__rid)
@@ -20,12 +22,11 @@ class OrientRecord(object):
         self.__o_class = kwargs.get('o_class', None)
 
     def __str__(self):
-        return self.__o_class + str([
-            x for x in self.__dict__ if not x.startswith('_Orient')])
+        return self.__o_class + str(
+            [x for x in self.__dict__ if not x.startswith('_Orient')])
 
 
 class OrientRecordLink(object):
-
     def __init__(self, recordlink):
         cid, rpos = recordlink.split(":")
         self.__link = recordlink
@@ -43,7 +44,6 @@ class OrientRecordLink(object):
 
 
 class OrientBinaryObject(object):
-
     def __init__(self, stri):
         self.b64 = stri
 

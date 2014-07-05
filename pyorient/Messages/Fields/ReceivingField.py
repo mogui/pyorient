@@ -1,5 +1,6 @@
-import struct
+__author__ = 'Ostico'
 
+import struct
 from pyorient.Messages.Fields.OrientPrimitives import *
 
 
@@ -26,10 +27,10 @@ class ReceivingField(object):
             self.content = 1
         elif _type == BYTES:
             self.type = BYTES
-            self.content = 1
+            self.content = 4
         elif _type == STRING:
             self.type = STRING
-            self.content = 1
+            self.content = 4
 
     @staticmethod
     def decode(_type, _value):
@@ -44,8 +45,10 @@ class ReceivingField(object):
         elif _type == LONG:
             return struct.unpack('!q', _value)[0]
         elif _type == STRING:
-            _len = ReceivingField.decode( INT, _value[0] )
-            return _value[1:]
+            # _len = ReceivingField.decode( INT, _value[0] )
+            # return _value[1:]
+            return ''
         elif _type == BYTES:
-            _len = ReceivingField.decode( INT, _value[0] )
-            return _value[1:]
+            # _len = ReceivingField.decode( INT, _value[0] )
+            # return _value[1:]
+            return ''

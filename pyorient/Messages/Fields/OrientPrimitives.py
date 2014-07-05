@@ -13,7 +13,8 @@ STRINGS = 9
 DB_TYPE_DOCUMENT    = 'document'
 DB_TYPE_GRAPH       = 'graph'
 
-STORAGE_TYPE_LOCAL  = 'local'
+STORAGE_TYPE_LOCAL = 'local'
+STORAGE_TYPE_PLOCAL = 'plocal'
 STORAGE_TYPE_MEMORY = 'memory'
 
 # Commands costants

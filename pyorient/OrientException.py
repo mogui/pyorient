@@ -23,3 +23,7 @@ class PyOrientDatabaseException(PyOrientException):
 
 class PyOrientCommandException(PyOrientException):
     pass
+
+
+class PyOrientBadMethodCallException(PyOrientException):
+    pass

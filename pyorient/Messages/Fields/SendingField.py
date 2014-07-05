@@ -1,6 +1,7 @@
 import struct
 
 from pyorient.Messages.Fields.OrientPrimitives import *
+__author__ = 'Ostico'
 
 
 class SendingField(object):

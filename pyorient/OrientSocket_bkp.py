@@ -143,16 +143,16 @@ class OrientSocket(object):
     #
     def send(self):
 
-        import datetime
-        dt = datetime.datetime.now()
-        rfile = open("out.bin" + str(dt.microsecond), "w")
-        rfile.write( self.buffer )
+        # import datetime
+        # dt = datetime.datetime.now()
+        # rfile = open("out.bin" + str(dt.microsecond), "w")
+        # rfile.write( self.buffer )
         # rfile.write("\n\n")
 
         self.buffer = ''.join(self.__array_buffer['request'])
         self.s.send(self.buffer)
         self.buffer_dump_string()
-        self.buffer_reset()
+        # self.buffer_reset()
         # self.buffer = ''
 
     #
