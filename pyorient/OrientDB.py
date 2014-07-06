@@ -10,28 +10,6 @@ from pyorient.Messages.Fields.OrientOperations import *
 from utils import *
 
 #
-# need connection decorator
-def need_connected(wrapp):
-    def wrap_function(*args, **kwargs):
-        if not args[0].is_connected:
-            raise PyOrientConnectionException("You must be connected to issue this command", [])
-        return wrapp(*args, **kwargs)
-
-    return wrap_function
-
-
-#
-# need db opened decorator
-def need_db_opened(wrapp):
-    def wrap_function(*args, **kwargs):
-        if args[0].opened_db is None:
-            raise PyOrientDatabaseException("You must have an opened database to issue this command", [])
-        return wrapp(*args, **kwargs)
-
-    return wrap_function
-
-
-#
 # OrientDB
 #
 class OrientDB(object):

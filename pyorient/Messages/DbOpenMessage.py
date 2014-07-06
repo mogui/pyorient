@@ -5,54 +5,35 @@ from Fields.SendingField import SendingField
 from Fields.ReceivingField import ReceivingField
 from Fields.OrientOperations import *
 from Fields.OrientPrimitives import *
-from pyorient.OrientSocket import OrientSocket
-
+from pyorient.utils import *
 
 class DbOpenMessage(BaseMessage):
 
-    def __init__(self, conn_message):
+    def __init__(self, _orient_socket):
 
-        self._session_id = -1
         self._user = ''
         self._pass = ''
         self._client_id = ''
         self._db_name = ''
         self._db_type = DB_TYPE_DOCUMENT
 
-        # already connected and the ConnectMessage instance was provided
-        if isinstance( conn_message, ConnectMessage ):
-            super( DbOpenMessage, self ).\
-                __init__(conn_message.get_orient_socket_instance())
+        super( DbOpenMessage, self ).__init__(_orient_socket)
+        # this block of code check for session because this class
+        # can be initialized directly from orient socket
 
-            self._user = conn_message._user
-            self._pass = conn_message._pass
-            self._client_id = conn_message._client_id
+        self.append( SendingField( ( BYTE, DB_OPEN ) ) )
+        # session_id
+        self.append( SendingField( ( INT, self._session_id ) ) )
 
-            self._protocol = conn_message.get_protocol()  # get from cache
-            self._session_id = conn_message.fetch_response()  # get from cache
-
-            self.append( SendingField( ( BYTE, DB_OPEN ) ) )
-
-            # session_id
-            self.append( SendingField( ( INT, self._session_id ) ) )
-
-        elif isinstance( conn_message, OrientSocket ):
-
-            super( DbOpenMessage, self ).__init__(conn_message)
-            # this block of code check for session because this class
-            # can be initialized directly from orient socket
-            if self._session_id < 0:
-                # try to connect, we inherited BaseMessage
-                conn_message = ConnectMessage( self._orientSocket )
-                self._session_id = conn_message\
-                    .prepare( ( self._user, self._pass, self._client_id ) )\
-                    .send_message().fetch_response()
-
-                self._protocol = conn_message.get_protocol()
-                self.append( SendingField( ( BYTE, DB_OPEN ) ) )
-
-                # session_id
-                self.append( SendingField( ( INT, self._session_id ) ) )
+    def _perform_connection(self):
+        # try to connect, we inherited BaseMessage
+        conn_message = ConnectMessage( self._orientSocket )
+        # set session id and protocol
+        self._session_id = conn_message\
+            .prepare( ( self._user, self._pass, self._client_id ) )\
+            .send_message().fetch_response()
+        # now, self._session_id and _orient_socket.session_id are updated
+        self._protocol = self._orientSocket.protocol
 
     def prepare(self, params=None ):
 
@@ -67,6 +48,11 @@ class DbOpenMessage(BaseMessage):
                 # Use default for non existent indexes
                 pass
 
+        # if session id is -1, so we aren't connected
+        # because ConnectMessage set the client id
+        if self._orientSocket.session_id < 0:
+            self._perform_connection()
+
         self.append(
             SendingField( ( STRINGS, [NAME, VERSION] ) )
         ).append(
@@ -77,6 +63,7 @@ class DbOpenMessage(BaseMessage):
         )
         return super( DbOpenMessage, self ).prepare()
 
+    @need_connected
     def fetch_response(self):
         self._set_response_header_fields()
         self.append( ReceivingField( INT ) )  # session_id

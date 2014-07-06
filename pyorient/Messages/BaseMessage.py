@@ -6,30 +6,22 @@ from pyorient.OrientSocket import *
 from pyorient.OrientException import *
 
 
-#
-# need connection decorator
-# def need_session(wrap):
-#     def wrap_function(*args, **kwargs):
-#         if args[0].session_id < 0:
-#             raise PyOrientBadMethodCallException(
-#                 "Session Id not provided or not valid. Call set_session_id", [])
-#         return wrap(*args, **kwargs)
-#
-#     return wrap_function
-
-
 class BaseMessage(object):
 
     def get_orient_socket_instance(self):
         return self._orientSocket
+
+    def is_connected(self):
+        return self._session_id != -1
 
     def __init__(self, sock=OrientSocket):
         """
         :type sock: OrientSocket
         """
         self._socket = sock.get_connection()
-
         self._orientSocket = sock
+        self._protocol = self._orientSocket.protocol
+        self._session_id = self._orientSocket.session_id
 
         self._header = []
         """:type : list of [str]"""
@@ -40,16 +32,13 @@ class BaseMessage(object):
         self._fields_definition = []
         """:type : list of [object]"""
 
-        self._protocol = -1
         self._command = chr(0)
         self._output_buffer = ''
         self._input_buffer = ''
 
-        self._session_id = -1
-
-    def set_session_id(self, session_id=-1):
-        self._session_id = session_id
-        self.append( SendingField( ( INT, self._session_id ) ) )
+    def _update_socket_id(self):
+        """Force update of socket id from inside the class"""
+        self._orientSocket.session_id = self._session_id
         return self
 
     def _set_response_header_fields(self):
@@ -178,7 +167,6 @@ class BaseMessage(object):
             # there are only a message composition error in driver development
             pass
 
-        # if len(_continue) is not 0 or len(self._body) is 0:
         if log is True:
             if is_debug_active():
                 from pyorient.hexdump import hexdump
@@ -207,4 +195,4 @@ class BaseMessage(object):
         return self
 
     def close(self):
-        self._socket.close()
+        self._orientSocket.close()

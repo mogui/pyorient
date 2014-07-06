@@ -2,22 +2,20 @@ __author__ = 'Ostico'
 
 from BaseMessage import BaseMessage
 from Fields.SendingField import SendingField
-from Fields.ReceivingField import ReceivingField
 from Fields.OrientOperations import *
 from Fields.OrientPrimitives import *
-from Fields.ClientConstants import *
-
+from pyorient.utils import *
 
 class DbDropMessage(BaseMessage):
     _db_name = ''
     _storage_type = STORAGE_TYPE_LOCAL
 
-    def __init__(self, conn_message ):
+    def __init__(self, _orient_socket ):
         super( DbDropMessage, self ).\
-            __init__(conn_message.get_orient_socket_instance())
+            __init__(_orient_socket)
 
-        self._protocol = conn_message.get_protocol()  # get from cache
-        self._session_id = conn_message.fetch_response()  # get from cache
+        self._protocol = _orient_socket.protocol  # get from cache
+        self._session_id = _orient_socket.session_id  # get from cache
 
         # order matters
         self.append( SendingField( ( BYTE, DB_DROP ) ) )
@@ -40,6 +38,7 @@ class DbDropMessage(BaseMessage):
 
         return super( DbDropMessage, self ).prepare()
 
+    @need_connected
     def fetch_response(self):
         self._set_response_header_fields()
         return super( DbDropMessage, self ).fetch_response()

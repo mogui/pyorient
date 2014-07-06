@@ -10,16 +10,17 @@ from Fields.ClientConstants import *
 
 class ConnectMessage(BaseMessage):
 
-    def __init__(self, sock):
-        super( ConnectMessage, self ).__init__(sock)
-        self.append( SendingField( ( BYTE, CONNECT ) ) )
+    def __init__(self, _orient_socket):
+        super( ConnectMessage, self ).__init__(_orient_socket)
         self._user = ''
         self._pass = ''
         self._client_id = ''
 
-    def prepare(self, params=None ):
+        self.append( SendingField( ( BYTE, CONNECT ) ) )
+        # session_id = -1
+        self.append( SendingField( ( INT, self._session_id ) ) )
 
-        self.set_session_id(-1)
+    def prepare(self, params=None ):
 
         if isinstance( params, tuple ):
             try:
@@ -42,6 +43,10 @@ class ConnectMessage(BaseMessage):
         self._set_response_header_fields()
         self.append( ReceivingField( INT ) )
         self._session_id = super( ConnectMessage, self ).fetch_response()[0]
+
+        # IMPORTANT needed to pass the id to other messages
+        self._update_socket_id()
+
         return self._session_id
 
     def set_user(self, _user):

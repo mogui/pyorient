@@ -4,6 +4,7 @@ from BaseMessage import BaseMessage
 from Fields.SendingField import SendingField
 from Fields.OrientOperations import *
 from Fields.OrientPrimitives import *
+from pyorient.utils import *
 
 
 class DbCreateMessage(BaseMessage):
@@ -12,12 +13,11 @@ class DbCreateMessage(BaseMessage):
     _db_type = ''
     _storage_type = STORAGE_TYPE_LOCAL
 
-    def __init__(self, conn_message):
-        super( DbCreateMessage, self ).\
-            __init__(conn_message.get_orient_socket_instance())
+    def __init__(self, _orient_socket):
+        super( DbCreateMessage, self ).__init__(_orient_socket)
 
-        self._protocol = conn_message.get_protocol()
-        self._session_id = conn_message.fetch_response()
+        self._protocol = _orient_socket.protocol
+        self._session_id = _orient_socket.session_id
 
         # order matters
         self.append( SendingField( ( BYTE, DB_CREATE ) ) )
@@ -38,6 +38,7 @@ class DbCreateMessage(BaseMessage):
         )
         return super( DbCreateMessage, self ).prepare()
 
+    @need_connected
     def fetch_response(self):
         self._set_response_header_fields()
         return super( DbCreateMessage, self ).fetch_response()

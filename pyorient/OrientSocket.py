@@ -10,8 +10,6 @@ from utils import *
 class OrientSocket(object):
     """docstring for OrientSocket"""
 
-    __metaclass__ = Singleton
-
     def __init__(self, host, port):
 
         self.host = host
@@ -19,6 +17,7 @@ class OrientSocket(object):
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         """:type : socket.socket"""
         self.protocol = -1
+        self.session_id = -1
 
     def get_connection(self):
         try:
@@ -41,4 +40,8 @@ class OrientSocket(object):
             raise PyOrientConnectionException( "Socket Error: %s" % e, e.errno )
 
     def close(self):
-        self._socket.socket.close()
+        self.host = ''
+        self.port = ''
+        self.protocol = -1
+        self.session_id = -1
+        self._socket.close()
