@@ -1,10 +1,8 @@
 __author__ = 'Ostico'
 
 from ConnectMessage import *
-from Fields.SendingField import SendingField
-from Fields.ReceivingField import ReceivingField
-from Fields.OrientOperations import *
-from Fields.OrientPrimitives import *
+from Constants.OrientOperations import *
+from Constants.OrientPrimitives import *
 from pyorient.utils import *
 
 class DbOpenMessage(BaseMessage):
@@ -21,9 +19,7 @@ class DbOpenMessage(BaseMessage):
         # this block of code check for session because this class
         # can be initialized directly from orient socket
 
-        self.append( SendingField( ( BYTE, DB_OPEN ) ) )
-        # session_id
-        self.append( SendingField( ( INT, self._session_id ) ) )
+        self.append( ( FIELD_BYTE, DB_OPEN ) )
 
     def _perform_connection(self):
         # try to connect, we inherited BaseMessage
@@ -54,20 +50,18 @@ class DbOpenMessage(BaseMessage):
             self._perform_connection()
 
         self.append(
-            SendingField( ( STRINGS, [NAME, VERSION] ) )
+            ( FIELD_STRINGS, [NAME, VERSION] )
         ).append(
-            SendingField( ( SHORT, SUPPORTED_PROTOCOL ) )
+            ( FIELD_SHORT, SUPPORTED_PROTOCOL )
         ).append(
-            SendingField( (STRINGS, [self._client_id, self._db_name,
-                                     self._db_type, self._user, self._pass]) )
+            (FIELD_STRINGS, [self._client_id, self._db_name,
+                             self._db_type, self._user, self._pass])
         )
         return super( DbOpenMessage, self ).prepare()
 
-    @need_connected
     def fetch_response(self):
-        self._set_response_header_fields()
-        self.append( ReceivingField( INT ) )  # session_id
-        self.append( ReceivingField( SHORT ) )  # cluster_num
+        self.append( FIELD_INT )  # session_id
+        self.append( FIELD_SHORT )  # cluster_num
 
         self._session_id, cluster_num = \
             super( DbOpenMessage, self ).fetch_response()
@@ -75,13 +69,13 @@ class DbOpenMessage(BaseMessage):
         self._reset_fields_definition()
 
         for n in range(0, cluster_num):
-            self.append( ReceivingField( STRING ) )  # cluster_name
-            self.append( ReceivingField( SHORT ) )  # cluster_id
-            self.append( ReceivingField( STRING ) )  # cluster_type
-            self.append( ReceivingField( SHORT ) )  # cluster_segment_id
+            self.append( FIELD_STRING )  # cluster_name
+            self.append( FIELD_SHORT )  # cluster_id
+            self.append( FIELD_STRING )  # cluster_type
+            self.append( FIELD_SHORT )  # cluster_segment_id
 
-        self.append( ReceivingField( INT ) )  # cluster config string ( -1 )
-        self.append( ReceivingField( STRING ) )  # cluster release
+        self.append( FIELD_INT )  # cluster config string ( -1 )
+        self.append( FIELD_STRING )  # cluster release
 
         response = super( DbOpenMessage, self ).fetch_response(True)
 

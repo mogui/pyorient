@@ -1,9 +1,8 @@
 __author__ = 'Ostico'
 
 from BaseMessage import BaseMessage
-from Fields.SendingField import SendingField
-from Fields.OrientOperations import *
-from Fields.OrientPrimitives import *
+from Constants.OrientOperations import *
+from Constants.OrientPrimitives import *
 from pyorient.utils import *
 
 class DbDropMessage(BaseMessage):
@@ -18,9 +17,9 @@ class DbDropMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from cache
 
         # order matters
-        self.append( SendingField( ( BYTE, DB_DROP ) ) )
-        self.append( SendingField( ( INT, self._session_id ) ) )  # session_id
+        self.append( ( FIELD_BYTE, DB_DROP ) )
 
+    @need_connected
     def prepare(self, params=None):
 
         try:
@@ -30,15 +29,19 @@ class DbDropMessage(BaseMessage):
             # Use default for non existent indexes
             pass
 
-        self.append( SendingField( ( STRING, self._db_name ) ) )  # db_name
+        self.append( ( FIELD_STRING, self._db_name ) )  # db_name
 
         if self.get_protocol() >= 16:  # > 16 1.5-snapshot
             # custom choice server_storage_type
-            self.append( SendingField( ( STRING, self._storage_type ) ) )
+            self.append( ( FIELD_STRING, self._storage_type ) )
 
         return super( DbDropMessage, self ).prepare()
 
-    @need_connected
     def fetch_response(self):
-        self._set_response_header_fields()
         return super( DbDropMessage, self ).fetch_response()
+
+    def set_db_name(self, db_name):
+        self._db_name = db_name
+
+    def set_storage_type(self, storage_type):
+        self._storage_type = storage_type

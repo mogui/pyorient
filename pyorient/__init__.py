@@ -17,9 +17,9 @@
 __author__ = 'mogui'
 import base64
 
-from OrientDB import *
-from OrientException import *
-from OrientTypes import *
+# from OrientDB import *
+# from OrientException import *
+# from OrientTypes import *
 
 
 # cluster costants

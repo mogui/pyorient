@@ -1,11 +1,9 @@
 __author__ = 'Ostico'
 
 from BaseMessage import BaseMessage
-from Fields.SendingField import SendingField
-from Fields.ReceivingField import ReceivingField
-from Fields.OrientOperations import *
-from Fields.OrientPrimitives import *
-from Fields.ClientConstants import *
+from Constants.OrientOperations import *
+from Constants.OrientPrimitives import *
+from Constants.ClientConstants import *
 
 
 class ConnectMessage(BaseMessage):
@@ -16,9 +14,7 @@ class ConnectMessage(BaseMessage):
         self._pass = ''
         self._client_id = ''
 
-        self.append( SendingField( ( BYTE, CONNECT ) ) )
-        # session_id = -1
-        self.append( SendingField( ( INT, self._session_id ) ) )
+        self.append( ( FIELD_BYTE, CONNECT ) )
 
     def prepare(self, params=None ):
 
@@ -31,17 +27,16 @@ class ConnectMessage(BaseMessage):
                 pass
 
         self.append(
-            SendingField( ( STRINGS, [NAME, VERSION] ) )
+            ( FIELD_STRINGS, [NAME, VERSION] )
         ).append(
-            SendingField( ( SHORT, SUPPORTED_PROTOCOL ) )
+            ( FIELD_SHORT, SUPPORTED_PROTOCOL )
         ).append(
-            SendingField( (STRINGS, [self._client_id, self._user, self._pass]) )
+            ( FIELD_STRINGS, [self._client_id, self._user, self._pass])
         )
         return super( ConnectMessage, self ).prepare()
 
     def fetch_response(self):
-        self._set_response_header_fields()
-        self.append( ReceivingField( INT ) )
+        self.append( FIELD_INT )
         self._session_id = super( ConnectMessage, self ).fetch_response()[0]
 
         # IMPORTANT needed to pass the id to other messages

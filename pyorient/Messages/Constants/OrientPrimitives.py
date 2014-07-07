@@ -9,6 +9,17 @@ STRING  = 7
 RECORD  = 8
 STRINGS = 9
 
+# Field types, we have the type definition and the first bytes to read
+FIELD_BOOLEAN = {"type": BOOLEAN, "bytes": 1}
+FIELD_BYTE = {"type": BYTE, "bytes": 1}
+FIELD_SHORT = {"type": SHORT, "bytes": 2}
+FIELD_INT = {"type": INT, "bytes": 4}
+FIELD_LONG = {"type": LONG, "bytes": 8}
+FIELD_BYTES = {"type": BYTES, "bytes": 4}
+FIELD_STRING = {"type": STRING, "bytes": 4}
+FIELD_STRINGS = {"type": STRINGS, "bytes": 4}
+FIELD_RECORD = {"type": RECORD, "bytes": '????'}
+
 
 DB_TYPE_DOCUMENT    = 'document'
 DB_TYPE_GRAPH       = 'graph'
