@@ -1,9 +1,10 @@
 __author__ = 'Ostico'
 
-from Fields.ReceivingField import *
-from Fields.SendingField import *
-from pyorient.OrientSocket import *
+import struct
+import pyorient.OrientSocket
+from pyorient.utils import *
 from pyorient.OrientException import *
+from Constants.OrientPrimitives import *
 
 
 class BaseMessage(object):
@@ -14,7 +15,7 @@ class BaseMessage(object):
     def is_connected(self):
         return self._session_id != -1
 
-    def __init__(self, sock=OrientSocket):
+    def __init__(self, sock=pyorient.OrientSocket):
         """
         :type sock: OrientSocket
         """
@@ -41,17 +42,15 @@ class BaseMessage(object):
         self._orientSocket.session_id = self._session_id
         return self
 
-    def _set_response_header_fields(self):
-        status = ReceivingField( BYTE )
-        sid = ReceivingField( INT )
-        self.append( status ).append( sid )
-        return self
-
     def _reset_fields_definition(self):
         self._fields_definition = []
 
     def prepare(self, *args):
-        self._output_buffer = ''.join( x.content for x in self._fields_definition )
+        # session_id
+        self._fields_definition.insert( 1, ( FIELD_INT, self._session_id ) )
+        self._output_buffer = ''.join(
+            self._encode_field( x ) for x in self._fields_definition
+        )
         return self
 
     def get_protocol(self):
@@ -60,57 +59,29 @@ class BaseMessage(object):
         return self._protocol
 
     def _decode_header(self):
+
         # read header's information
-        for _pos in range(2):
-            field = self._fields_definition[0]
-            _value = self._socket.recv( field.content )
-
-            if field.type == BYTE:
-                value = ReceivingField.decode( BYTE, _value )
-            elif field.type == INT:
-                value = ReceivingField.decode( INT, _value )
-            else:
-                raise PyOrientBadMethodCallException( "Invalid Header Field "
-                                                      + field )
-
-            self._header.append( value )
-            self._fields_definition = self._fields_definition[1:]
-            self._input_buffer += _value
+        self._header = [ self._decode_field( FIELD_BYTE ), self._decode_field( FIELD_INT ) ]
 
         # decode message errors and raise an exception
         if self._header[0]:
-            self._reset_fields_definition()
 
             # Parse the error
-            _bool_field = ReceivingField( BOOLEAN )
-            _str_field = ReceivingField( STRING )
-
             exception_class = ''
             exception_message = ''
 
-            more = ReceivingField.decode(
-                BOOLEAN, self._socket.recv( _bool_field.content ) )
+            more = self._decode_field( FIELD_BOOLEAN )
 
             while more:
                 # read num bytes by the field definition
-                _len = ReceivingField.decode(
-                    INT, self._socket.recv( _str_field.content ) )
-                exception_class += self._socket.recv( _len )
-
-                # read num bytes by the field definition
-                _len = ReceivingField.decode(
-                    INT, self._socket.recv( _str_field.content ) )
-                exception_message += self._socket.recv( _len )
-
-                more = ReceivingField.decode(
-                    BOOLEAN, self._socket.recv( _bool_field.content ) )
+                exception_class += self._decode_field( FIELD_STRING )
+                exception_message += self._decode_field( FIELD_STRING )
+                more = self._decode_field( FIELD_BOOLEAN )
 
             if self.get_protocol() > 18:  # > 18 1.6-snapshot
                 # read serialized version of exception thrown on server side
                 # useful only for java clients
-                _len = ReceivingField.decode(
-                    INT, self._socket.recv( _str_field.content ) )
-                serialized_exception = self._socket.recv( _len )  # trash
+                serialized_exception = self._decode_field( FIELD_STRING )  # trash
 
             raise PyOrientCommandException(
                 exception_message + " - " + exception_class, [] )
@@ -118,33 +89,12 @@ class BaseMessage(object):
     def _decode_body(self):
         # read body
         for field in self._fields_definition:
-
-            # read num bytes by the field definition
-            _value = self._socket.recv( field.content )
-
-            # if it is a string decode first 4 Bytes as INT
-            # and try to read the buffer
-            if field.type == STRING or field.type == BYTES:
-                _len = ReceivingField.decode( INT, _value )
-                if _len == -1:
-                    _decoded = ''
-                else:
-                    _decoded = self._socket.recv( _len )
-
-                self._input_buffer += _value
-                self._input_buffer += _decoded
-
-            else:
-                # read buffer length and decode value by field definition
-                _decoded = ReceivingField.decode( field.type, _value )
-                self._input_buffer += _value
-
-            self._body.append( _decoded )
+            self._body.append( self._decode_field( field ) )
 
         self._reset_fields_definition()
         return self
 
-    def _decode(self):
+    def _decode_all(self):
         self._decode_header()
         self._decode_body()
 
@@ -159,7 +109,7 @@ class BaseMessage(object):
                 log = True
             # already fetched, get last results as cache info
             elif len(self._body) is 0:
-                self._decode()
+                self._decode_all()
                 log = True
 
         except (IndexError, TypeError), e:
@@ -196,3 +146,65 @@ class BaseMessage(object):
 
     def close(self):
         self._orientSocket.close()
+
+    @staticmethod
+    def _encode_field(field):
+
+        # tuple with type
+        t, v = field
+        _content = ''
+
+        if t['type'] == INT:
+            _content = struct.pack("!i", v)
+        elif t['type'] == SHORT:
+            _content = struct.pack("!h", v)
+        elif t['type'] == LONG:
+            _content = struct.pack("!q", v)
+        elif t['type'] == BOOLEAN:
+            _content = chr(1) if v else chr(0)
+        elif t['type'] == BYTE:
+            _content = v
+        elif t['type'] == BYTES:
+            _content = struct.pack("!i", len(v)) + v
+        elif t['type'] == STRING:
+            _content = struct.pack("!i", len(v)) + v
+        elif t['type'] == STRINGS:
+            for s in v:
+                _content += struct.pack("!i", len(s)) + s
+
+        return _content
+
+    def _decode_field(self, _type):
+
+        # read buffer length and decode value by field definition
+        _value = self._socket.recv( _type['bytes'] )
+
+        # if it is a string decode first 4 Bytes as INT
+        # and try to read the buffer
+        if _type['type'] == STRING or _type['type'] == BYTES:
+
+            _len = struct.unpack('!i', _value)[0]
+            if _len == -1:
+                _decoded = ''
+            else:
+                _decoded = self._socket.recv( _len )
+
+            self._input_buffer += _value
+            self._input_buffer += _decoded
+
+            return _decoded
+
+        else:
+
+            self._input_buffer += _value
+
+            if _type['type'] == BOOLEAN:
+                return ord(_value) == 1
+            elif _type['type'] == BYTE:
+                return ord(_value)
+            elif _type['type'] == SHORT:
+                return struct.unpack('!h', _value)[0]
+            elif _type['type'] == INT:
+                return struct.unpack('!i', _value)[0]
+            elif _type['type'] == LONG:
+                return struct.unpack('!q', _value)[0]

@@ -1,10 +1,9 @@
 __author__ = 'Ostico'
 
-
-import socket
-from OrientException import PyOrientConnectionException
-from Messages.Fields.ReceivingField import *
+from Messages.Constants.OrientPrimitives import *
 from utils import *
+import socket
+import struct
 
 
 class OrientSocket(object):
@@ -34,8 +33,8 @@ class OrientSocket(object):
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._socket.connect( (self.host, self.port) )
-            _value = self._socket.recv( SHORT )
-            self.protocol = ReceivingField.decode( SHORT, _value )
+            _value = self._socket.recv( FIELD_SHORT['bytes'] )
+            self.protocol = struct.unpack('!h', _value)[0]
         except socket.error, e:
             raise PyOrientConnectionException( "Socket Error: %s" % e, e.errno )
 

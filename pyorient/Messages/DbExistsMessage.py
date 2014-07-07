@@ -1,10 +1,8 @@
 __author__ = 'Ostico'
 
 from BaseMessage import *
-from Fields.SendingField import SendingField
-from Fields.ReceivingField import ReceivingField
-from Fields.OrientOperations import *
-from Fields.OrientPrimitives import *
+from Constants.OrientOperations import *
+from Constants.OrientPrimitives import *
 from pyorient.utils import *
 
 class DbExistsMessage(BaseMessage):
@@ -20,9 +18,9 @@ class DbExistsMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from socket
 
         # order matters
-        self.append( SendingField( ( BYTE, DB_EXIST ) ) )
-        self.append( SendingField( ( INT, self._session_id ) ) )  # session_id
+        self.append( ( FIELD_BYTE, DB_EXIST ) )
 
+    @need_connected
     def prepare(self, params=None):
 
         try:
@@ -33,19 +31,17 @@ class DbExistsMessage(BaseMessage):
             pass
 
         if self.get_protocol() >= 6:
-            self.append( SendingField( ( STRING, self._db_name ) ) )  # db_name
+            self.append( ( FIELD_STRING, self._db_name ) )  # db_name
 
         if self.get_protocol() >= 16:
             # > 16 1.5-snapshot
             # custom choice server_storage_type
-            self.append( SendingField( ( STRING, self._storage_type ) ) )
+            self.append( ( FIELD_STRING, self._storage_type ) )
 
         return super( DbExistsMessage, self ).prepare()
 
-    @need_connected
     def fetch_response(self):
-        self._set_response_header_fields()
-        self.append( ReceivingField( BOOLEAN ) )
+        self.append( FIELD_BOOLEAN )
         return super( DbExistsMessage, self ).fetch_response()[0]
 
     def set_db_name(self, db_name):

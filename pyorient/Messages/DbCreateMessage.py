@@ -1,9 +1,8 @@
 __author__ = 'Ostico'
 
 from BaseMessage import BaseMessage
-from Fields.SendingField import SendingField
-from Fields.OrientOperations import *
-from Fields.OrientPrimitives import *
+from Constants.OrientOperations import *
+from Constants.OrientPrimitives import *
 from pyorient.utils import *
 
 
@@ -20,9 +19,9 @@ class DbCreateMessage(BaseMessage):
         self._session_id = _orient_socket.session_id
 
         # order matters
-        self.append( SendingField( ( BYTE, DB_CREATE ) ) )
-        self.append( SendingField( ( INT, self._session_id ) ) )  # session_id
+        self.append( ( FIELD_BYTE, DB_CREATE ) )
 
+    @need_connected
     def prepare(self, params=None ):
 
         if isinstance( params, tuple ):
@@ -34,13 +33,11 @@ class DbCreateMessage(BaseMessage):
                 pass
 
         self.append(
-            SendingField( (STRINGS, [self._db_name, self._db_type, self._storage_type]) )
+            (FIELD_STRINGS, [self._db_name, self._db_type, self._storage_type])
         )
         return super( DbCreateMessage, self ).prepare()
 
-    @need_connected
     def fetch_response(self):
-        self._set_response_header_fields()
         return super( DbCreateMessage, self ).fetch_response()
 
     def set_db_name(self, db_name):

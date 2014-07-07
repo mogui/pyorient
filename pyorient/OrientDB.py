@@ -4,9 +4,9 @@
 # from ORecordCoder import ORecordDecoder, ORecordEncoder
 from OrientException import *
 
-from OrientSocket_bkp import OrientSocket
-from pyorient.Messages.Fields.OrientPrimitives import *
-from pyorient.Messages.Fields.OrientOperations import *
+from OrientSocket import OrientSocket
+from pyorient.Messages.Constants.OrientPrimitives import *
+from pyorient.Messages.Constants.OrientOperations import *
 from utils import *
 
 #
