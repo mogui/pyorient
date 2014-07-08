@@ -32,3 +32,6 @@ STORAGE_TYPE_MEMORY = 'memory'
 QUERY_SYNC  = "com.orientechnologies.orient.core.sql.query.OSQLSynchQuery"
 QUERY_ASYNC = "com.orientechnologies.orient.core.sql.query.OSQLAsynchQuery"
 QUERY_CMD   = "com.orientechnologies.orient.core.sql.OCommandSQL"
+
+SERIALIZATION_DOCUMENT2CSV = "ORecordDocument2csv"
+SERIALIZATION_SERIAL_BIN = "ORecordSerializerBinary"

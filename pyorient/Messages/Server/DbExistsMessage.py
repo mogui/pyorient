@@ -1,23 +1,24 @@
 __author__ = 'Ostico'
 
-from BaseMessage import BaseMessage
-from Constants.OrientOperations import *
-from Constants.OrientPrimitives import *
+from pyorient.Messages.BaseMessage import BaseMessage
+from pyorient.Messages.Constants.OrientOperations import *
+from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.utils import *
 
-class DbDropMessage(BaseMessage):
+class DbExistsMessage(BaseMessage):
+
     _db_name = ''
     _storage_type = STORAGE_TYPE_LOCAL
 
     def __init__(self, _orient_socket ):
-        super( DbDropMessage, self ).\
+        super( DbExistsMessage, self ).\
             __init__(_orient_socket)
 
-        self._protocol = _orient_socket.protocol  # get from cache
-        self._session_id = _orient_socket.session_id  # get from cache
+        self._protocol = _orient_socket.protocol  # get from socket
+        self._session_id = _orient_socket.session_id  # get from socket
 
         # order matters
-        self.append( ( FIELD_BYTE, DB_DROP ) )
+        self.append( ( FIELD_BYTE, DB_EXIST ) )
 
     @need_connected
     def prepare(self, params=None):
@@ -29,16 +30,19 @@ class DbDropMessage(BaseMessage):
             # Use default for non existent indexes
             pass
 
-        self.append( ( FIELD_STRING, self._db_name ) )  # db_name
+        if self.get_protocol() >= 6:
+            self.append( ( FIELD_STRING, self._db_name ) )  # db_name
 
-        if self.get_protocol() >= 16:  # > 16 1.5-snapshot
+        if self.get_protocol() >= 16:
+            # > 16 1.5-snapshot
             # custom choice server_storage_type
             self.append( ( FIELD_STRING, self._storage_type ) )
 
-        return super( DbDropMessage, self ).prepare()
+        return super( DbExistsMessage, self ).prepare()
 
     def fetch_response(self):
-        return super( DbDropMessage, self ).fetch_response()
+        self.append( FIELD_BOOLEAN )
+        return super( DbExistsMessage, self ).fetch_response()[0]
 
     def set_db_name(self, db_name):
         self._db_name = db_name

@@ -1,7 +1,8 @@
 __author__ = 'Ostico'
 
 import struct
-import pyorient.OrientSocket
+
+import pyorient.Messages.OrientSocket
 from pyorient.utils import *
 from pyorient.OrientException import *
 from Constants.OrientPrimitives import *
@@ -15,7 +16,7 @@ class BaseMessage(object):
     def is_connected(self):
         return self._session_id != -1
 
-    def __init__(self, sock=pyorient.OrientSocket):
+    def __init__(self, sock=pyorient.Messages.OrientSocket):
         """
         :type sock: OrientSocket
         """
@@ -61,7 +62,8 @@ class BaseMessage(object):
     def _decode_header(self):
 
         # read header's information
-        self._header = [ self._decode_field( FIELD_BYTE ), self._decode_field( FIELD_INT ) ]
+        self._header = [ self._decode_field( FIELD_BYTE ),
+                         self._decode_field( FIELD_INT ) ]
 
         # decode message errors and raise an exception
         if self._header[0]:
@@ -106,27 +108,27 @@ class BaseMessage(object):
             if len(_continue) is not 0:
                 self._body = []
                 self._decode_body()
-                log = True
+                self.dump_streams()
             # already fetched, get last results as cache info
             elif len(self._body) is 0:
                 self._decode_all()
-                log = True
+                self.dump_streams()
 
         except (IndexError, TypeError), e:
             # let the debug display the output if enabled,
             # there are only a message composition error in driver development
             pass
 
-        if log is True:
-            if is_debug_active():
-                from pyorient.hexdump import hexdump
-                print "\nRequest :"
-                hexdump( self._output_buffer )
-                print "\nResponse:"
-                hexdump( self._input_buffer )
-                print "\n"
-
         return self._body
+
+    def dump_streams(self):
+        if is_debug_active():
+            from pyorient.hexdump import hexdump
+            print "\nRequest :"
+            hexdump( self._output_buffer )
+            print "\nResponse:"
+            hexdump( self._input_buffer )
+            print "\n"
 
     def append(self, field):
         """
