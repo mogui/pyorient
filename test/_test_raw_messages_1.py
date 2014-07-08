@@ -1,6 +1,7 @@
-import os
 import sys
 import unittest
+import os
+
 
 os.environ['DEBUG'] = "1"
 if os.path.realpath( '../' ) not in sys.path:
@@ -11,13 +12,18 @@ if os.path.realpath( '.' ) not in sys.path:
 
 from pyorient.utils import *
 from pyorient.Messages.Constants.OrientPrimitives import *
-from pyorient.Messages.ConnectMessage import ConnectMessage
-from pyorient.Messages.DbExistsMessage import DbExistsMessage
-from pyorient.Messages.DbOpenMessage import DbOpenMessage
-from pyorient.Messages.DbCreateMessage import DbCreateMessage
-from pyorient.Messages.DbDropMessage import DbDropMessage
-from pyorient.OrientSocket import OrientSocket
 from pyorient.OrientException import *
+from pyorient.Messages.OrientSocket import OrientSocket
+from pyorient.Messages.Server.ConnectMessage import ConnectMessage
+from pyorient.Messages.Server.DbExistsMessage import DbExistsMessage
+from pyorient.Messages.Server.DbOpenMessage import DbOpenMessage
+from pyorient.Messages.Server.DbCreateMessage import DbCreateMessage
+from pyorient.Messages.Server.DbDropMessage import DbDropMessage
+from pyorient.Messages.Server.DbReloadMessage import DbReloadMessage
+from pyorient.Messages.Server.ShutdownMessage import ShutdownMessage
+
+from pyorient.Messages.Database.DbCloseMessage import DbCloseMessage
+from pyorient.Messages.Database.DbSizeMessage import DbSizeMessage
 
 
 class CommandTestCase(unittest.TestCase):
@@ -119,6 +125,7 @@ class CommandTestCase(unittest.TestCase):
 
         print "Cluster: %s" % cluster_info
         assert len(cluster_info) != 0
+        return ( connection, cluster_info )
 
     def test_db_create_without_connect(self):
 
@@ -188,6 +195,7 @@ class CommandTestCase(unittest.TestCase):
             assert True
             print e.message
 
+
     def test_db_create_with_drop(self):
 
         connection = OrientSocket( "localhost", int( 2424 ) )
@@ -234,6 +242,70 @@ class CommandTestCase(unittest.TestCase):
         print "After %r" % exists
 
 
+    def test_db_close(self):
+        connection = OrientSocket( "localhost", int( 2424 ) )
+        conn_msg = ConnectMessage( connection )
+        print "Protocol: %r" % conn_msg.get_protocol()
+        assert connection.protocol != -1
+
+        session_id = conn_msg.prepare( ("admin", "admin") ) \
+            .send_message().fetch_response()
+
+        print "Sid: %s" % session_id
+        assert session_id == connection.session_id
+        assert session_id != -1
+
+        c_msg = DbCloseMessage( connection )
+
+        closing = c_msg.prepare(None)\
+            .send_message().fetch_response()
+        assert closing is 0
+
+
+    def test_db_reload(self):
+
+        connection, cluster_info = self.test_db_open_not_connected()
+
+        reload_msg = DbReloadMessage( connection )
+        cluster_reload = reload_msg.prepare().send_message().fetch_response()
+
+        print "Cluster: %s" % cluster_info
+        assert cluster_info == cluster_reload
+
+
+    def test_db_size(self):
+
+        connection, cluster_info = self.test_db_open_not_connected()
+
+        reload_msg = DbSizeMessage( connection )
+        size = reload_msg.prepare().send_message().fetch_response()
+
+        print "Size: %s" % size
+        assert size != 0
+
+    # WARNING comment return to test this message
+    def test_shutdown(self):
+        return
+        connection = OrientSocket( "localhost", int( 2424 ) )
+        msg = ConnectMessage( connection )
+        print "%r" % msg.get_protocol()
+        assert msg.get_protocol() != -1
+
+        sid = msg.prepare( ("admin", "admin") )\
+            .send_message().fetch_response()
+        """
+        alternative use
+            session_id = msg.set_user("admin").set_pass("admin").prepare()\
+            .send_message().fetch_response()
+        """
+        print "%r" % sid
+        assert sid != -1
+
+        shut_msg = ShutdownMessage(connection)
+        res = shut_msg.prepare(("root", "16ABC88EB0CAEE3774E00BABB6D19E69FD3495D6BFA32CAF8AD95A64DA7415CE")).\
+            send_message().fetch_response()
+
+        assert res[:] == []
 
 # test_not_singleton_socket()
 # test_connection()
@@ -244,3 +316,7 @@ class CommandTestCase(unittest.TestCase):
 # test_db_create_with_connect()
 # test_db_drop_without_connect()
 # test_db_create_with_drop()
+# test_db_close()
+# test_db_reload()
+# test_db_size()
+# test_shutdown()

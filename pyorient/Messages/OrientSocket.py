@@ -1,7 +1,7 @@
 __author__ = 'Ostico'
 
-from Messages.Constants.OrientPrimitives import *
-from utils import *
+from Constants.OrientPrimitives import *
+from pyorient.utils import *
 import socket
 import struct
 

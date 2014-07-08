@@ -1,9 +1,9 @@
 __author__ = 'Ostico'
 
-from BaseMessage import BaseMessage
-from Constants.OrientOperations import *
-from Constants.OrientPrimitives import *
-from Constants.ClientConstants import *
+from pyorient.Messages.BaseMessage import BaseMessage
+from pyorient.Messages.Constants.OrientOperations import *
+from pyorient.Messages.Constants.OrientPrimitives import *
+from pyorient.Messages.Constants.ClientConstants import *
 
 
 class ConnectMessage(BaseMessage):
@@ -13,6 +13,7 @@ class ConnectMessage(BaseMessage):
         self._user = ''
         self._pass = ''
         self._client_id = ''
+        self._serialization_type = SERIALIZATION_DOCUMENT2CSV
 
         self.append( ( FIELD_BYTE, CONNECT ) )
 
@@ -23,15 +24,26 @@ class ConnectMessage(BaseMessage):
                 self._user = params[0]
                 self._pass = params[1]
                 self._client_id = params[2]
+                self._serialization_type = params[3]
             except IndexError:
+                # Use default for non existent indexes
                 pass
+
+        if self._protocol > 21:
+            #TODO Implement version 22 of the protocol
+            connect_string = (FIELD_STRINGS, [self._client_id,
+                                              self._serialization_type,
+                                              self._user, self._pass])
+        else:
+            connect_string = (FIELD_STRINGS, [self._client_id,
+                                              self._user, self._pass])
 
         self.append(
             ( FIELD_STRINGS, [NAME, VERSION] )
         ).append(
             ( FIELD_SHORT, SUPPORTED_PROTOCOL )
         ).append(
-            ( FIELD_STRINGS, [self._client_id, self._user, self._pass])
+            connect_string
         )
         return super( ConnectMessage, self ).prepare()
 

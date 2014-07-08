@@ -1,8 +1,8 @@
 __author__ = 'Ostico'
 
-from BaseMessage import BaseMessage
-from Constants.OrientOperations import *
-from Constants.OrientPrimitives import *
+from pyorient.Messages.BaseMessage import BaseMessage
+from pyorient.Messages.Constants.OrientOperations import *
+from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.utils import *
 
 
