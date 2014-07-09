@@ -315,7 +315,6 @@ class CommandTestCase(unittest.TestCase):
         assert res[:] == []
 
     def test_command(self):
-
         connection = OrientSocket( "localhost", int( 2424 ) )
 
         print "Sid, should be -1 : %s" % connection.session_id
@@ -337,7 +336,6 @@ class CommandTestCase(unittest.TestCase):
         # res = req_msg.prepare( [ "select out from followed_by where -2:1" ] ) \
         # res = req_msg.prepare( [ "select NULL" ] ) \
         # res = req_msg.prepare( [ "select from #11:0" ] ) \
-
         # res = req_msg.prepare( [ "select from #11:18" ] ) \
         res = req_msg.prepare( [ "select * from followed_by limit 12" ] ) \
             .send_message().fetch_response()
