@@ -52,15 +52,15 @@ class DbOpenMessage(BaseMessage):
         if self._orientSocket.session_id < 0:
             self._perform_connection()
 
-        if self._protocol > 21:
-            #TODO Implement version 22 of the protocol
-            connect_string = (FIELD_STRINGS, [self._client_id,
-                                              self._serialization_type,
-                                              self._db_name,
-                                              self._db_type,
-                                              self._user, self._pass])
-        else:
-            connect_string = (FIELD_STRINGS, [self._client_id,
+        # if self._protocol > 21:
+        #     #TODO Implement version 22 of the protocol
+        #     connect_string = (FIELD_STRINGS, [self._client_id,
+        #                                       self._serialization_type,
+        #                                       self._db_name,
+        #                                       self._db_type,
+        #                                       self._user, self._pass])
+        # else:
+        connect_string = (FIELD_STRINGS, [self._client_id,
                                               self._db_name,
                                               self._db_type,
                                               self._user, self._pass])
@@ -112,9 +112,11 @@ class DbOpenMessage(BaseMessage):
 
     def set_db_name(self, db_name):
         self._db_name = db_name
+        return self
 
     def set_db_type(self, db_type):
         self._db_name = db_type
+        return self
 
     def set_client_id(self, _cid):
         self._client_id = _cid

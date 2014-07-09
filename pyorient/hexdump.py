@@ -75,9 +75,10 @@ import sys
 # --- constants
 PY3K = sys.version_info >= (3, 0)
 
+
 # --- helpers
 def int2byte(i):
-    '''convert int [0..255] to binary byte'''
+    """convert int [0..255] to binary byte"""
     if PY3K:
         return i.to_bytes(1, 'little')
     else:
@@ -86,14 +87,14 @@ def int2byte(i):
 
 # --- - chunking helpers
 def chunks(seq, size):
-    '''Generator that cuts sequence (bytes, memoryview, etc.)
+    """Generator that cuts sequence (bytes, memoryview, etc.)
        into chunks of given size. If `seq` length is not multiply
        of `size`, the lengh of the last chunk returned will be
        less than requested.
 
        >>> list( chunks([1,2,3,4,5,6,7], 3) )
        [[1, 2, 3], [4, 5, 6], [7]]
-    '''
+    """
     d, m = divmod(len(seq), size)
     for i in range(d):
         yield seq[i * size:(i + 1) * size]
@@ -102,8 +103,8 @@ def chunks(seq, size):
 
 
 def chunkread(f, size):
-    '''Generator that reads from file like object. May return less
-       data than requested on the last read.'''
+    """Generator that reads from file like object. May return less
+       data than requested on the last read."""
     c = f.read(size)
     while len(c):
         yield c
@@ -111,9 +112,9 @@ def chunkread(f, size):
 
 
 def genchunks(mixed, size):
-    '''Generator to chunk binary sequences or file like objects.
-       The size of the last chunk returned may be less than
-       requested.'''
+    """Generator to chunk binary sequences or file like objects.
+       The size of the last chunk retur'''ned may be less than
+       requested."""
     if hasattr(mixed, 'read'):
         return chunkread(mixed, size)
     else:
@@ -124,12 +125,12 @@ def genchunks(mixed, size):
 
 # --- hex stuff
 def dump(binary):
-    '''
+    """
     Convert `binary` bytes (Python 3) or str (Python 2) to
     hex string:
 
     00 00 00 00 00 00 00 00 00 00 00 ...
-    '''
+    """
     hexstr = binascii.hexlify(binary)
     if PY3K:
         hexstr = hexstr._decode_body('ascii')
@@ -137,11 +138,11 @@ def dump(binary):
 
 
 def dumpgen(data):
-    '''
+    """
     Generator that produces strings:
 
     '00000000: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................'
-    '''
+    """
     generator = genchunks(data, 16)
     for addr, d in enumerate(generator):
         # 00000000:
@@ -172,7 +173,7 @@ def dumpgen(data):
 
 
 def hexdump(data, result='print'):
-    '''
+    """
     Transform binary data to the hex dump text format:
 
     00000000: 00 00 00 00 00 00 00 00  00 00 00 00 00 00 00 00  ................
@@ -184,7 +185,7 @@ def hexdump(data, result='print'):
       'print'     - prints line by line
       'return'    - returns single string
       'generator' - returns generator that produces lines
-    '''
+    """
     if PY3K and type(data) == str:
         raise TypeError('Abstract unicode data (expected bytes sequence)')
 
@@ -201,7 +202,7 @@ def hexdump(data, result='print'):
 
 
 def restore(dump):
-    '''
+    """
     Restore binary data from a hex dump.
       [x] dump argument as a string
       [ ] dump argument as a line iterator
@@ -210,7 +211,7 @@ def restore(dump):
       [x] hexdump.hexdump
       [x] Scapy
       [x] Far Manager
-    '''
+    """
     minhexwidth = 2 * 16  # minimal width of the hex part - 00000... style
     bytehexwidth = 3 * 16 - 1  # min width for a bytewise dump - 00 00 ... style
 
@@ -249,8 +250,8 @@ def restore(dump):
 
 
 def runtest(logfile=None):
-    '''Run hexdump tests. Requires hexfile.bin to be in the same
-       directory as hexdump.py itself'''
+    """Run hexdump tests. Requires hexfile.bin to be in the same
+       directory as hexdump.py itself"""
 
     class TeeOutput(object):
         def __init__(self, stream1, stream2):
@@ -280,16 +281,15 @@ def runtest(logfile=None):
         sys.stderr = TeeOutput(sys.stderr, openlog)
         sys.stdout = TeeOutput(sys.stdout, openlog)
 
-
     def echo(msg, linefeed=True):
         sys.stdout.write(msg)
         if linefeed:
             sys.stdout.write('\n')
 
-    expected = '''\
+    expected = """\
 00000000: 00 00 00 5B 68 65 78 64  75 6D 70 5D 00 00 00 00  ...[hexdump]....
 00000010: 00 11 22 33 44 55 66 77  88 99 0A BB CC DD EE FF  .."3DUfw........\
-'''
+"""
 
     import os.path as osp
 
@@ -320,27 +320,27 @@ def runtest(logfile=None):
 
     # binary restore test
     bindata = restore(
-        '''
+        """
         00000000: 00 00 00 5B 68 65 78 64  75 6D 70 5D 00 00 00 00  ...[hexdump]....
         00000010: 00 11 22 33 44 55 66 77  88 99 0A BB CC DD EE FF  .."3DUfw........
-        ''')
+        """)
     echo('restore check ', linefeed=False)
     assert bin == bindata, 'restore check failed'
     echo('passed')
 
     far = \
-        '''
+        """
         000000000: 00 00 00 5B 68 65 78 64 ¦ 75 6D 70 5D 00 00 00 00     [hexdump]
         000000010: 00 11 22 33 44 55 66 77 ¦ 88 99 0A BB CC DD EE FF   ?"3DUfwˆ™ª»ÌÝîÿ
-        '''
+        """
     echo('restore far format ', linefeed=False)
     assert bin == restore(far), 'far format check failed'
     echo('passed')
 
-    scapy = '''\
+    scapy = """\
 00 00 00 5B 68 65 78 64 75 6D 70 5D 00 00 00 00  ...[hexdump]....
 00 11 22 33 44 55 66 77 88 99 0A BB CC DD EE FF  .."3DUfw........
-'''
+"""
     echo('restore scapy format ', linefeed=False)
     assert bin == restore(scapy), 'scapy format check failed'
     echo('passed')
@@ -362,10 +362,10 @@ def runtest(logfile=None):
 if __name__ == '__main__':
     from optparse import OptionParser
 
-    parser = OptionParser(usage='''
+    parser = OptionParser(usage="""
   %prog binfile
   %prog -r hexfile
-  %prog --test [logfile]''', version=__version__)
+  %prog --test [logfile]""", version=__version__)
     parser.add_option('-r', '--restore', action='store_true',
                       help='restore binary')
     parser.add_option('--test', action='store_true',
