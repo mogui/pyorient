@@ -46,6 +46,8 @@ class DbExistsMessage(BaseMessage):
 
     def set_db_name(self, db_name):
         self._db_name = db_name
+        return self
 
     def set_storage_type(self, storage_type):
         self._storage_type = storage_type
+        return self

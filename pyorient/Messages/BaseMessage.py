@@ -7,6 +7,7 @@ from pyorient.utils import *
 from pyorient.OrientException import *
 from Constants.OrientPrimitives import *
 
+from pyorient.ORecordCoder import *
 
 class BaseMessage(object):
 
@@ -178,8 +179,10 @@ class BaseMessage(object):
 
     def _decode_field(self, _type):
 
+        _value = ""
         # read buffer length and decode value by field definition
-        _value = self._socket.recv( _type['bytes'] )
+        if _type['bytes'] is not None:
+            _value = self._socket.recv( _type['bytes'] )
 
         # if it is a string decode first 4 Bytes as INT
         # and try to read the buffer
@@ -187,14 +190,28 @@ class BaseMessage(object):
 
             _len = struct.unpack('!i', _value)[0]
             if _len == -1:
-                _decoded = ''
+                _decoded_string = ''
             else:
-                _decoded = self._socket.recv( _len )
+                _decoded_string = self._socket.recv( _len )
 
             self._input_buffer += _value
-            self._input_buffer += _decoded
+            self._input_buffer += _decoded_string
 
-            return _decoded
+            return _decoded_string
+
+        elif _type['type'] == RECORD:
+
+            self._decode_field( _type['struct'][0] )  # NOP
+            self._decode_field( _type['struct'][1] )  # NOP
+
+            rid = "#" + str( self._decode_field( _type['struct'][2] ) )
+            rid += ":" + str( self._decode_field( _type['struct'][3] ) )
+
+            self._decode_field( _type['struct'][4] )  # NOP
+
+            _res = ORecordDecoder( self._decode_field( _type['struct'][5] ) )
+            return OrientRecord(_res.data,
+                                o_class=_res.className, rid=rid)
 
         else:
 
@@ -204,6 +221,8 @@ class BaseMessage(object):
                 return ord(_value) == 1
             elif _type['type'] == BYTE:
                 return ord(_value)
+            elif _type['type'] == CHAR:
+                return _value
             elif _type['type'] == SHORT:
                 return struct.unpack('!h', _value)[0]
             elif _type['type'] == INT:

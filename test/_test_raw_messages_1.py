@@ -24,6 +24,7 @@ from pyorient.Messages.Server.ShutdownMessage import ShutdownMessage
 
 from pyorient.Messages.Database.DbCloseMessage import DbCloseMessage
 from pyorient.Messages.Database.DbSizeMessage import DbSizeMessage
+from pyorient.Messages.Database.CommandMessage import CommandMessage
 
 
 class CommandTestCase(unittest.TestCase):
@@ -285,7 +286,13 @@ class CommandTestCase(unittest.TestCase):
 
     # WARNING comment return to test this message
     def test_shutdown(self):
+
+        import inspect
+        print "# WARNING comment return below this line " \
+              "to test this message. Line %u" % \
+              inspect.currentframe().f_back.f_lineno
         return
+
         connection = OrientSocket( "localhost", int( 2424 ) )
         msg = ConnectMessage( connection )
         print "%r" % msg.get_protocol()
@@ -306,6 +313,37 @@ class CommandTestCase(unittest.TestCase):
             send_message().fetch_response()
 
         assert res[:] == []
+
+    def test_command(self):
+
+        connection = OrientSocket( "localhost", int( 2424 ) )
+
+        print "Sid, should be -1 : %s" % connection.session_id
+        assert connection.session_id == -1
+
+        # ##################
+
+        msg = DbOpenMessage( connection )
+
+        db_name = "GratefulDeadConcerts"
+        cluster_info = msg.prepare(
+            ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
+        ).send_message().fetch_response()
+        assert len(cluster_info) != 0
+
+        req_msg = CommandMessage( connection )
+
+        # res = req_msg.prepare( [ "select from #11:0" ] ) \
+        # res = req_msg.prepare( [ "select out from followed_by where -2:1" ] ) \
+        # res = req_msg.prepare( [ "select NULL" ] ) \
+        # res = req_msg.prepare( [ "select from #11:0" ] ) \
+
+        # res = req_msg.prepare( [ "select from #11:18" ] ) \
+        res = req_msg.prepare( [ "select * from followed_by limit 12" ] ) \
+            .send_message().fetch_response()
+
+        print "%r" % res[0].rid
+        print "%r" % res[0].o_class
 
 # test_not_singleton_socket()
 # test_connection()
