@@ -291,7 +291,7 @@ class OrientDB(object):
         # raw_result = _pyorient.command(query, limit, **kwargs)
 
         # BYTE INT(4) BYTE // ??
-        self.conn.make_request( REQUEST_COMMAND,
+        self.conn.make_request( COMMAND,
                                 ( mod_byte, 101, QUERY_SYNC, query,
                                   -1, "*:0", 0 ) )
 

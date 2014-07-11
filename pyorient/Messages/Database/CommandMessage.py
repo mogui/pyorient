@@ -3,6 +3,7 @@ __author__ = 'Ostico'
 from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.OrientPrimitives import *
+from pyorient.OrientTypes import OrientRecord
 
 
 class CommandMessage(BaseMessage):
@@ -12,35 +13,46 @@ class CommandMessage(BaseMessage):
         self._query = ''
         self._limit = 20
         self._fetch_plan = '*:0'
-        self._sync_type = QUERY_SYNC
+        self._command_type = QUERY_SYNC
         self._mod_byte = 's'
 
         super( CommandMessage, self ).__init__(_orient_socket)
 
-        self.append( ( FIELD_BYTE, REQUEST_COMMAND ) )
+        self.append( ( FIELD_BYTE, COMMAND ) )
 
     def prepare(self, params=None ):
 
         if isinstance( params, tuple ) or isinstance( params, list ):
             try:
-                self._query = params[0]
-                self._limit = params[1]
-                self._fetch_plan = params[2]
-                self._sync_type = QUERY_SYNC if params[3] is False \
-                    else QUERY_ASYNC
-                self._mod_byte = 's' if params[3] is False else 'a'
+                self._command_type = params[0]
+                self._query = params[1]
+                self._limit = params[2]
+                self._fetch_plan = params[3]
+
+                if params[0] is QUERY_CMD \
+                        or params[0] is QUERY_SYNC \
+                        or params[0] is QUERY_GREMLIN:
+                    self._mod_byte = 's'
+                else:
+                    self._mod_byte = 'a'
 
             except IndexError:
                 # Use default for non existent indexes
                 pass
 
         _payload_definition = [
-            ( FIELD_STRING, self._sync_type ),
-            ( FIELD_STRING, self._query ),
-            ( FIELD_INT, self._limit ),
-            ( FIELD_STRING, self._fetch_plan ),
-            ( FIELD_INT, 0 )  # serialized params
+            ( FIELD_STRING, self._command_type ),
+            ( FIELD_STRING, self._query )
         ]
+
+        if self._command_type is QUERY_ASYNC \
+                or self._command_type is QUERY_SYNC \
+                or self._command_type is QUERY_GREMLIN:
+            # set limit to -1 and get it from sql string
+            _payload_definition.append( ( FIELD_INT, self._limit ) )
+            _payload_definition.append( ( FIELD_STRING, self._fetch_plan ) )
+
+        _payload_definition.append( ( FIELD_INT, 0 ) )
 
         payload = ''.join(
             self._encode_field( x ) for x in _payload_definition
@@ -78,8 +90,8 @@ class CommandMessage(BaseMessage):
 
         return res
 
-    def set_async(self, _async):
-        self._sync_type = QUERY_SYNC if _async is False else QUERY_ASYNC
+    def set_async(self, _sync_type):
+        self._command_type = _sync_type
         return self
 
     def set_fetch_plan(self, _fetch_plan):

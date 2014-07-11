@@ -39,9 +39,18 @@ STORAGE_TYPE_PLOCAL = 'plocal'
 STORAGE_TYPE_MEMORY = 'memory'
 
 # Commands costants
-QUERY_SYNC  = "com.orientechnologies.orient.core.sql.query.OSQLSynchQuery"
+COMMAND_QUERY = 1
+COMMAND_SELECT_SYNC = 2
+COMMAND_SELECT_ASYNC = 3
+COMMAND_SELECT_GREMLIN = 4
+
+MODE_SYNC = 's'
+MODE_ASYNC = 'a'
+
+QUERY_SYNC = "com.orientechnologies.orient.core.sql.query.OSQLSynchQuery"
 QUERY_ASYNC = "com.orientechnologies.orient.core.sql.query.OSQLAsynchQuery"
-QUERY_CMD   = "com.orientechnologies.orient.core.sql.OCommandSQL"
+QUERY_CMD = "com.orientechnologies.orient.core.sql.OCommandSQL"
+QUERY_GREMLIN = "com.orientechnologies.orient.graph.gremlin.OCommandGremlin"
 
 SERIALIZATION_DOCUMENT2CSV = "ORecordDocument2csv"
 SERIALIZATION_SERIAL_BIN = "ORecordSerializerBinary"
