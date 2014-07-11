@@ -3,8 +3,8 @@ class OrientRecord(object):
     Object that represent an Orient Document / Record
 
     """
-    __rid = None  # @BUG now it is unvalorized due to lack in c shit
-    __version = None  # same as above
+    __rid = None
+    __version = None
     __o_class = None
 
     rid = property(lambda self: self.__rid)

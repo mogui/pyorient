@@ -10,4 +10,6 @@ DB_SIZE         = chr(8)
 DB_COUNTRECORDS = chr(9)
 DB_RELOAD       = chr(73)
 
-REQUEST_COMMAND = chr(41)
+RECORD_LOAD = chr(30)
+
+COMMAND = chr(41)

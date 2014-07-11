@@ -335,7 +335,7 @@ def test_command():
     # res = req_msg.prepare( [ "select from #11:0" ] ) \
 
     # res = req_msg.prepare( [ "select from #11:18" ] ) \
-    res = req_msg.prepare( [ "select * from followed_by limit 12" ] ) \
+    res = req_msg.prepare( [ QUERY_SYNC, "select * from followed_by limit 12" ] ) \
         .send_message().fetch_response()
 
     print "%r" % res[0].rid
