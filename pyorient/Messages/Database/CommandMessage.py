@@ -3,8 +3,7 @@ __author__ = 'Ostico'
 from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.OrientPrimitives import *
-from pyorient.OrientTypes import OrientRecord
-
+from pyorient.ORecordCoder import *
 
 class CommandMessage(BaseMessage):
 
@@ -84,9 +83,16 @@ class CommandMessage(BaseMessage):
             list_len = super( CommandMessage, self ).fetch_response(True)[0]
             self._reset_fields_definition()
             for n in range(0, list_len):
-                self.append( FIELD_RECORD )
 
-            res = super( CommandMessage, self ).fetch_response(True)
+                # read raw short
+                self.append( FIELD_SHORT )  # marker
+                self.append( FIELD_RECORD )
+                __res = super( CommandMessage, self ).fetch_response(True)[1]
+                _res = ORecordDecoder( __res['content'] )
+                res.append( OrientRecord(
+                    _res.data, o_class=_res.className,
+                    rid=__res['rid'], version=__res['version'] )
+                )
 
         return res
 

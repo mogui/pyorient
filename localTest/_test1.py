@@ -340,7 +340,7 @@ def test_command():
 
     print "%r" % res[0].rid
     print "%r" % res[0].o_class
-    # print "%r" % res.className
+    print "%r" % res[0].version
 
 
 # test_not_singleton_socket()
