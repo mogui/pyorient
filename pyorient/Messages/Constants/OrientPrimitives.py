@@ -9,6 +9,7 @@ STRING  = 7
 RECORD  = 8
 STRINGS = 9
 CHAR    = 10
+LINK    = 11
 
 
 # Field types, we have the type definition and the first bytes to read
@@ -22,12 +23,15 @@ FIELD_BYTES = {"type": BYTES, "bytes": 4, "struct": None}
 FIELD_STRING = {"type": STRING, "bytes": 4, "struct": None}
 FIELD_STRINGS = {"type": STRINGS, "bytes": 4, "struct": None}
 FIELD_RECORD = {"type": RECORD, "bytes": None, "struct": [
-    FIELD_SHORT,
-    FIELD_BYTE,
-    FIELD_SHORT,
-    FIELD_LONG,
-    FIELD_INT,
-    FIELD_BYTES
+    FIELD_BYTE,   # record_type
+    FIELD_SHORT,  # record_clusterID
+    FIELD_LONG,   # record_position
+    FIELD_INT,    # record_version
+    FIELD_BYTES   # record_content
+]}
+FIELD_TYPE_LINK = {"type": LINK, "bytes": None, "struct": [
+    FIELD_SHORT,  # record_clusterID
+    FIELD_LONG,   # record_position
 ]}
 
 

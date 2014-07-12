@@ -68,22 +68,48 @@ class RecordLoadMessage(BaseMessage):
 
             self._reset_fields_definition()
 
+            import time
             cached_records = {}
             while _status != 0:
-                self.append( FIELD_RECORD )  # cached Record
-                cached_records.__setitem__(
-                    self._record_id, super( RecordLoadMessage, self )
-                    .fetch_response(True) )  # save in cache
 
-                self._reset_fields_definition()
+                marker = self._decode_field( FIELD_SHORT )  # status
+
+                if marker is -2:
+                    return None
+                elif marker is -3:
+                    self.append( FIELD_TYPE_LINK )
+                    return super( RecordLoadMessage, self ).fetch_response(True)
+
+                # time.sleep(0.005)  # wait 5 ms for next fetch,
+                                   # or python sometimes goes in MemoryError
+                                   # or blocks indefinitely on socket.recv
+                                   # for very large responses
+                                   # don't know why....
+                                   # So, warning, this slow down everything
+
+                # cached Records, not used at moment.
+                # moreover, ORecordDecoder can't handle documents anymore
+                # so perform a raw read and flush the debug buffer
+                # before starting a new loop
+                cached_record = self._decode_field( FIELD_RECORD )
+
+                cached_records.__setitem__(
+                    cached_record['rid'],
+                    cached_record
+                )  # save in cache
+
+                # read new status and flush the debug buffer
                 self.append( FIELD_BYTE )  # status
                 _status = super( RecordLoadMessage, self ).fetch_response(True)[0]
+
                 self._reset_fields_definition()
+                self._output_buffer = ''
+                self._input_buffer = ''
 
             self.cached_records = cached_records
 
-        return OrientRecord(_record.data,
-                            o_class=_record.className, rid=self._record_id)
+        return OrientRecord(_record.data, o_class=_record.className,
+                            rid=self._record_id)
 
     def set_db_name(self, _record_id):
         self._record_id = _record_id

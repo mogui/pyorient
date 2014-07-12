@@ -7,7 +7,6 @@ from pyorient.utils import *
 from pyorient.OrientException import *
 from Constants.OrientPrimitives import *
 
-from pyorient.ORecordCoder import *
 
 class BaseMessage(object):
 
@@ -21,7 +20,7 @@ class BaseMessage(object):
         """
         :type sock: OrientSocket
         """
-        self._socket = sock.get_connection()
+        sock.get_connection()
         self._orientSocket = sock
         self._protocol = self._orientSocket.protocol
         self._session_id = self._orientSocket.session_id
@@ -143,7 +142,7 @@ class BaseMessage(object):
         return hexdump( ''.join( map( str, self._fields_definition ) ), 'return' )
 
     def send_message(self):
-        self._socket.send( self._output_buffer )
+        self._orientSocket.write( self._output_buffer )
         self._reset_fields_definition()
         return self
 
@@ -182,7 +181,7 @@ class BaseMessage(object):
         _value = ""
         # read buffer length and decode value by field definition
         if _type['bytes'] is not None:
-            _value = self._socket.recv( _type['bytes'] )
+            _value = self._orientSocket.read( _type['bytes'] )
 
         # if it is a string decode first 4 Bytes as INT
         # and try to read the buffer
@@ -192,7 +191,7 @@ class BaseMessage(object):
             if _len == -1:
                 _decoded_string = ''
             else:
-                _decoded_string = self._socket.recv( _len )
+                _decoded_string = self._orientSocket.read( _len )
 
             self._input_buffer += _value
             self._input_buffer += _decoded_string
@@ -201,17 +200,21 @@ class BaseMessage(object):
 
         elif _type['type'] == RECORD:
 
-            self._decode_field( _type['struct'][0] )  # NOP
-            self._decode_field( _type['struct'][1] )  # NOP
+            record_type = self._decode_field( _type['struct'][0] )  # record_type
 
-            rid = "#" + str( self._decode_field( _type['struct'][2] ) )
-            rid += ":" + str( self._decode_field( _type['struct'][3] ) )
+            rid = "#" + str( self._decode_field( _type['struct'][1] ) )
+            rid += ":" + str( self._decode_field( _type['struct'][2] ) )
 
-            self._decode_field( _type['struct'][4] )  # NOP
+            version = self._decode_field( _type['struct'][3] )
+            content = self._decode_field( _type['struct'][4] )
+            return {'rid': rid, 'record_type': record_type,
+                    'content': content, 'version': version}
 
-            _res = ORecordDecoder( self._decode_field( _type['struct'][5] ) )
-            return OrientRecord(_res.data,
-                                o_class=_res.className, rid=rid)
+        elif _type['type'] == LINK:
+
+            rid = "#" + str( self._decode_field( _type['struct'][0] ) )
+            rid += ":" + str( self._decode_field( _type['struct'][1] ) )
+            return rid
 
         else:
 
