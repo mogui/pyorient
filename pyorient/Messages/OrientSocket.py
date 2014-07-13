@@ -1,6 +1,7 @@
-__author__ = 'Ostico'
+__author__ = 'Ostico <ostico@gmail.com>'
 
-from Constants.OrientPrimitives import *
+from Constants.BinaryTypes import *
+from Constants.ClientConstants import *
 from pyorient.utils import *
 import socket
 import struct
@@ -43,6 +44,10 @@ class OrientSocket(object):
             self._socket.connect( (self.host, self.port) )
             _value = self._socket.recv( FIELD_SHORT['bytes'] )
             self.protocol = struct.unpack('!h', _value)[0]
+            if self.protocol > SUPPORTED_PROTOCOL:
+                raise PyOrientWrongProtocolVersionException(
+                    "Protocol version " + str(self.protocol) +
+                    " is not supported yet by this client.")
             self._connected = True
         except socket.error, e:
             raise PyOrientConnectionException( "Socket Error: %s" % e, e.errno )
@@ -71,7 +76,7 @@ class OrientSocket(object):
 
             while buf.tell() < _len_to_read:
 
-                if is_debug_active():
+                if is_debug_verbose():
                     tmp = self._socket.recv( _len_to_read - buf.tell() )
                     buf.write( tmp )
                     import pyorient.hexdump

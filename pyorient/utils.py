@@ -1,4 +1,4 @@
-__author__ = 'Ostico'
+__author__ = 'Ostico <ostico@gmail.com>'
 
 import os
 from OrientException import *
@@ -7,6 +7,14 @@ from OrientException import *
 def is_debug_active():
     if 'DEBUG' in os.environ:
         if os.environ['DEBUG'].lower() in ( '1', 'true' ):
+            return True
+    return False
+
+
+def is_debug_verbose():
+    if 'DEBUG_VERBOSE' in os.environ:
+        if is_debug_active() and os.environ['DEBUG_VERBOSE'].lower() \
+                in ( '1', 'true' ):
             return True
     return False
 

@@ -1,7 +1,8 @@
-__author__ = 'Ostico'
+__author__ = 'Ostico <ostico@gmail.com>'
 
 from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
+from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.ClientConstants import *
 

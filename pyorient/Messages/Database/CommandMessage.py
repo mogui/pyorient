@@ -1,9 +1,11 @@
-__author__ = 'Ostico'
+__author__ = 'Ostico <ostico@gmail.com>'
 
 from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.OrientPrimitives import *
+from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.ORecordCoder import *
+
 
 class CommandMessage(BaseMessage):
 
@@ -47,7 +49,7 @@ class CommandMessage(BaseMessage):
         if self._command_type is QUERY_ASYNC \
                 or self._command_type is QUERY_SYNC \
                 or self._command_type is QUERY_GREMLIN:
-            # set limit to -1 and get it from sql string
+            # set limit from sql string every times override the limit param
             _payload_definition.append( ( FIELD_INT, self._limit ) )
             _payload_definition.append( ( FIELD_STRING, self._fetch_plan ) )
 

@@ -6,22 +6,25 @@ from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.utils import *
 
 
-class DbCloseMessage(BaseMessage):
+class DbCountRecordsMessage(BaseMessage):
 
     def __init__(self, _orient_socket ):
-        super( DbCloseMessage, self ).\
+        super( DbCountRecordsMessage, self ).\
             __init__(_orient_socket)
+
+        self._user = ''
+        self._pass = ''
 
         self._protocol = _orient_socket.protocol  # get from cache
         self._session_id = _orient_socket.session_id  # get from cache
 
         # order matters
-        self.append( ( FIELD_BYTE, DB_CLOSE ) )
+        self.append( ( FIELD_BYTE, DB_COUNTRECORDS ) )
 
     @need_connected
     def prepare(self, params=None):
-        return super( DbCloseMessage, self ).prepare()
+        return super( DbCountRecordsMessage, self ).prepare()
 
     def fetch_response(self):
-        super( DbCloseMessage, self ).close()
-        return 0
+        self.append( FIELD_LONG )
+        return super( DbCountRecordsMessage, self ).fetch_response()[0]

@@ -1,11 +1,11 @@
-__author__ = 'Ostico'
+__author__ = 'Ostico <ostico@gmail.com>'
 
 import struct
 
 import pyorient.Messages.OrientSocket
 from pyorient.utils import *
 from pyorient.OrientException import *
-from Constants.OrientPrimitives import *
+from Constants.BinaryTypes import *
 
 
 class BaseMessage(object):
@@ -83,7 +83,9 @@ class BaseMessage(object):
             if self.get_protocol() > 18:  # > 18 1.6-snapshot
                 # read serialized version of exception thrown on server side
                 # useful only for java clients
-                serialized_exception = self._decode_field( FIELD_STRING )  # trash
+                serialized_exception = self._decode_field( FIELD_STRING )
+                # trash
+                del serialized_exception
 
             raise PyOrientCommandException(
                 exception_message + " - " + exception_class, [] )
@@ -102,8 +104,6 @@ class BaseMessage(object):
 
     def fetch_response(self, *_continue):
 
-        log = False
-
         try:
             if len(_continue) is not 0:
                 self._body = []
@@ -114,7 +114,7 @@ class BaseMessage(object):
                 self._decode_all()
                 self.dump_streams()
 
-        except (IndexError, TypeError), e:
+        except (IndexError, TypeError):
             # let the debug display the output if enabled,
             # there are only a message composition error in driver development
             pass
@@ -139,7 +139,8 @@ class BaseMessage(object):
 
     def __str__(self):
         from pyorient.hexdump import hexdump
-        return hexdump( ''.join( map( str, self._fields_definition ) ), 'return' )
+        return hexdump( ''.join( map( str, self._fields_definition ) ),
+                        'return' )
 
     def send_message(self):
         self._orientSocket.write( self._output_buffer )
@@ -200,7 +201,8 @@ class BaseMessage(object):
 
         elif _type['type'] == RECORD:
 
-            record_type = self._decode_field( _type['struct'][0] )  # record_type
+            # record_type
+            record_type = self._decode_field( _type['struct'][0] )
 
             rid = "#" + str( self._decode_field( _type['struct'][1] ) )
             rid += ":" + str( self._decode_field( _type['struct'][2] ) )
