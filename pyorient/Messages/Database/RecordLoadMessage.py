@@ -1,8 +1,8 @@
-__author__ = 'Ostico'
+__author__ = 'Ostico <ostico@gmail.com>'
 
 from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
-from pyorient.Messages.Constants.OrientPrimitives import *
+from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.ORecordCoder import *
 from pyorient.utils import *
 
@@ -68,7 +68,6 @@ class RecordLoadMessage(BaseMessage):
 
             self._reset_fields_definition()
 
-            import time
             cached_records = {}
             while _status != 0:
 
@@ -80,16 +79,9 @@ class RecordLoadMessage(BaseMessage):
                     self.append( FIELD_TYPE_LINK )
                     return super( RecordLoadMessage, self ).fetch_response(True)
 
-                # time.sleep(0.005)  # wait 5 ms for next fetch,
-                                   # or python sometimes goes in MemoryError
-                                   # or blocks indefinitely on socket.recv
-                                   # for very large responses
-                                   # don't know why....
-                                   # So, warning, this slow down everything
-
                 # cached Records, not used at moment.
-                # moreover, ORecordDecoder can't handle documents anymore
-                # so perform a raw read and flush the debug buffer
+                # moreover, ORecordDecoder can't handle the document data types
+                # so, perform a raw read and flush the debug buffer
                 # before starting a new loop
                 cached_record = self._decode_field( FIELD_RECORD )
 

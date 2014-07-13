@@ -1,9 +1,9 @@
-__author__ = 'Ostico'
+__author__ = 'Ostico <ostico@gmail.com>'
 
 from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Server.ConnectMessage import *
 from pyorient.Messages.Constants.OrientOperations import *
-from pyorient.Messages.Constants.OrientPrimitives import *
+from pyorient.Messages.Constants.BinaryTypes import *
 
 
 class DbOpenMessage(BaseMessage):
@@ -52,17 +52,15 @@ class DbOpenMessage(BaseMessage):
         if self._orientSocket.session_id < 0:
             self._perform_connection()
 
-        # if self._protocol > 21:
-        #     #TODO Implement version 22 of the protocol
-        #     connect_string = (FIELD_STRINGS, [self._client_id,
-        #                                       self._serialization_type,
-        #                                       self._db_name,
-        #                                       self._db_type,
-        #                                       self._user, self._pass])
-        # else:
-        connect_string = (FIELD_STRINGS, [self._client_id,
+        if self._protocol > 21:
+            connect_string = (FIELD_STRINGS, [self._client_id,
+                                              self._serialization_type,
                                               self._db_name,
                                               self._db_type,
+                                              self._user, self._pass])
+        else:
+            connect_string = (FIELD_STRINGS, [self._client_id,
+                                              self._db_name, self._db_type,
                                               self._user, self._pass])
 
         self.append(

@@ -4,7 +4,7 @@
 # from ORecordCoder import ORecordDecoder, ORecordEncoder
 from pyorient.Messages import OrientSocket
 
-from pyorient.Messages.Constants.OrientPrimitives import *
+from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.Messages.Constants.OrientOperations import *
 from utils import *
 

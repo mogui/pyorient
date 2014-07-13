@@ -27,3 +27,7 @@ class PyOrientCommandException(PyOrientException):
 
 class PyOrientBadMethodCallException(PyOrientException):
     pass
+
+
+class PyOrientWrongProtocolVersionException(PyOrientException):
+    pass
