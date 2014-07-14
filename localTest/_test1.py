@@ -24,7 +24,7 @@ from pyorient.Messages.Server.ShutdownMessage import ShutdownMessage
 
 from pyorient.Messages.Database.DbCloseMessage import DbCloseMessage
 from pyorient.Messages.Database.DbSizeMessage import DbSizeMessage
-from pyorient.Messages.Database.CommandMessage import CommandMessage
+from pyorient.Messages.Database.SQLCommandMessage import SQLCommandMessage
 
 
 def test_not_singleton_socket():
@@ -161,8 +161,6 @@ def test_db_create_with_connect():
         ( DbCreateMessage( connection ) ).prepare(
             (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_LOCAL)
         ).send_message().fetch_response()
-        assert False
-        # exit(1)  # this should not happen if you have database
     except PyOrientCommandException, e:
         assert True
         print e.message
@@ -235,6 +233,10 @@ def test_db_create_with_drop():
     msg = DbExistsMessage( connection )
     exists = msg.prepare( [db_name] ).send_message().fetch_response()
     assert  exists is True
+
+    # at the end drop the test database
+    ( DbDropMessage( connection ) ).prepare([db_name]) \
+        .send_message().fetch_response()
 
     msg.close()
     print "After %r" % exists
@@ -327,7 +329,7 @@ def test_command():
     ).send_message().fetch_response()
     assert len(cluster_info) != 0
 
-    req_msg = CommandMessage( connection )
+    req_msg = SQLCommandMessage( connection )
 
     # res = req_msg.prepare( [ "select from #11:0" ] ) \
     # res = req_msg.prepare( [ "select out from followed_by where -2:1" ] ) \
@@ -343,17 +345,17 @@ def test_command():
     print "%r" % res[0].version
 
 
-# test_not_singleton_socket()
-# test_connection()
-# test_db_exists()
-# test_db_open_connected()
-# test_db_open_not_connected()
-# test_db_create_without_connect()
-# test_db_create_with_connect()
-# test_db_drop_without_connect()
-# test_db_create_with_drop()
-# test_db_close()
-# test_db_reload()
-# test_db_size()
-# test_shutdown()
+test_not_singleton_socket()
+test_connection()
+test_db_exists()
+test_db_open_connected()
+test_db_open_not_connected()
+test_db_create_without_connect()
+test_db_create_with_connect()
+test_db_drop_without_connect()
+test_db_create_with_drop()
+test_db_close()
+test_db_reload()
+test_db_size()
+test_shutdown()
 test_command()

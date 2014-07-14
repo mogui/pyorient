@@ -18,7 +18,7 @@ class DbSizeMessage(BaseMessage):
         # order matters
         self.append( ( FIELD_BYTE, DB_SIZE ) )
 
-    @need_connected
+    @need_db_opened
     def prepare(self, params=None):
         return super( DbSizeMessage, self ).prepare()
 

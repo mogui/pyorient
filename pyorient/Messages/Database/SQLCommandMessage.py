@@ -5,9 +5,10 @@ from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.ORecordCoder import *
+from pyorient.utils import *
 
 
-class CommandMessage(BaseMessage):
+class SQLCommandMessage(BaseMessage):
 
     def __init__(self, _orient_socket):
 
@@ -17,10 +18,11 @@ class CommandMessage(BaseMessage):
         self._command_type = QUERY_SYNC
         self._mod_byte = 's'
 
-        super( CommandMessage, self ).__init__(_orient_socket)
+        super( SQLCommandMessage, self ).__init__(_orient_socket)
 
         self.append( ( FIELD_BYTE, COMMAND ) )
 
+    @need_db_opened
     def prepare(self, params=None ):
 
         if isinstance( params, tuple ) or isinstance( params, list ):
@@ -65,13 +67,13 @@ class CommandMessage(BaseMessage):
             ( FIELD_STRING, payload )
         )
 
-        return super( CommandMessage, self ).prepare()
+        return super( SQLCommandMessage, self ).prepare()
 
     def fetch_response(self):
 
         self.append( FIELD_CHAR )  # type of response
 
-        response_type = super( CommandMessage, self ).fetch_response()[0]
+        response_type = super( SQLCommandMessage, self ).fetch_response()[0]
 
         self._reset_fields_definition()
 
@@ -82,19 +84,32 @@ class CommandMessage(BaseMessage):
             raise NotImplementedError
         elif response_type == 'l':
             self.append( FIELD_INT )
-            list_len = super( CommandMessage, self ).fetch_response(True)[0]
+            list_len = super( SQLCommandMessage, self ).fetch_response(True)[0]
             self._reset_fields_definition()
             for n in range(0, list_len):
 
                 # read raw short
                 self.append( FIELD_SHORT )  # marker
                 self.append( FIELD_RECORD )
-                __res = super( CommandMessage, self ).fetch_response(True)[1]
+                __res = super( SQLCommandMessage, self ).fetch_response(True)[1]
                 _res = ORecordDecoder( __res['content'] )
                 res.append( OrientRecord(
                     _res.data, o_class=_res.className,
                     rid=__res['rid'], version=__res['version'] )
                 )
+
+            # asynch-result-type can be:
+            # 0: no records remain to be fetched
+            # 1: a record is returned as a resultset
+            # 2: a record is returned as pre-fetched to be loaded in client's
+            #       cache only. It's not part of the result set but the client
+            #       knows that it's available for later access
+
+            self.append( FIELD_BYTE )
+            async_results = super( SQLCommandMessage, self ).fetch_response(True)[0]
+            self._reset_fields_definition()
+            if async_results != 0:
+                raise NotImplementedError
 
         return res
 

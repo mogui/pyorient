@@ -26,7 +26,7 @@ class RecordCreateMessage(BaseMessage):
         # order matters
         self.append( ( FIELD_BYTE, RECORD_CREATE ) )
 
-    @need_connected
+    @need_db_opened
     def prepare(self, params=None):
 
         try:

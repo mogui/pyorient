@@ -26,6 +26,7 @@ class OrientSocket(object):
         """:type : socket.socket"""
         self.protocol = -1
         self.session_id = -1
+        self.db_opened = None
 
     def get_connection(self):
         try:

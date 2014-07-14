@@ -51,8 +51,9 @@ def need_connected(wrap):
 #
 # need db opened decorator
 def need_db_opened(wrap):
+    @need_connected
     def wrap_function(*args, **kwargs):
-        if args[0].opened_db is None:
+        if args[0].database_opened() is None:
             raise PyOrientDatabaseException(
                 "You must have an opened database to issue this command", [])
         return wrap(*args, **kwargs)
