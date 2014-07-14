@@ -39,7 +39,7 @@ class RecordUpdateMessage(BaseMessage):
         # order matters
         self.append( ( FIELD_BYTE, RECORD_UPDATE ) )
 
-    @need_connected
+    @need_db_opened
     def prepare(self, params=None):
 
         try:

@@ -16,6 +16,9 @@ class BaseMessage(object):
     def is_connected(self):
         return self._session_id != -1
 
+    def database_opened(self):
+        return self._db_opened
+
     def __init__(self, sock=pyorient.Messages.OrientSocket):
         """
         :type sock: OrientSocket
@@ -35,6 +38,7 @@ class BaseMessage(object):
         """:type : list of [object]"""
 
         self._command = chr(0)
+        self._db_opened = self._orientSocket.db_opened
         self._output_buffer = ''
         self._input_buffer = ''
 

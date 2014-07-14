@@ -106,6 +106,9 @@ class DbOpenMessage(BaseMessage):
                 "segment": cluster_segment_data_id
             })
 
+        # set database opened
+        self._orientSocket.db_opened = self._db_name
+
         return clusters
 
     def set_db_name(self, db_name):

@@ -21,7 +21,7 @@ class DbCountRecordsMessage(BaseMessage):
         # order matters
         self.append( ( FIELD_BYTE, DB_COUNTRECORDS ) )
 
-    @need_connected
+    @need_db_opened
     def prepare(self, params=None):
         return super( DbCountRecordsMessage, self ).prepare()
 

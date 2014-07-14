@@ -24,7 +24,7 @@ from pyorient.Messages.Server.ShutdownMessage import ShutdownMessage
 
 from pyorient.Messages.Database.DbCloseMessage import DbCloseMessage
 from pyorient.Messages.Database.DbSizeMessage import DbSizeMessage
-from pyorient.Messages.Database.CommandMessage import CommandMessage
+from pyorient.Messages.Database.SQLCommandMessage import SQLCommandMessage
 
 
 class CommandTestCase(unittest.TestCase):
@@ -164,8 +164,6 @@ class CommandTestCase(unittest.TestCase):
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_LOCAL)
             ).send_message().fetch_response()
-            assert False
-            # exit(1)  # this should not happen if you have database
         except PyOrientCommandException, e:
             assert True
             print e.message
@@ -195,7 +193,6 @@ class CommandTestCase(unittest.TestCase):
         except PyOrientConnectionException, e:
             assert True
             print e.message
-
 
     def test_db_create_with_drop(self):
 
@@ -239,9 +236,12 @@ class CommandTestCase(unittest.TestCase):
         exists = msg.prepare( [db_name] ).send_message().fetch_response()
         assert  exists is True
 
+        # at the end drop the test database
+        ( DbDropMessage( connection ) ).prepare([db_name]) \
+            .send_message().fetch_response()
+
         msg.close()
         print "After %r" % exists
-
 
     def test_db_close(self):
         connection = OrientSocket( "localhost", int( 2424 ) )
@@ -262,7 +262,6 @@ class CommandTestCase(unittest.TestCase):
             .send_message().fetch_response()
         assert closing is 0
 
-
     def test_db_reload(self):
 
         connection, cluster_info = self.test_db_open_not_connected()
@@ -272,7 +271,6 @@ class CommandTestCase(unittest.TestCase):
 
         print "Cluster: %s" % cluster_info
         assert cluster_info == cluster_reload
-
 
     def test_db_size(self):
 
@@ -284,7 +282,6 @@ class CommandTestCase(unittest.TestCase):
         print "Size: %s" % size
         assert size != 0
 
-    # WARNING comment return to test this message
     def test_shutdown(self):
 
         import inspect
@@ -330,18 +327,15 @@ class CommandTestCase(unittest.TestCase):
         ).send_message().fetch_response()
         assert len(cluster_info) != 0
 
-        req_msg = CommandMessage( connection )
+        req_msg = SQLCommandMessage( connection )
 
-        # res = req_msg.prepare( [ "select from #11:0" ] ) \
-        # res = req_msg.prepare( [ "select out from followed_by where -2:1" ] ) \
-        # res = req_msg.prepare( [ "select NULL" ] ) \
-        # res = req_msg.prepare( [ "select from #11:0" ] ) \
-        # res = req_msg.prepare( [ "select from #11:18" ] ) \
-        res = req_msg.prepare( [  QUERY_SYNC, "select * from followed_by limit 12" ] ) \
+        res = req_msg.prepare( [ QUERY_SYNC, "select * from followed_by limit 1" ] ) \
             .send_message().fetch_response()
 
         print "%r" % res[0].rid
         print "%r" % res[0].o_class
+        print "%r" % res[0].version
+
 
 # test_not_singleton_socket()
 # test_connection()
@@ -356,3 +350,4 @@ class CommandTestCase(unittest.TestCase):
 # test_db_reload()
 # test_db_size()
 # test_shutdown()
+# test_command()

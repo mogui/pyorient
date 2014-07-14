@@ -46,6 +46,7 @@ class RecordLoadMessage(BaseMessage):
 
         return super( RecordLoadMessage, self ).prepare()
 
+    @need_db_opened
     def fetch_response(self):
         self.append( FIELD_BYTE )
         _status = super( RecordLoadMessage, self ).fetch_response()[0]

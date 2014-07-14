@@ -12,6 +12,7 @@ DB_COUNTRECORDS = chr(9)
 RECORD_LOAD     = chr(30)
 RECORD_CREATE   = chr(31)
 RECORD_UPDATE   = chr(32)
+RECORD_DELETE   = chr(33)
 
 COMMAND         = chr(41)
 
