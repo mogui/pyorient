@@ -4,7 +4,6 @@ import sys
 import unittest
 import os
 
-
 os.environ['DEBUG'] = "1"
 os.environ['DEBUG_VERBOSE'] = "0"
 if os.path.realpath( '../' ) not in sys.path:
@@ -33,6 +32,7 @@ from pyorient.Messages.Database.RecordLoadMessage import RecordLoadMessage
 from pyorient.Messages.Database.RecordCreateMessage import RecordCreateMessage
 from pyorient.Messages.Database.RecordUpdateMessage import RecordUpdateMessage
 from pyorient.Messages.Database.RecordDeleteMessage import RecordDeleteMessage
+from pyorient.Messages.Database.DataClusterCountMessage import DataClusterCountMessage
 from pyorient.ORecordCoder import *
 
 class CommandTestCase(unittest.TestCase):
@@ -41,14 +41,13 @@ class CommandTestCase(unittest.TestCase):
     def test_record_load(self):
         connection = OrientSocket( "localhost", int( 2424 ) )
 
-        print "Sid, should be -1 : %s" % connection.session_id
+        # print "Sid, should be -1 : %s" % connection.session_id
         assert connection.session_id == -1
 
         # ##################
 
         msg = DbOpenMessage( connection )
 
-        db_name = "my_little_test"
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
             ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
@@ -61,26 +60,30 @@ class CommandTestCase(unittest.TestCase):
             .send_message().fetch_response()
 
         assert res.rid == "#11:0"
-        print res
-        print "%r" % res.rid
-        print "%r" % res.o_class
-        print "%s" % res.__getattribute__('in')
-        print "%s" % res.out
+        assert res.o_class == 'followed_by'
+        assert res.__getattribute__('in') != 0
+        assert res.out != 0
+
+        # print res
+        # print "%r" % res.rid
+        # print "%r" % res.o_class
+        # print "%s" % res.__getattribute__('in')
+        # print "%s" % res.out
 
 
     def test_record_count_with_no_opened_db(self):
         connection = OrientSocket( "localhost", int( 2424 ) )
 
-        print "Sid, should be -1 : %s" % connection.session_id
+        # print "Sid, should be -1 : %s" % connection.session_id
         assert connection.session_id == -1
 
         # ##################
         conn_msg = ConnectMessage( connection )
-        print "Protocol: %r" % conn_msg.get_protocol()
+        # print "Protocol: %r" % conn_msg.get_protocol()
         session_id = conn_msg.prepare( ("admin", "admin") )\
             .send_message().fetch_response()
 
-        print "Sid: %s" % session_id
+        # print "Sid: %s" % session_id
         assert session_id == connection.session_id
         assert session_id != -1
 
@@ -95,14 +98,13 @@ class CommandTestCase(unittest.TestCase):
     def test_record_count(self):
         connection = OrientSocket( "localhost", int( 2424 ) )
 
-        print "Sid, should be -1 : %s" % connection.session_id
+        # print "Sid, should be -1 : %s" % connection.session_id
         assert connection.session_id == -1
 
         # ##################
 
         msg = DbOpenMessage( connection )
 
-        db_name = "my_little_test"
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
             ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
@@ -111,13 +113,13 @@ class CommandTestCase(unittest.TestCase):
 
         session_id = connection.session_id
         assert session_id != -1
-        print "Sid: %s" % session_id
+        # print "Sid: %s" % session_id
         assert session_id != -1
 
         count_msg = DbCountRecordsMessage( connection )
         res = count_msg.prepare().send_message().fetch_response()
 
-        print res
+        # print res
         assert res is not 0
         assert res > 0
 
@@ -126,13 +128,13 @@ class CommandTestCase(unittest.TestCase):
 
         connection = OrientSocket( "localhost", int( 2424 ) )
         conn_msg = ConnectMessage( connection )
-        print "Protocol: %r" % conn_msg.get_protocol()
+        # print "Protocol: %r" % conn_msg.get_protocol()
         assert connection.protocol != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") ) \
             .send_message().fetch_response()
 
-        print "Sid: %s" % session_id
+        # print "Sid: %s" % session_id
         assert session_id == connection.session_id
         assert session_id != -1
 
@@ -159,7 +161,7 @@ class CommandTestCase(unittest.TestCase):
         cluster_info = msg.prepare(
             ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
         ).send_message().fetch_response()
-        print cluster_info
+        # print cluster_info
         assert len(cluster_info) != 0
 
         rec = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
@@ -167,7 +169,7 @@ class CommandTestCase(unittest.TestCase):
             .prepare( ( 1, rec ) )\
             .send_message().fetch_response()
 
-        print rec_position
+        # print rec_position
         assert rec_position[0] != 0
 
         rec = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
@@ -175,19 +177,19 @@ class CommandTestCase(unittest.TestCase):
             .prepare( ( 1, rec_position[0], rec ) )\
             .send_message().fetch_response()
 
-        print update_success
+        # print update_success
         assert update_success[0] != 0
 
         res = ( SQLCommandMessage( connection ) )\
             .prepare( [ QUERY_SYNC, "select from #1:" + str(rec_position[0]) ] )\
             .send_message().fetch_response()
 
-        print "%r" % res[0].rid
-        print "%r" % res[0].o_class
-        print "%r" % res[0].version
-        print "%r" % res[0].alloggio
-        print "%r" % res[0].lavoro
-        print "%r" % res[0].vacanza
+        # print "%r" % res[0].rid
+        # print "%r" % res[0].o_class
+        # print "%r" % res[0].version
+        # print "%r" % res[0].alloggio
+        # print "%r" % res[0].lavoro
+        # print "%r" % res[0].vacanza
 
         assert res[0].rid == '#1:2'
         assert res[0].o_class is None
@@ -206,7 +208,6 @@ class CommandTestCase(unittest.TestCase):
         connection = OrientSocket( "localhost", int( 2424 ) )
 
         conn_msg = ConnectMessage( connection )
-        print "Protocol: %r" % conn_msg.get_protocol()
         assert connection.protocol != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") ) \
@@ -237,10 +238,8 @@ class CommandTestCase(unittest.TestCase):
         cluster_info = msg.prepare(
             ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
         ).send_message().fetch_response()
-        print cluster_info
+
         assert len(cluster_info) != 0
-        print "Protocol: %r" % msg.get_protocol()
-        assert connection.protocol != -1
 
         rec = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
         rec_position = ( RecordCreateMessage(connection) )\
@@ -255,12 +254,12 @@ class CommandTestCase(unittest.TestCase):
             .prepare( [ QUERY_SYNC, "select from #1:" + str(rec_position[0]) ] )\
             .send_message().fetch_response()
 
-        print "%r" % res[0].rid
-        print "%r" % res[0].o_class
-        print "%r" % res[0].version
-        print "%r" % res[0].alloggio
-        print "%r" % res[0].lavoro
-        print "%r" % res[0].vacanza
+        # print "%r" % res[0].rid
+        # print "%r" % res[0].o_class
+        # print "%r" % res[0].version
+        # print "%r" % res[0].alloggio
+        # print "%r" % res[0].lavoro
+        # print "%r" % res[0].vacanza
 
         assert res[0].rid == '#1:2'
         assert res[0].o_class is None
@@ -275,7 +274,6 @@ class CommandTestCase(unittest.TestCase):
         deletion = del_msg.prepare( ( 1, rec_position[0] ) ).send_message()\
             .fetch_response()
 
-        print deletion
         assert deletion is True
 
         # now try a failure in deletion for wrong rid
@@ -283,15 +281,42 @@ class CommandTestCase(unittest.TestCase):
         deletion = del_msg.prepare( ( 1, 11111 ) ).send_message()\
             .fetch_response()
 
-        print deletion
         assert deletion is False
 
         # at the end drop the test database
         ( DbDropMessage( connection ) ).prepare([db_name]) \
             .send_message().fetch_response()
 
+
+    def test_data_cluster_count(self):
+
+        connection = OrientSocket( "localhost", int( 2424 ) )
+        assert connection.session_id == -1
+
+        # ##################
+
+        msg = DbOpenMessage( connection )
+
+        db_name = "GratefulDeadConcerts"
+        cluster_info = msg.prepare(
+            ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
+        ).send_message().fetch_response()
+
+        print cluster_info
+        assert len(cluster_info) != 0
+        assert connection.session_id != -1
+
+        count_msg = DataClusterCountMessage( connection )
+        res = count_msg.set_count_tombstones(1)\
+            .prepare( range(0, 11) ).send_message().fetch_response()
+
+        print res
+        assert res is not 0
+        assert res > 0
+
 # test_record_load()
 # test_record_count_with_no_opened_db()
 # test_record_count()
 # test_record_create_update()
 # test_record_delete()
+# test_data_cluster_count()

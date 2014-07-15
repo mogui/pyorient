@@ -99,6 +99,7 @@ class BaseMessage(object):
         for field in self._fields_definition:
             self._body.append( self._decode_field( field ) )
 
+        # clear field stack
         self._reset_fields_definition()
         return self
 

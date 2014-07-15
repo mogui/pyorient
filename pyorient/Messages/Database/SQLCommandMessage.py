@@ -75,8 +75,6 @@ class SQLCommandMessage(BaseMessage):
 
         response_type = super( SQLCommandMessage, self ).fetch_response()[0]
 
-        self._reset_fields_definition()
-
         res = []
         if response_type == 'n':
             raise NotImplementedError
@@ -85,7 +83,7 @@ class SQLCommandMessage(BaseMessage):
         elif response_type == 'l':
             self.append( FIELD_INT )
             list_len = super( SQLCommandMessage, self ).fetch_response(True)[0]
-            self._reset_fields_definition()
+
             for n in range(0, list_len):
 
                 # read raw short
@@ -104,10 +102,8 @@ class SQLCommandMessage(BaseMessage):
             # 2: a record is returned as pre-fetched to be loaded in client's
             #       cache only. It's not part of the result set but the client
             #       knows that it's available for later access
-
             self.append( FIELD_BYTE )
             async_results = super( SQLCommandMessage, self ).fetch_response(True)[0]
-            self._reset_fields_definition()
             if async_results != 0:
                 raise NotImplementedError
 

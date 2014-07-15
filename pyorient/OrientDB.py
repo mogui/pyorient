@@ -273,7 +273,7 @@ class OrientDB(object):
     # REQUEST_DB_COUNTRECORDS
     @need_db_opened
     def db_count_records(self):
-        self.conn.make_request(DB_COUNTRECORDS)
+        self.conn.make_request(DB_COUNT_RECORDS)
         ok, errors, count = self.conn.parse_response([LONG])
         self.log_binary()
         return count

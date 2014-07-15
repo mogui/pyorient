@@ -79,8 +79,6 @@ class DbOpenMessage(BaseMessage):
         self._session_id, cluster_num = \
             super( DbOpenMessage, self ).fetch_response()
 
-        self._reset_fields_definition()
-
         for n in range(0, cluster_num):
             self.append( FIELD_STRING )  # cluster_name
             self.append( FIELD_SHORT )  # cluster_id

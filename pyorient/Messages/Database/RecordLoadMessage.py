@@ -50,7 +50,6 @@ class RecordLoadMessage(BaseMessage):
     def fetch_response(self):
         self.append( FIELD_BYTE )
         _status = super( RecordLoadMessage, self ).fetch_response()[0]
-        self._reset_fields_definition()
 
         _record = OrientRecord()
 
@@ -62,12 +61,8 @@ class RecordLoadMessage(BaseMessage):
             __record = super( RecordLoadMessage, self ).fetch_response(True)[0]
             _record = ORecordDecoder( __record )
 
-            self._reset_fields_definition()
-
             self.append( FIELD_BYTE )  # status
             _status = super( RecordLoadMessage, self ).fetch_response(True)[0]
-
-            self._reset_fields_definition()
 
             cached_records = {}
             while _status != 0:
@@ -95,7 +90,6 @@ class RecordLoadMessage(BaseMessage):
                 self.append( FIELD_BYTE )  # status
                 _status = super( RecordLoadMessage, self ).fetch_response(True)[0]
 
-                self._reset_fields_definition()
                 self._output_buffer = ''
                 self._input_buffer = ''
 
