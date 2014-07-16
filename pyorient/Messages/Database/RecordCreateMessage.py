@@ -24,7 +24,7 @@ class RecordCreateMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from socket
 
         # order matters
-        self.append( ( FIELD_BYTE, RECORD_CREATE ) )
+        self._append( ( FIELD_BYTE, RECORD_CREATE ) )
 
     @need_db_opened
     def prepare(self, params=None):
@@ -44,18 +44,18 @@ class RecordCreateMessage(BaseMessage):
         record = OrientRecord( self._record_content )
         o_record_enc = ORecordEncoder(record)
 
-        self.append( ( FIELD_INT, int(self._data_segment_id) ) )
-        self.append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self.append( ( FIELD_STRING, o_record_enc.getRaw() ) )
-        self.append( ( FIELD_BYTE, self._record_type ) )
-        self.append( ( FIELD_BOOLEAN, self._mode_async ) )
+        self._append( ( FIELD_INT, int(self._data_segment_id) ) )
+        self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
+        self._append( ( FIELD_STRING, o_record_enc.getRaw() ) )
+        self._append( ( FIELD_BYTE, self._record_type ) )
+        self._append( ( FIELD_BOOLEAN, self._mode_async ) )
 
         return super( RecordCreateMessage, self ).prepare()
 
     def fetch_response(self):
 
-        self.append( FIELD_LONG )  # cluster-position
-        self.append( FIELD_INT )  # record-version
+        self._append( FIELD_LONG )  # cluster-position
+        self._append( FIELD_INT )  # record-version
 
         return super( RecordCreateMessage, self ).fetch_response()
 

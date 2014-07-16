@@ -21,7 +21,7 @@ class DbOpenMessage(BaseMessage):
         # this block of code check for session because this class
         # can be initialized directly from orient socket
 
-        self.append( ( FIELD_BYTE, DB_OPEN ) )
+        self._append( ( FIELD_BYTE, DB_OPEN ) )
 
     def _perform_connection(self):
         # try to connect, we inherited BaseMessage
@@ -63,30 +63,30 @@ class DbOpenMessage(BaseMessage):
                                               self._db_name, self._db_type,
                                               self._user, self._pass])
 
-        self.append(
+        self._append(
             ( FIELD_STRINGS, [NAME, VERSION] )
-        ).append(
+        )._append(
             ( FIELD_SHORT, SUPPORTED_PROTOCOL )
-        ).append(
+        )._append(
             connect_string
         )
         return super( DbOpenMessage, self ).prepare()
 
     def fetch_response(self):
-        self.append( FIELD_INT )  # session_id
-        self.append( FIELD_SHORT )  # cluster_num
+        self._append( FIELD_INT )  # session_id
+        self._append( FIELD_SHORT )  # cluster_num
 
         self._session_id, cluster_num = \
             super( DbOpenMessage, self ).fetch_response()
 
         for n in range(0, cluster_num):
-            self.append( FIELD_STRING )  # cluster_name
-            self.append( FIELD_SHORT )  # cluster_id
-            self.append( FIELD_STRING )  # cluster_type
-            self.append( FIELD_SHORT )  # cluster_segment_id
+            self._append( FIELD_STRING )  # cluster_name
+            self._append( FIELD_SHORT )  # cluster_id
+            self._append( FIELD_STRING )  # cluster_type
+            self._append( FIELD_SHORT )  # cluster_segment_id
 
-        self.append( FIELD_INT )  # cluster config string ( -1 )
-        self.append( FIELD_STRING )  # cluster release
+        self._append( FIELD_INT )  # cluster config string ( -1 )
+        self._append( FIELD_STRING )  # cluster release
 
         response = super( DbOpenMessage, self ).fetch_response(True)
 

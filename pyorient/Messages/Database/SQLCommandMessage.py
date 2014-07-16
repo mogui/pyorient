@@ -20,7 +20,7 @@ class SQLCommandMessage(BaseMessage):
 
         super( SQLCommandMessage, self ).__init__(_orient_socket)
 
-        self.append( ( FIELD_BYTE, COMMAND ) )
+        self._append( ( FIELD_BYTE, COMMAND ) )
 
     @need_db_opened
     def prepare(self, params=None ):
@@ -31,17 +31,16 @@ class SQLCommandMessage(BaseMessage):
                 self._query = params[1]
                 self._limit = params[2]
                 self._fetch_plan = params[3]
-
-                if params[0] is QUERY_CMD \
-                        or params[0] is QUERY_SYNC \
-                        or params[0] is QUERY_GREMLIN:
-                    self._mod_byte = 's'
-                else:
-                    self._mod_byte = 'a'
-
             except IndexError:
                 # Use default for non existent indexes
                 pass
+
+        if self._command_type is QUERY_CMD \
+                or self._command_type is QUERY_SYNC \
+                or self._command_type is QUERY_GREMLIN:
+            self._mod_byte = 's'
+        else:
+            self._mod_byte = 'a'
 
         _payload_definition = [
             ( FIELD_STRING, self._command_type ),
@@ -61,56 +60,29 @@ class SQLCommandMessage(BaseMessage):
             self._encode_field( x ) for x in _payload_definition
         )
 
-        self.append(
-            ( FIELD_BYTE, self._mod_byte )
-        ).append(
-            ( FIELD_STRING, payload )
-        )
+        self._append( ( FIELD_BYTE, self._mod_byte ) )
+        self._append( ( FIELD_STRING, payload ) )
 
         return super( SQLCommandMessage, self ).prepare()
 
     def fetch_response(self):
 
-        self.append( FIELD_CHAR )  # type of response
+        if self._command_type is QUERY_ASYNC:
+            # decode header only
+            void = super( SQLCommandMessage, self ).fetch_response()
+            _results = self._read_async_records()
+            # cache = _results['cached']
+            return _results['async']
 
-        response_type = super( SQLCommandMessage, self ).fetch_response()[0]
+        else:
+            # type of response
+            self._append( FIELD_CHAR )
+            # decode header and body char
+            response_type = super( SQLCommandMessage, self ).fetch_response()[0]
+            return self._read_sync( response_type )
 
-        res = []
-        if response_type == 'n':
-            raise NotImplementedError
-        elif response_type == 'r':
-            raise NotImplementedError
-        elif response_type == 'l':
-            self.append( FIELD_INT )
-            list_len = super( SQLCommandMessage, self ).fetch_response(True)[0]
-
-            for n in range(0, list_len):
-
-                # read raw short
-                self.append( FIELD_SHORT )  # marker
-                self.append( FIELD_RECORD )
-                __res = super( SQLCommandMessage, self ).fetch_response(True)[1]
-                _res = ORecordDecoder( __res['content'] )
-                res.append( OrientRecord(
-                    _res.data, o_class=_res.className,
-                    rid=__res['rid'], version=__res['version'] )
-                )
-
-            # asynch-result-type can be:
-            # 0: no records remain to be fetched
-            # 1: a record is returned as a resultset
-            # 2: a record is returned as pre-fetched to be loaded in client's
-            #       cache only. It's not part of the result set but the client
-            #       knows that it's available for later access
-            self.append( FIELD_BYTE )
-            async_results = super( SQLCommandMessage, self ).fetch_response(True)[0]
-            if async_results != 0:
-                raise NotImplementedError
-
-        return res
-
-    def set_async(self, _sync_type):
-        self._command_type = _sync_type
+    def set_command_type(self, _command_type):
+        self._command_type = _command_type
         return self
 
     def set_fetch_plan(self, _fetch_plan):
@@ -124,3 +96,31 @@ class SQLCommandMessage(BaseMessage):
     def set_limit(self, _limit):
         self._limit = _limit
         return self
+
+    def _read_sync(self, response_type):
+
+        res = []
+        if response_type == 'n':
+            return None
+        elif response_type == 'r':
+            res = [ self._read_record() ]
+        elif response_type == 'a':
+            self._append( FIELD_STRING )
+            res = [ super( SQLCommandMessage, self ).fetch_response(True)[0] ]
+        elif response_type == 'l':
+            self._append( FIELD_INT )
+            list_len = super( SQLCommandMessage, self ).fetch_response(True)[0]
+
+            for n in range(0, list_len):
+                res.append( self._read_record() )
+
+            # async-result-type can be:
+            # 0: no records remain to be fetched
+            # 1: a record is returned as a result set
+            # 2: a record is returned as pre-fetched to be loaded in client's
+            #       cache only. It's not part of the result set but the client
+            #       knows that it's available for later access
+            cached_results = self._read_async_records()
+            # cache = cached_results['cached']
+
+        return res

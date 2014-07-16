@@ -6,6 +6,7 @@ import pyorient.Messages.OrientSocket
 from pyorient.utils import *
 from pyorient.OrientException import *
 from Constants.BinaryTypes import *
+from pyorient.ORecordCoder import *
 
 
 class BaseMessage(object):
@@ -135,8 +136,9 @@ class BaseMessage(object):
             hexdump( self._input_buffer )
             print "\n"
 
-    def append(self, field):
+    def _append(self, field):
         """
+        @:rtype self: BaseMessage
         @type field: object
         """
         self._fields_definition.append( field )
@@ -239,3 +241,73 @@ class BaseMessage(object):
                 return struct.unpack('!i', _value)[0]
             elif _type['type'] == LONG:
                 return struct.unpack('!q', _value)[0]
+
+    def _read_async_records(self):
+        """
+        # async-result-type byte as trailing byte of a record can be:
+        # 0: no records remain to be fetched
+        # 1: a record is returned as a result set
+        # 2: a record is returned as pre-fetched to be loaded in client's
+        #       cache only. It's not part of the result set but the client
+        #       knows that it's available for later access
+        """
+        _status = self._decode_field( FIELD_BYTE )  # status
+
+        async_records = []
+        cached_records = []
+        while _status != 0:
+
+            try:
+
+                _record = self._read_record()
+
+                if _status == 1:  # async record type
+                    async_records.append( _record )  # save in async
+                elif _status == 2:  # cache
+                    cached_records.append( _record )  # save in cache
+
+            except Exception:
+                pass
+            finally:
+                # read new status and flush the debug buffer
+                _status = self._decode_field( FIELD_BYTE )  # status
+
+        return {'async': async_records, 'cached': cached_records}
+
+    def _read_record(self):
+        """
+        # The format depends if a RID is passed or an entire
+            record with its content.
+
+        # In case of null record then -2 as short is passed.
+
+        # In case of RID -3 is passes as short and then the RID:
+            (-3:short)(cluster-id:short)(cluster-position:long).
+
+        # In case of record:
+            (0:short)(record-type:byte)(cluster-id:short)
+            (cluster-position:long)(record-version:int)(record-content:bytes)
+
+        :raise: Exception
+        :return: OrientRecordLink|OrientRecord
+        """
+        marker = self._decode_field( FIELD_SHORT )  # marker
+
+        if marker is -2:
+            raise Exception('NULL Record')
+        elif marker is -3:
+            res = OrientRecordLink( self._decode_field( FIELD_TYPE_LINK ) )
+        else:
+            # read record
+            __res = self._decode_field( FIELD_RECORD )
+            _res = ORecordDecoder( __res['content'] )
+            res = OrientRecord(
+                _res.data, o_class=_res.className,
+                rid=__res['rid'], version=__res['version']
+            )
+
+        self.dump_streams()  # debug log
+        self._output_buffer = ''
+        self._input_buffer = ''
+
+        return res

@@ -18,7 +18,7 @@ class DbDropMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from cache
 
         # order matters
-        self.append( ( FIELD_BYTE, DB_DROP ) )
+        self._append( ( FIELD_BYTE, DB_DROP ) )
 
     @need_connected
     def prepare(self, params=None):
@@ -30,11 +30,11 @@ class DbDropMessage(BaseMessage):
             # Use default for non existent indexes
             pass
 
-        self.append( ( FIELD_STRING, self._db_name ) )  # db_name
+        self._append( ( FIELD_STRING, self._db_name ) )  # db_name
 
         if self.get_protocol() >= 16:  # > 16 1.5-snapshot
             # custom choice server_storage_type
-            self.append( ( FIELD_STRING, self._storage_type ) )
+            self._append( ( FIELD_STRING, self._storage_type ) )
 
         return super( DbDropMessage, self ).prepare()
 

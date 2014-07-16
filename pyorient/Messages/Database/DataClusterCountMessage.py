@@ -19,7 +19,7 @@ class DataClusterCountMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from cache
 
         # order matters
-        self.append( ( FIELD_BYTE, DATA_CLUSTER_COUNT ) )
+        self._append( ( FIELD_BYTE, DATA_CLUSTER_COUNT ) )
 
     @need_db_opened
     def prepare(self, params=None):
@@ -28,11 +28,11 @@ class DataClusterCountMessage(BaseMessage):
             # mandatory if not passed by method
             self._cluster_ids = params
 
-            self.append( ( FIELD_SHORT, len(self._cluster_ids) ) )
+            self._append( ( FIELD_SHORT, len(self._cluster_ids) ) )
             for x in self._cluster_ids:
-                self.append( ( FIELD_SHORT, x ) )
+                self._append( ( FIELD_SHORT, x ) )
 
-            self.append( ( FIELD_BOOLEAN, self._count_tombstones ) )
+            self._append( ( FIELD_BOOLEAN, self._count_tombstones ) )
 
         except( IndexError, TypeError ):
             # Use default for non existent indexes
@@ -41,7 +41,7 @@ class DataClusterCountMessage(BaseMessage):
         return super( DataClusterCountMessage, self ).prepare()
 
     def fetch_response(self):
-        self.append( FIELD_LONG )
+        self._append( FIELD_LONG )
         return super( DataClusterCountMessage, self ).fetch_response()[0]
 
     def set_cluster_ids(self, _cluster_ids):

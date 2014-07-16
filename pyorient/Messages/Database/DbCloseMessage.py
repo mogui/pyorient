@@ -16,7 +16,7 @@ class DbCloseMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from cache
 
         # order matters
-        self.append( ( FIELD_BYTE, DB_CLOSE ) )
+        self._append( ( FIELD_BYTE, DB_CLOSE ) )
 
     @need_connected
     def prepare(self, params=None):

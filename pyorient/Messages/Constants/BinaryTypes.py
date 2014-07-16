@@ -27,7 +27,7 @@ FIELD_BYTES = {"type": BYTES, "bytes": 4, "struct": None}
 FIELD_STRING = {"type": STRING, "bytes": 4, "struct": None}
 FIELD_STRINGS = {"type": STRINGS, "bytes": 4, "struct": None}
 FIELD_RECORD = {"type": RECORD, "bytes": None, "struct": [
-    FIELD_BYTE,   # record_type
+    FIELD_CHAR,   # record_type
     FIELD_SHORT,  # record_clusterID
     FIELD_LONG,   # record_position
     FIELD_INT,    # record_version

@@ -16,7 +16,7 @@ class ConnectMessage(BaseMessage):
         self._client_id = ''
         self._serialization_type = SERIALIZATION_DOCUMENT2CSV
 
-        self.append( ( FIELD_BYTE, CONNECT ) )
+        self._append( ( FIELD_BYTE, CONNECT ) )
 
     def prepare(self, params=None ):
 
@@ -39,17 +39,17 @@ class ConnectMessage(BaseMessage):
             connect_string = (FIELD_STRINGS, [self._client_id,
                                               self._user, self._pass])
 
-        self.append(
+        self._append(
             ( FIELD_STRINGS, [NAME, VERSION] )
-        ).append(
+        )._append(
             ( FIELD_SHORT, SUPPORTED_PROTOCOL )
-        ).append(
+        )._append(
             connect_string
         )
         return super( ConnectMessage, self ).prepare()
 
     def fetch_response(self):
-        self.append( FIELD_INT )
+        self._append( FIELD_INT )
         self._session_id = super( ConnectMessage, self ).fetch_response()[0]
 
         # IMPORTANT needed to pass the id to other messages

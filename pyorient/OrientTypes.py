@@ -51,4 +51,5 @@ class OrientBinaryObject(object):
         return "_" + self.b64 + "_"
 
     def getBin(self):
+        import base64
         return base64.b64decode(self.b64)

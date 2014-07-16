@@ -35,6 +35,7 @@ STATE_NUMBER = 6
 STATE_KEY = 7
 STATE_BOOLEAN = 8
 STATE_BUFFER = 9
+STATE_BASE64 = 10
 
 
 #character classes
@@ -56,6 +57,7 @@ TTYPE_BOOLEAN = 10
 TTYPE_KEY = 11
 TTYPE_EMBEDDED = 12
 TTYPE_BUFFER = 13
+TTYPE_BASE64 = 14
 
 
 class ORecordEncoder(object):
@@ -141,14 +143,15 @@ class ORecordDecoder(object):
         self._i = 0
         self._stackTokenValues = []
         self._stackTokenTypes = []
-        self.isCollection = False
-        self.isMap = False
+        self._isCollection = False
+        self._isMap = False
         self.escape = False
         self._stateCase = [self.__state_guess, self.__state_name,
                            self.__state_value, self.__state_string,
                            self.__state_comma, self.__state_link,
                            self.__state_number, self.__state_key,
-                           self.__state_boolean, self.__state_buffer]
+                           self.__state_boolean, self.__state_buffer,
+                           self.__state_base64]
 
         # start decoding
         self.__decode()
@@ -158,7 +161,7 @@ class ORecordDecoder(object):
 
         while self._i < len(self.content) and self._continue:
             char = self.content[self._i:self._i + 1]
-            cClass = CCLASS_OTHER
+            cClass = CCLASS_OTHER  # CCLASS_OTHER = 0
             cCode = ord(char)
             if (cCode >= 65 and cCode <= 90) or (
                     cCode >= 97 and cCode <= 122) or cCode == 95:
@@ -172,22 +175,35 @@ class ORecordDecoder(object):
             self._stateCase[self._state](char, cClass)
             tokenType = self.__stackGetLastType()
 
-            if tokenType == TTYPE_NAME or tokenType == TTYPE_KEY or tokenType == TTYPE_COLLECTION_START or tokenType == TTYPE_MAP_START:
+            if tokenType == TTYPE_NAME or \
+                    tokenType == TTYPE_KEY or \
+                    tokenType == TTYPE_COLLECTION_START or \
+                    tokenType == TTYPE_MAP_START:
                 pass
-            elif tokenType == TTYPE_CLASS:
+
+            elif tokenType == TTYPE_CLASS:   # TTYPE_CLASS = 1
                 (ttype, tvalue) = self.__stackPop()
                 self.className = tvalue
-            elif tokenType == TTYPE_NUMBER or tokenType == TTYPE_STRING or tokenType == TTYPE_BUFFER or tokenType == TTYPE_BOOLEAN or tokenType == TTYPE_EMBEDDED or tokenType == TTYPE_LINK:
-                if not self.isCollection and not self.isMap:
+
+            elif tokenType == TTYPE_NUMBER or \
+                    tokenType == TTYPE_STRING or \
+                    tokenType == TTYPE_BUFFER or \
+                    tokenType == TTYPE_BOOLEAN or \
+                    tokenType == TTYPE_EMBEDDED or \
+                    tokenType == TTYPE_BASE64 or \
+                    tokenType == TTYPE_LINK:
+                if not self._isCollection and not self._isMap:
                     tt, tvalue = self.__stackPop()
                     tt, tname = self.__stackPop()
                     #print("%s -> %s" % (tname, tvalue))    
                     self.data[tname] = tvalue
+
             elif tokenType == TTYPE_NULL:
-                if not self.isCollection and not self.isMap:
+                if not self._isCollection and not self._isMap:
                     self.__stackPop()
                     tt, tname = self.__stackPop()
                     self.data[tname] = None
+
             elif tokenType == TTYPE_COLLECTION_END:
                 values = []
                 while True:
@@ -199,6 +215,7 @@ class ORecordDecoder(object):
                 tt, tname = self.__stackPop()
                 values.reverse()
                 self.data[tname] = values
+
             elif tokenType == TTYPE_MAP_END:
                 values = {}
                 while True:
@@ -264,7 +281,7 @@ class ORecordDecoder(object):
             # token type is collection start
             self.__stackPush(TTYPE_COLLECTION_START)
             # started collection
-            self.isCollection = True
+            self._isCollection = True
             self._i += 1
         elif char == ']':
             # ] found,
@@ -272,7 +289,7 @@ class ORecordDecoder(object):
             # token type is collection end
             self.__stackPush(TTYPE_COLLECTION_END)
             # stopped collection
-            self.isCollection = False
+            self._isCollection = False
             self._i += 1
         elif char == '{':
             # found { switch state to name
@@ -280,7 +297,7 @@ class ORecordDecoder(object):
             # token type is map start
             self.__stackPush(TTYPE_MAP_START)
             # started map
-            self.isMap = True
+            self._isMap = True
             self._i += 1
         elif char == '}':
             # } found
@@ -294,7 +311,7 @@ class ORecordDecoder(object):
             # token type is map end
             self.__stackPush(TTYPE_MAP_END)
             # stopped map
-            self.isMap = False
+            self._isMap = False
             self._i += 1
         elif char == '(':
             # ( found, state is COMMA
@@ -303,7 +320,7 @@ class ORecordDecoder(object):
             self._i += 1
             parser = ORecordDecoder(self.content[self._i:])
             rec = OrientRecord(parser.data,
-                               o_class=parser.className)  # @TODO missing rid and version from c api
+                               o_class=parser.className)
 
             tokenValue = rec
             # token type is embedded
@@ -321,6 +338,9 @@ class ORecordDecoder(object):
             # boolean found - switch state to boolean
             self._state = STATE_BOOLEAN
             self._buffer = char
+            self._i += 1
+        elif char == '%':
+            self._state = STATE_BASE64
             self._i += 1
         else:
             if cClass == CCLASS_NUMBER or char == '-':
@@ -378,13 +398,19 @@ class ORecordDecoder(object):
 
         self._i += 1
 
+    def __state_base64(self, char, cClass):
+        pos_end = self.content[self._i:].find(';')
+        self._buffer += self.content[self._i:(self._i + pos_end)]
+        self._i += pos_end + 1              # skip th semi colon
+        self._state = STATE_COMMA
+        self.__stackPush(TTYPE_BASE64, OrientBinaryObject(self._buffer) )
 
     def __state_comma(self, char, cClass):
         """docstring for __state_comma"""
         if char == ',':
-            if self.isCollection:
+            if self._isCollection:
                 self._state = STATE_VALUE
-            elif self.isMap:
+            elif self._isMap:
                 self._state = STATE_KEY
             else:
                 self._state = STATE_GUESS

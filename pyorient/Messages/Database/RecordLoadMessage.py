@@ -22,7 +22,7 @@ class RecordLoadMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from socket
 
         # order matters
-        self.append( ( FIELD_BYTE, RECORD_LOAD ) )
+        self._append( ( FIELD_BYTE, RECORD_LOAD ) )
 
     @need_connected
     def prepare(self, params=None):
@@ -38,65 +38,37 @@ class RecordLoadMessage(BaseMessage):
         if _cluster[0] is '#':
             _cluster = _cluster[1:]
 
-        self.append( ( FIELD_SHORT, int(_cluster) ) )
-        self.append( ( FIELD_LONG, long(_position) ) )
-        self.append( ( FIELD_STRING, self._fetch_plan ) )
-        self.append( ( FIELD_BYTE, "0" ) )
-        self.append( ( FIELD_BYTE, "0" ) )
+        self._append( ( FIELD_SHORT, int(_cluster) ) )
+        self._append( ( FIELD_LONG, long(_position) ) )
+        self._append( ( FIELD_STRING, self._fetch_plan ) )
+        self._append( ( FIELD_BYTE, "0" ) )
+        self._append( ( FIELD_BYTE, "0" ) )
 
         return super( RecordLoadMessage, self ).prepare()
 
     @need_db_opened
     def fetch_response(self):
-        self.append( FIELD_BYTE )
+        self._append( FIELD_BYTE )
         _status = super( RecordLoadMessage, self ).fetch_response()[0]
 
         _record = OrientRecord()
 
         if _status != 0:
-            self.append( FIELD_BYTES )
-            self.append( FIELD_INT )
-            self.append( FIELD_BYTE )
+            self._append( FIELD_BYTES )
+            self._append( FIELD_INT )
+            self._append( FIELD_BYTE )
 
             __record = super( RecordLoadMessage, self ).fetch_response(True)[0]
             _record = ORecordDecoder( __record )
 
-            self.append( FIELD_BYTE )  # status
-            _status = super( RecordLoadMessage, self ).fetch_response(True)[0]
+            cached_results = self._read_async_records()  # get cache
+            self.cached_records = cached_results['cached']
 
-            cached_records = {}
-            while _status != 0:
-
-                marker = self._decode_field( FIELD_SHORT )  # status
-
-                if marker is -2:
-                    return None
-                elif marker is -3:
-                    self.append( FIELD_TYPE_LINK )
-                    return super( RecordLoadMessage, self ).fetch_response(True)
-
-                # cached Records, not used at moment.
-                # moreover, ORecordDecoder can't handle the document data types
-                # so, perform a raw read and flush the debug buffer
-                # before starting a new loop
-                cached_record = self._decode_field( FIELD_RECORD )
-
-                cached_records.__setitem__(
-                    cached_record['rid'],
-                    cached_record
-                )  # save in cache
-
-                # read new status and flush the debug buffer
-                self.append( FIELD_BYTE )  # status
-                _status = super( RecordLoadMessage, self ).fetch_response(True)[0]
-
-                self._output_buffer = ''
-                self._input_buffer = ''
-
-            self.cached_records = cached_records
-
-        return OrientRecord(_record.data, o_class=_record.className,
-                            rid=self._record_id)
+        return OrientRecord(
+            _record.data,
+            o_class=_record.className,
+            rid=self._record_id
+        )
 
     def set_db_name(self, _record_id):
         self._record_id = _record_id
