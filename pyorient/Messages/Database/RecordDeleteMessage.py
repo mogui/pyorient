@@ -21,7 +21,7 @@ class RecordDeleteMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from socket
 
         # order matters
-        self.append( ( FIELD_BYTE, RECORD_DELETE ) )
+        self._append( ( FIELD_BYTE, RECORD_DELETE ) )
 
     @need_db_opened
     def prepare(self, params=None):
@@ -39,15 +39,15 @@ class RecordDeleteMessage(BaseMessage):
             # Use default for non existent indexes
             pass
 
-        self.append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self.append( ( FIELD_LONG, int(self._cluster_position) ) )
-        self.append( ( FIELD_INT, int(self._record_version) ) )
-        self.append( ( FIELD_BOOLEAN, self._mode_async ) )
+        self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
+        self._append( ( FIELD_LONG, int(self._cluster_position) ) )
+        self._append( ( FIELD_INT, int(self._record_version) ) )
+        self._append( ( FIELD_BOOLEAN, self._mode_async ) )
 
         return super( RecordDeleteMessage, self ).prepare()
 
     def fetch_response(self):
-        self.append( FIELD_BOOLEAN )  # payload-status
+        self._append( FIELD_BOOLEAN )  # payload-status
         return super( RecordDeleteMessage, self ).fetch_response()[0]
 
     def set_record_version(self, _record_version):

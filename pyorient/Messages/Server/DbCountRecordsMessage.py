@@ -19,12 +19,12 @@ class DbCountRecordsMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from cache
 
         # order matters
-        self.append( ( FIELD_BYTE, DB_COUNT_RECORDS ) )
+        self._append( ( FIELD_BYTE, DB_COUNT_RECORDS ) )
 
     @need_db_opened
     def prepare(self, params=None):
         return super( DbCountRecordsMessage, self ).prepare()
 
     def fetch_response(self):
-        self.append( FIELD_LONG )
+        self._append( FIELD_LONG )
         return super( DbCountRecordsMessage, self ).fetch_response()[0]

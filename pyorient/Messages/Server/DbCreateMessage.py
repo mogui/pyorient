@@ -20,7 +20,7 @@ class DbCreateMessage(BaseMessage):
         self._session_id = _orient_socket.session_id
 
         # order matters
-        self.append( ( FIELD_BYTE, DB_CREATE ) )
+        self._append( ( FIELD_BYTE, DB_CREATE ) )
 
     @need_connected
     def prepare(self, params=None ):
@@ -33,7 +33,7 @@ class DbCreateMessage(BaseMessage):
             except IndexError:
                 pass
 
-        self.append(
+        self._append(
             (FIELD_STRINGS, [self._db_name, self._db_type, self._storage_type])
         )
         return super( DbCreateMessage, self ).prepare()

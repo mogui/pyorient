@@ -37,7 +37,7 @@ class RecordUpdateMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from socket
 
         # order matters
-        self.append( ( FIELD_BYTE, RECORD_UPDATE ) )
+        self._append( ( FIELD_BYTE, RECORD_UPDATE ) )
 
     @need_db_opened
     def prepare(self, params=None):
@@ -63,24 +63,24 @@ class RecordUpdateMessage(BaseMessage):
         record = OrientRecord( self._record_content )
         o_record_enc = ORecordEncoder(record)
 
-        self.append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self.append( ( FIELD_LONG, int(self._cluster_position) ) )
+        self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
+        self._append( ( FIELD_LONG, int(self._cluster_position) ) )
 
         if self._protocol >= 23:
-            self.append( ( FIELD_BOOLEAN, self._update_content ) )
+            self._append( ( FIELD_BOOLEAN, self._update_content ) )
 
-        self.append( ( FIELD_STRING, o_record_enc.getRaw() ) )
-        self.append( ( FIELD_INT, int(self._record_version_policy) ) )
-        self.append( ( FIELD_BYTE, self._record_type ) )
-        self.append( ( FIELD_BOOLEAN, self._mode_async ) )
+        self._append( ( FIELD_STRING, o_record_enc.getRaw() ) )
+        self._append( ( FIELD_INT, int(self._record_version_policy) ) )
+        self._append( ( FIELD_BYTE, self._record_type ) )
+        self._append( ( FIELD_BOOLEAN, self._mode_async ) )
 
         return super( RecordUpdateMessage, self ).prepare()
 
     def fetch_response(self):
 
-        self.append( FIELD_INT )  # record-version
+        self._append( FIELD_INT )  # record-version
         if self._protocol > 23:
-            self.append( FIELD_INT )  # count-of-collection-changes
+            self._append( FIELD_INT )  # count-of-collection-changes
 
         return super( RecordUpdateMessage, self ).fetch_response()
 

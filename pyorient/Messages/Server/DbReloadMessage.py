@@ -16,7 +16,7 @@ class DbReloadMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from cache
 
         # order matters
-        self.append( ( FIELD_BYTE, DB_RELOAD ) )
+        self._append( ( FIELD_BYTE, DB_RELOAD ) )
 
     @need_connected
     def prepare(self, params=None):
@@ -24,15 +24,15 @@ class DbReloadMessage(BaseMessage):
 
     def fetch_response(self):
 
-        self.append( FIELD_SHORT )  # cluster_num
+        self._append( FIELD_SHORT )  # cluster_num
 
         cluster_num = super( DbReloadMessage, self ).fetch_response()[0]
 
         for n in range(0, cluster_num):
-            self.append( FIELD_STRING )  # cluster_name
-            self.append( FIELD_SHORT )  # cluster_id
-            self.append( FIELD_STRING )  # cluster_type
-            self.append( FIELD_SHORT )  # cluster_segment_id
+            self._append( FIELD_STRING )  # cluster_name
+            self._append( FIELD_SHORT )  # cluster_id
+            self._append( FIELD_STRING )  # cluster_type
+            self._append( FIELD_SHORT )  # cluster_segment_id
 
         response = super( DbReloadMessage, self ).fetch_response(True)
 

@@ -19,7 +19,7 @@ class ShutdownMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from cache
 
         # order matters
-        self.append( ( FIELD_BYTE, SHUTDOWN ) )
+        self._append( ( FIELD_BYTE, SHUTDOWN ) )
 
     @need_connected
     def prepare(self, params=None):
@@ -32,7 +32,7 @@ class ShutdownMessage(BaseMessage):
                 # Use default for non existent indexes
                 pass
 
-        self.append( (FIELD_STRINGS, [self._user, self._pass]) )
+        self._append( (FIELD_STRINGS, [self._user, self._pass]) )
 
         return super( ShutdownMessage, self ).prepare()
 

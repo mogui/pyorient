@@ -19,7 +19,7 @@ class DbExistsMessage(BaseMessage):
         self._session_id = _orient_socket.session_id  # get from socket
 
         # order matters
-        self.append( ( FIELD_BYTE, DB_EXIST ) )
+        self._append( ( FIELD_BYTE, DB_EXIST ) )
 
     @need_connected
     def prepare(self, params=None):
@@ -32,17 +32,17 @@ class DbExistsMessage(BaseMessage):
             pass
 
         if self.get_protocol() >= 6:
-            self.append( ( FIELD_STRING, self._db_name ) )  # db_name
+            self._append( ( FIELD_STRING, self._db_name ) )  # db_name
 
         if self.get_protocol() >= 16:
             # > 16 1.5-snapshot
             # custom choice server_storage_type
-            self.append( ( FIELD_STRING, self._storage_type ) )
+            self._append( ( FIELD_STRING, self._storage_type ) )
 
         return super( DbExistsMessage, self ).prepare()
 
     def fetch_response(self):
-        self.append( FIELD_BOOLEAN )
+        self._append( FIELD_BOOLEAN )
         return super( DbExistsMessage, self ).fetch_response()[0]
 
     def set_db_name(self, db_name):
