@@ -67,19 +67,15 @@ class SQLCommandMessage(BaseMessage):
 
     def fetch_response(self):
 
+        # decode header only
+        void = super( SQLCommandMessage, self ).fetch_response()
+
         if self._command_type is QUERY_ASYNC:
-            # decode header only
-            void = super( SQLCommandMessage, self ).fetch_response()
             _results = self._read_async_records()
             # cache = _results['cached']
             return _results['async']
-
         else:
-            # type of response
-            self._append( FIELD_CHAR )
-            # decode header and body char
-            response_type = super( SQLCommandMessage, self ).fetch_response()[0]
-            return self._read_sync( response_type )
+            return self._read_sync()
 
     def set_command_type(self, _command_type):
         self._command_type = _command_type
@@ -97,7 +93,11 @@ class SQLCommandMessage(BaseMessage):
         self._limit = _limit
         return self
 
-    def _read_sync(self, response_type):
+    def _read_sync(self):
+
+        # type of response
+        # decode body char with flag continue ( Header already read )
+        response_type = self._decode_field( FIELD_CHAR )
 
         res = []
         if response_type == 'n':

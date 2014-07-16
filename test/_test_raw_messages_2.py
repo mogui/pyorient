@@ -33,6 +33,7 @@ from pyorient.Messages.Database.RecordCreateMessage import RecordCreateMessage
 from pyorient.Messages.Database.RecordUpdateMessage import RecordUpdateMessage
 from pyorient.Messages.Database.RecordDeleteMessage import RecordDeleteMessage
 from pyorient.Messages.Database.DataClusterCountMessage import DataClusterCountMessage
+from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDataRangeMessage
 from pyorient.ORecordCoder import *
 
 class CommandTestCase(unittest.TestCase):
@@ -50,7 +51,7 @@ class CommandTestCase(unittest.TestCase):
 
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
-            ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send_message().fetch_response()
         assert len(cluster_info) != 0
 
@@ -107,7 +108,7 @@ class CommandTestCase(unittest.TestCase):
 
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
-            ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send_message().fetch_response()
         assert len(cluster_info) != 0
 
@@ -159,7 +160,7 @@ class CommandTestCase(unittest.TestCase):
 
         msg = DbOpenMessage( connection )
         cluster_info = msg.prepare(
-            ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send_message().fetch_response()
         # print cluster_info
         assert len(cluster_info) != 0
@@ -236,7 +237,7 @@ class CommandTestCase(unittest.TestCase):
 
         msg = DbOpenMessage( connection )
         cluster_info = msg.prepare(
-            ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send_message().fetch_response()
 
         assert len(cluster_info) != 0
@@ -299,7 +300,7 @@ class CommandTestCase(unittest.TestCase):
 
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
-            ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send_message().fetch_response()
 
         print cluster_info
@@ -307,12 +308,102 @@ class CommandTestCase(unittest.TestCase):
         assert connection.session_id != -1
 
         count_msg = DataClusterCountMessage( connection )
-        res = count_msg.set_count_tombstones(1)\
-            .prepare( range(0, 11) ).send_message().fetch_response()
+        res1 = count_msg.set_count_tombstones(1)\
+            .prepare( [ range(0, 11) ] ).send_message().fetch_response()
 
-        print res
-        assert res is not 0
-        assert res > 0
+        print res1
+        assert res1 is not 0
+        assert res1 > 0
+
+        count_msg = DataClusterCountMessage( connection )
+        res2 = count_msg.set_count_tombstones(1)\
+            .prepare( [ range(0, 11), 1 ] ).send_message().fetch_response()
+
+        print res2
+        assert res2 is not 0
+        assert res2 > 0
+
+        count_msg = DataClusterCountMessage( connection )
+        res3 = count_msg.set_count_tombstones(1).set_cluster_ids( range(0, 11) )\
+            .prepare().send_message().fetch_response()
+
+        print res3
+        assert res3 is not 0
+        assert res3 > 0
+
+        assert res1 == res2
+        assert res3 == res2
+        assert res3 == res1
+
+    def test_query_async(self):
+        connection = OrientSocket( 'localhost', 2424 )
+        open_msg = DbOpenMessage(connection)
+
+        open_msg.set_db_name('GratefulDeadConcerts')\
+            .set_user('admin').set_pass('admin').prepare()\
+            .send_message().fetch_response()
+
+        try_select_async = SQLCommandMessage(connection)
+
+        try_select_async.set_command_type(QUERY_ASYNC)\
+                        .set_query("select from followed_by")\
+                        .set_limit(50)\
+                        .set_fetch_plan("*:0")\
+                        .prepare()\
+                        .send_message()
+
+        response = try_select_async.fetch_response()
+
+        assert response is not []
+        assert response[0].rid is not None  # assert no exception
+        assert response[1].rid is not None  # assert no exception
+        assert response[2].rid is not None  # assert no exception
+        # for x in response:
+        #     print x
+        #     print x.rid
+        #     print x.o_class
+        #     print x.__getattribute__('in')
+        #     print x.out
+
+    def test_wrong_data_range(self):
+        connection = OrientSocket( 'localhost', 2424 )
+
+        db_name = "GratefulDeadConcerts"
+
+        db = DbOpenMessage(connection)
+        cluster_info = db.prepare(
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
+        ).send_message().fetch_response()
+
+        datarange = DataClusterDataRangeMessage(connection)
+        try:
+            value = datarange.prepare(32767).send_message().fetch_response()
+        except PyOrientCommandException, e:
+            assert e.message == "32767 - java.lang.ArrayIndexOutOfBoundsException"
+
+    def test_data_range(self):
+        connection = OrientSocket( 'localhost', 2424 )
+
+        db_name = "GratefulDeadConcerts"
+
+        db = DbOpenMessage(connection)
+        cluster_info = db.prepare(
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
+        ).send_message().fetch_response()
+
+        # print cluster_info
+
+        cluster_info.sort(key=lambda cluster: cluster['id'])
+
+        for cluster in cluster_info:
+            # os.environ['DEBUG'] = '0'  # silence debug
+            datarange = DataClusterDataRangeMessage(connection)
+            value = datarange.prepare(cluster['id']).send_message().fetch_response()
+            print "Cluster Name: %s, ID: %u: %s " \
+                  % ( cluster['name'], cluster['id'], value )
+            assert value is not []
+            assert value is not None
+
 
 # test_record_load()
 # test_record_count_with_no_opened_db()
@@ -320,3 +411,6 @@ class CommandTestCase(unittest.TestCase):
 # test_record_create_update()
 # test_record_delete()
 # test_data_cluster_count()
+# test_query_async()
+# test_wrong_data_range()
+# test_data_range()

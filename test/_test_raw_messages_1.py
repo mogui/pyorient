@@ -102,7 +102,7 @@ class CommandTestCase(unittest.TestCase):
 
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
-            ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send_message().fetch_response()
 
         print "Cluster: %s" % cluster_info
@@ -121,7 +121,7 @@ class CommandTestCase(unittest.TestCase):
 
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
-            ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send_message().fetch_response()
 
         print "Cluster: %s" % cluster_info
@@ -323,7 +323,7 @@ class CommandTestCase(unittest.TestCase):
 
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
-            ("admin", "admin", "", db_name, DB_TYPE_DOCUMENT)
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send_message().fetch_response()
         assert len(cluster_info) != 0
 

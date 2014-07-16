@@ -109,7 +109,12 @@ class BaseMessage(object):
         self._decode_body()
 
     def fetch_response(self, *_continue):
-
+        """
+        # Decode header and body
+        # If flag continue is set( Header already read ) read only body
+        :param _continue:
+        :return:
+        """
         try:
             if len(_continue) is not 0:
                 self._body = []
