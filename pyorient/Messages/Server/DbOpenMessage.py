@@ -37,11 +37,11 @@ class DbOpenMessage(BaseMessage):
 
         if isinstance( params, tuple ):
             try:
-                self._user = params[0]
-                self._pass = params[1]
-                self._client_id = params[2]
-                self._db_name = params[3]
-                self._db_type = params[4]
+                self._db_name = params[0]
+                self._user = params[1]
+                self._pass = params[2]
+                self._db_type = params[3]
+                self._client_id = params[4]
                 self._serialization_type = params[5]
             except IndexError:
                 # Use default for non existent indexes

@@ -24,19 +24,21 @@ class DataClusterCountMessage(BaseMessage):
     @need_db_opened
     def prepare(self, params=None):
 
-        try:
-            # mandatory if not passed by method
-            self._cluster_ids = params
+        if isinstance( params, tuple ) or isinstance( params, list ):
+            try:
+                # mandatory if not passed by method
+                # raise Exception if None
+                self._cluster_ids = params[0]
+                self._count_tombstones = params[1]
+            except( IndexError, TypeError ):
+                # Use default for non existent indexes
+                pass
 
-            self._append( ( FIELD_SHORT, len(self._cluster_ids) ) )
-            for x in self._cluster_ids:
-                self._append( ( FIELD_SHORT, x ) )
+        self._append( ( FIELD_SHORT, len(self._cluster_ids) ) )
+        for x in self._cluster_ids:
+            self._append( ( FIELD_SHORT, x ) )
 
-            self._append( ( FIELD_BOOLEAN, self._count_tombstones ) )
-
-        except( IndexError, TypeError ):
-            # Use default for non existent indexes
-            pass
+        self._append( ( FIELD_BOOLEAN, self._count_tombstones ) )
 
         return super( DataClusterCountMessage, self ).prepare()
 

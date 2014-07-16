@@ -39,13 +39,9 @@ class ConnectMessage(BaseMessage):
             connect_string = (FIELD_STRINGS, [self._client_id,
                                               self._user, self._pass])
 
-        self._append(
-            ( FIELD_STRINGS, [NAME, VERSION] )
-        )._append(
-            ( FIELD_SHORT, SUPPORTED_PROTOCOL )
-        )._append(
-            connect_string
-        )
+        self._append( ( FIELD_STRINGS, [NAME, VERSION] ) )
+        self._append( ( FIELD_SHORT, SUPPORTED_PROTOCOL ) )
+        self._append( connect_string )
         return super( ConnectMessage, self ).prepare()
 
     def fetch_response(self):
