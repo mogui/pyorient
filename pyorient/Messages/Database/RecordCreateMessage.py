@@ -41,7 +41,9 @@ class RecordCreateMessage(BaseMessage):
         record = OrientRecord( self._record_content )
         o_record_enc = ORecordEncoder(record)
 
-        self._append( ( FIELD_INT, int(self._data_segment_id) ) )
+        if self.get_protocol() < 24:
+            self._append( ( FIELD_INT, int(self._data_segment_id) ) )
+
         self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
         self._append( ( FIELD_STRING, o_record_enc.getRaw() ) )
         self._append( ( FIELD_BYTE, self._record_type ) )

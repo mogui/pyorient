@@ -39,11 +39,17 @@ class DbReloadMessage(BaseMessage):
             cluster_id = response[x + 1]
             cluster_type = response[x + 2]
             cluster_segment_data_id = response[x + 3]
-            clusters.append({
-                "name": cluster_name,
-                "id": cluster_id,
-                "type": cluster_type,
-                "segment": cluster_segment_data_id
-            })
+            if self.get_protocol() < 24:
+                clusters.append({
+                    "name": cluster_name,
+                    "id": cluster_id,
+                    "type": cluster_type,
+                    "segment": cluster_segment_data_id
+                })
+            else:
+                clusters.append({
+                    "name": cluster_name,
+                    "id": cluster_id
+                })
 
         return clusters

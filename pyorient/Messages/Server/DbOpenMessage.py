@@ -27,7 +27,7 @@ class DbOpenMessage(BaseMessage):
             .prepare( ( self._user, self._pass, self._client_id ) )\
             .send_message().fetch_response()
         # now, self._session_id and _orient_socket.session_id are updated
-        self._protocol = self._orientSocket.protocol
+        self.get_protocol()
 
     def prepare(self, params=None ):
 
@@ -54,7 +54,7 @@ class DbOpenMessage(BaseMessage):
         if self._orientSocket.session_id < 0:
             self._perform_connection()
 
-        if self._protocol > 21:
+        if self.get_protocol() > 21:
             connect_string = (FIELD_STRINGS, [self._client_id,
                                               self._serialization_type,
                                               self._db_name,
@@ -96,12 +96,18 @@ class DbOpenMessage(BaseMessage):
             cluster_id = response[x + 1]
             cluster_type = response[x + 2]
             cluster_segment_data_id = response[x + 3]
-            clusters.append({
-                "name": cluster_name,
-                "id": cluster_id,
-                "type": cluster_type,
-                "segment": cluster_segment_data_id
-            })
+            if self.get_protocol() < 24:
+                clusters.append({
+                    "name": cluster_name,
+                    "id": cluster_id,
+                    "type": cluster_type,
+                    "segment": cluster_segment_data_id
+                })
+            else:
+                clusters.append({
+                    "name": cluster_name,
+                    "id": cluster_id
+                })
 
         # set database opened
         self._orientSocket.db_opened = self._db_name
