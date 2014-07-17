@@ -12,11 +12,7 @@ class DbExistsMessage(BaseMessage):
     _storage_type = STORAGE_TYPE_LOCAL
 
     def __init__(self, _orient_socket ):
-        super( DbExistsMessage, self ).\
-            __init__(_orient_socket)
-
-        self._protocol = _orient_socket.protocol  # get from socket
-        self._session_id = _orient_socket.session_id  # get from socket
+        super( DbExistsMessage, self ).__init__(_orient_socket)
 
         # order matters
         self._append( ( FIELD_BYTE, DB_EXIST ) )
@@ -24,12 +20,15 @@ class DbExistsMessage(BaseMessage):
     @need_connected
     def prepare(self, params=None):
 
-        try:
-            self._db_name = params[0]
-            self._storage_type = params[1]  # user choice storage if present
-        except IndexError:
-            # Use default for non existent indexes
-            pass
+        if isinstance( params, tuple ) or isinstance( params, list ):
+            try:
+                self._db_name = params[0]
+                # user choice storage if present
+                self.set_storage_type( params[1] )
+
+            except IndexError:
+                # Use default for non existent indexes
+                pass
 
         if self.get_protocol() >= 6:
             self._append( ( FIELD_STRING, self._db_name ) )  # db_name
@@ -50,5 +49,12 @@ class DbExistsMessage(BaseMessage):
         return self
 
     def set_storage_type(self, storage_type):
-        self._storage_type = storage_type
+        try:
+            if STORAGE_TYPES.index( storage_type ) is not None:
+                # user choice storage if present
+                self._storage_type = storage_type
+        except ValueError:
+            raise PyOrientBadMethodCallException(
+                storage_type + ' is not a valid storage type', []
+            )
         return self

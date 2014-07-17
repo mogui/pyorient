@@ -5,27 +5,29 @@ from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.ClientConstants import *
+from pyorient.utils import *
 
 
 class ConnectMessage(BaseMessage):
 
+    _user = ''
+    _pass = ''
+    _client_id = ''
+    _serialization_type = SERIALIZATION_DOCUMENT2CSV
+
     def __init__(self, _orient_socket):
         super( ConnectMessage, self ).__init__(_orient_socket)
-        self._user = ''
-        self._pass = ''
-        self._client_id = ''
-        self._serialization_type = SERIALIZATION_DOCUMENT2CSV
-
         self._append( ( FIELD_BYTE, CONNECT ) )
 
     def prepare(self, params=None ):
 
-        if isinstance( params, tuple ):
+        if isinstance( params, tuple ) or isinstance( params, list ):
             try:
                 self._user = params[0]
                 self._pass = params[1]
                 self._client_id = params[2]
-                self._serialization_type = params[3]
+
+                self.set_serialization_type( params[3] )
             except IndexError:
                 # Use default for non existent indexes
                 pass
@@ -63,4 +65,15 @@ class ConnectMessage(BaseMessage):
 
     def set_client_id(self, _cid):
         self._client_id = _cid
+        return self
+
+    def set_serialization_type(self, serialization_type):
+        try:
+            if SERIALIZATION_TYPES.index( serialization_type ) is not None:
+                # user choice storage if present
+                self._serialization_type = serialization_type
+        except ValueError:
+            raise PyOrientBadMethodCallException(
+                serialization_type + ' is not a valid serialization type', []
+            )
         return self

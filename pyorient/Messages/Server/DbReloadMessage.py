@@ -9,11 +9,7 @@ from pyorient.utils import *
 class DbReloadMessage(BaseMessage):
 
     def __init__(self, _orient_socket ):
-        super( DbReloadMessage, self ).\
-            __init__(_orient_socket)
-
-        self._protocol = _orient_socket.protocol  # get from cache
-        self._session_id = _orient_socket.session_id  # get from cache
+        super( DbReloadMessage, self ).__init__(_orient_socket)
 
         # order matters
         self._append( ( FIELD_BYTE, DB_RELOAD ) )

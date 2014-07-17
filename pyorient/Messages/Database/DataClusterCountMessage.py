@@ -12,11 +12,7 @@ class DataClusterCountMessage(BaseMessage):
     _count_tombstones = 0
 
     def __init__(self, _orient_socket ):
-        super( DataClusterCountMessage, self ).\
-            __init__(_orient_socket)
-
-        self._protocol = _orient_socket.protocol  # get from cache
-        self._session_id = _orient_socket.session_id  # get from cache
+        super( DataClusterCountMessage, self ).__init__(_orient_socket)
 
         # order matters
         self._append( ( FIELD_BYTE, DATA_CLUSTER_COUNT ) )
@@ -28,7 +24,13 @@ class DataClusterCountMessage(BaseMessage):
             try:
                 # mandatory if not passed by method
                 # raise Exception if None
-                self._cluster_ids = params[0]
+                if isinstance( params[0], tuple ) or isinstance( params[0], list ):
+                    self._cluster_ids = params[0]
+                else:
+                    raise PyOrientBadMethodCallException(
+                        "Cluster IDs param must be an instance of Tuple or List.", []
+                    )
+
                 self._count_tombstones = params[1]
             except( IndexError, TypeError ):
                 # Use default for non existent indexes
