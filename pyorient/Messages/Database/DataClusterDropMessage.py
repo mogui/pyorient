@@ -8,15 +8,11 @@ from pyorient.utils import *
 
 class DataClusterDropMessage(BaseMessage):
 
-    _cluster_id = []
+    _cluster_id = 0
     _count_tombstones = 0
 
     def __init__(self, _orient_socket ):
-        super( DataClusterDropMessage, self ).\
-            __init__(_orient_socket)
-
-        self._protocol = _orient_socket.protocol  # get from cache
-        self._session_id = _orient_socket.session_id  # get from cache
+        super( DataClusterDropMessage, self ).__init__(_orient_socket)
 
         # order matters
         self._append( ( FIELD_BYTE, DATA_CLUSTER_DROP ) )
@@ -24,7 +20,7 @@ class DataClusterDropMessage(BaseMessage):
     @need_db_opened
     def prepare(self, params=None):
 
-        if isinstance( int(params), int ):
+        if isinstance( params, int ):
             # mandatory if not passed by method
             self._cluster_id = params
 

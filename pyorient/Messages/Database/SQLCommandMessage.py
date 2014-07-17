@@ -10,14 +10,13 @@ from pyorient.utils import *
 
 class SQLCommandMessage(BaseMessage):
 
+    _query = ''
+    _limit = 20
+    _fetch_plan = '*:0'
+    _command_type = QUERY_SYNC
+    _mod_byte = 's'
+
     def __init__(self, _orient_socket):
-
-        self._query = ''
-        self._limit = 20
-        self._fetch_plan = '*:0'
-        self._command_type = QUERY_SYNC
-        self._mod_byte = 's'
-
         super( SQLCommandMessage, self ).__init__(_orient_socket)
 
         self._append( ( FIELD_BYTE, COMMAND ) )
@@ -27,7 +26,9 @@ class SQLCommandMessage(BaseMessage):
 
         if isinstance( params, tuple ) or isinstance( params, list ):
             try:
-                self._command_type = params[0]
+
+                self.set_command_type( params[0] )
+
                 self._query = params[1]
                 self._limit = params[2]
                 self._fetch_plan = params[3]
@@ -78,7 +79,14 @@ class SQLCommandMessage(BaseMessage):
             return self._read_sync()
 
     def set_command_type(self, _command_type):
-        self._command_type = _command_type
+        try:
+            if QUERY_TYPES.index( _command_type ) is not None:
+                # user choice storage if present
+                self._command_type = _command_type
+        except ValueError:
+            raise PyOrientBadMethodCallException(
+                _command_type + ' is not a valid command type', []
+            )
         return self
 
     def set_fetch_plan(self, _fetch_plan):

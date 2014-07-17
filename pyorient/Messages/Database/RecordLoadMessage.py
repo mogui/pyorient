@@ -12,14 +12,10 @@ class RecordLoadMessage(BaseMessage):
     _record_id = ''
     _fetch_plan = '*:0'
 
-    cached_records = {}
+    cached_records = []
 
     def __init__(self, _orient_socket ):
-        super( RecordLoadMessage, self ).\
-            __init__(_orient_socket)
-
-        self._protocol = _orient_socket.protocol  # get from socket
-        self._session_id = _orient_socket.session_id  # get from socket
+        super( RecordLoadMessage, self ).__init__(_orient_socket)
 
         # order matters
         self._append( ( FIELD_BYTE, RECORD_LOAD ) )
@@ -70,10 +66,10 @@ class RecordLoadMessage(BaseMessage):
             rid=self._record_id
         )
 
-    def set_db_name(self, _record_id):
+    def set_record_id(self, _record_id):
         self._record_id = _record_id
         return self
 
-    def set_storage_type(self, _fetch_plan):
+    def set_fetch_plan(self, _fetch_plan):
         self._fetch_plan = _fetch_plan
         return self

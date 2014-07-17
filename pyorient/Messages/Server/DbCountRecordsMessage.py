@@ -8,15 +8,11 @@ from pyorient.utils import *
 
 class DbCountRecordsMessage(BaseMessage):
 
+    _user = ''
+    _pass = ''
+
     def __init__(self, _orient_socket ):
-        super( DbCountRecordsMessage, self ).\
-            __init__(_orient_socket)
-
-        self._user = ''
-        self._pass = ''
-
-        self._protocol = _orient_socket.protocol  # get from cache
-        self._session_id = _orient_socket.session_id  # get from cache
+        super( DbCountRecordsMessage, self ).__init__(_orient_socket)
 
         # order matters
         self._append( ( FIELD_BYTE, DB_COUNT_RECORDS ) )

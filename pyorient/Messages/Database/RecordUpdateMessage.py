@@ -30,11 +30,7 @@ class RecordUpdateMessage(BaseMessage):
     _mode_async = 0  # means synchronous mode
 
     def __init__(self, _orient_socket ):
-        super( RecordUpdateMessage, self ).\
-            __init__(_orient_socket)
-
-        self._protocol = _orient_socket.protocol  # get from socket
-        self._session_id = _orient_socket.session_id  # get from socket
+        super( RecordUpdateMessage, self ).__init__(_orient_socket)
 
         # order matters
         self._append( ( FIELD_BYTE, RECORD_UPDATE ) )
@@ -53,7 +49,9 @@ class RecordUpdateMessage(BaseMessage):
             self._record_content = params[2]
 
             self._update_content = params[3]  # optional
-            self._record_type = params[4]  # optional
+
+            self.set_record_type( params[4] )  # optional
+
             self._record_version_policy = params[5]  # optional
             self._mode_async = params[6]  # optional
         except IndexError:
@@ -101,7 +99,14 @@ class RecordUpdateMessage(BaseMessage):
         return self
 
     def set_record_type(self, record_type ):
-        self._record_type = record_type
+        try:
+            if RECORD_TYPES.index( record_type ) is not None:
+                # user choice storage if present
+                self._record_type = record_type
+        except ValueError:
+            raise PyOrientBadMethodCallException(
+                record_type + ' is not a valid record type', []
+            )
         return self
 
     def set_mode_async(self):

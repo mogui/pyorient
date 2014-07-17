@@ -15,17 +15,9 @@ class DataClusterAddMessage(BaseMessage):
     _datasegment_name = 'default'
     _new_cluster_id   = -1
 
-    _cluster_type_range = [
-        CLUSTER_TYPE_PHYSICAL,
-        CLUSTER_TYPE_MEMORY
-    ]
 
     def __init__(self, _orient_socket ):
-        super( DataClusterAddMessage, self ).\
-            __init__(_orient_socket)
-
-        self._protocol = _orient_socket.protocol  # get from cache
-        self._session_id = _orient_socket.session_id  # get from cache
+        super( DataClusterAddMessage, self ).__init__(_orient_socket)
 
         # order matters
         self._append( ( FIELD_BYTE, DATA_CLUSTER_ADD ) )
@@ -37,9 +29,8 @@ class DataClusterAddMessage(BaseMessage):
             # mandatory if not passed by method
             self._cluster_name = params[0]
 
-            if self._cluster_type_range.index( params[1] ):
-                # mandatory if not passed by method
-                self._cluster_type = params[1]
+            # mandatory if not passed by method
+            self.set_cluster_type( params[1] )
 
             self._cluster_location = params[2]
             self._datasegment_name = params[3]
@@ -66,7 +57,29 @@ class DataClusterAddMessage(BaseMessage):
         self._append( FIELD_SHORT )
         return super( DataClusterAddMessage, self ).fetch_response()[0]
 
-    def set_cluster_ids(self, _new_cluster_id):
-        self._new_cluster_id = _new_cluster_id
+    def set_cluster_name(self, _cluster_name):
+        self._cluster_name = _cluster_name
         return self
 
+    def set_cluster_type(self, _cluster_type):
+        try:
+            if CLUSTER_TYPES.index( _cluster_type ) is not None:
+                # user choice storage if present
+                self._cluster_type = _cluster_type
+        except ValueError:
+            raise PyOrientBadMethodCallException(
+                _cluster_type + ' is not a valid cluster type', []
+            )
+        return self
+
+    def set_cluster_location(self, _cluster_location):
+        self._cluster_location = _cluster_location
+        return self
+
+    def set_datasegment_name(self, _datasegment_name):
+        self._datasegment_name = _datasegment_name
+        return self
+
+    def set_cluster_id(self, _new_cluster_id):
+        self._new_cluster_id = _new_cluster_id
+        return self

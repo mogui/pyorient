@@ -14,11 +14,7 @@ class RecordDeleteMessage(BaseMessage):
     _mode_async = 0  # means synchronous mode
 
     def __init__(self, _orient_socket ):
-        super( RecordDeleteMessage, self ).\
-            __init__(_orient_socket)
-
-        self._protocol = _orient_socket.protocol  # get from socket
-        self._session_id = _orient_socket.session_id  # get from socket
+        super( RecordDeleteMessage, self ).__init__(_orient_socket)
 
         # order matters
         self._append( ( FIELD_BYTE, RECORD_DELETE ) )

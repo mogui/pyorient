@@ -17,11 +17,7 @@ class RecordCreateMessage(BaseMessage):
     _mode_async = 0  # means synchronous mode
 
     def __init__(self, _orient_socket ):
-        super( RecordCreateMessage, self ).\
-            __init__(_orient_socket)
-
-        self._protocol = _orient_socket.protocol  # get from socket
-        self._session_id = _orient_socket.session_id  # get from socket
+        super( RecordCreateMessage, self ).__init__(_orient_socket)
 
         # order matters
         self._append( ( FIELD_BYTE, RECORD_CREATE ) )
@@ -36,7 +32,8 @@ class RecordCreateMessage(BaseMessage):
             # mandatory if not passed by method
             self._record_content = params[1]
 
-            self._record_type = params[2]  # optional
+            self.set_record_type( params[2] )  # optional
+
         except IndexError:
             # Use default for non existent indexes
             pass
@@ -72,7 +69,14 @@ class RecordCreateMessage(BaseMessage):
         return self
 
     def set_record_type(self, record_type ):
-        self._record_type = record_type
+        try:
+            if RECORD_TYPES.index( record_type ) is not None:
+                # user choice storage if present
+                self._record_type = record_type
+        except ValueError:
+            raise PyOrientBadMethodCallException(
+                record_type + ' is not a valid record type', []
+            )
         return self
 
     def set_mode_async(self):

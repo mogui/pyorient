@@ -1,26 +1,22 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
-from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Server.ConnectMessage import *
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.BinaryTypes import *
+from pyorient.Messages.BaseMessage import BaseMessage
 
 
 class DbOpenMessage(BaseMessage):
 
+    _user = ''
+    _pass = ''
+    _client_id = ''
+    _db_name = ''
+    _db_type = DB_TYPE_DOCUMENT
+    _serialization_type = SERIALIZATION_DOCUMENT2CSV
+
     def __init__(self, _orient_socket):
-
-        self._user = ''
-        self._pass = ''
-        self._client_id = ''
-        self._db_name = ''
-        self._db_type = DB_TYPE_DOCUMENT
-        self._serialization_type = SERIALIZATION_DOCUMENT2CSV
-
         super( DbOpenMessage, self ).__init__(_orient_socket)
-        # this block of code check for session because this class
-        # can be initialized directly from orient socket
-
         self._append( ( FIELD_BYTE, DB_OPEN ) )
 
     def _perform_connection(self):
@@ -35,20 +31,26 @@ class DbOpenMessage(BaseMessage):
 
     def prepare(self, params=None ):
 
-        if isinstance( params, tuple ):
+        if isinstance( params, tuple ) or isinstance( params, list ):
             try:
                 self._db_name = params[0]
                 self._user = params[1]
                 self._pass = params[2]
-                self._db_type = params[3]
+
+                self.set_db_type( params[3] )
+
                 self._client_id = params[4]
-                self._serialization_type = params[5]
+
+                self.set_serialization_type( params[5] )
+
             except IndexError:
                 # Use default for non existent indexes
                 pass
 
         # if session id is -1, so we aren't connected
         # because ConnectMessage set the client id
+        # this block of code check for session because this class
+        # can be initialized directly from orient socket
         if self._orientSocket.session_id < 0:
             self._perform_connection()
 
@@ -63,13 +65,10 @@ class DbOpenMessage(BaseMessage):
                                               self._db_name, self._db_type,
                                               self._user, self._pass])
 
-        self._append(
-            ( FIELD_STRINGS, [NAME, VERSION] )
-        )._append(
-            ( FIELD_SHORT, SUPPORTED_PROTOCOL )
-        )._append(
-            connect_string
-        )
+        self._append( ( FIELD_STRINGS, [NAME, VERSION] ) )
+        self._append( ( FIELD_SHORT, SUPPORTED_PROTOCOL ) )
+        self._append( connect_string )
+
         return super( DbOpenMessage, self ).prepare()
 
     def fetch_response(self):
@@ -114,7 +113,13 @@ class DbOpenMessage(BaseMessage):
         return self
 
     def set_db_type(self, db_type):
-        self._db_name = db_type
+        try:
+            if DB_TYPES.index( db_type ) is not None:
+                self._db_type = db_type
+        except ValueError:
+            raise PyOrientBadMethodCallException(
+                db_type + ' is not a valid database type', []
+            )
         return self
 
     def set_client_id(self, _cid):
@@ -127,4 +132,15 @@ class DbOpenMessage(BaseMessage):
 
     def set_pass(self, _pass):
         self._pass = _pass
+        return self
+
+    def set_serialization_type(self, serialization_type):
+        try:
+            if SERIALIZATION_TYPES.index( serialization_type ) is not None:
+                # user choice storage if present
+                self._serialization_type = serialization_type
+        except ValueError:
+            raise PyOrientBadMethodCallException(
+                serialization_type + ' is not a valid serialization type', []
+            )
         return self
