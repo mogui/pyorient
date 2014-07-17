@@ -33,7 +33,6 @@ class ConnectMessage(BaseMessage):
                 pass
 
         if self.get_protocol() > 21:
-            #TODO Implement version 22 of the protocol
             connect_string = (FIELD_STRINGS, [self._client_id,
                                               self._serialization_type,
                                               self._user, self._pass])
@@ -68,6 +67,10 @@ class ConnectMessage(BaseMessage):
         return self
 
     def set_serialization_type(self, serialization_type):
+        #TODO Implement version 22 of the protocol
+        if serialization_type == SERIALIZATION_SERIAL_BIN:
+            raise NotImplementedError
+
         try:
             if SERIALIZATION_TYPES.index( serialization_type ) is not None:
                 # user choice storage if present
