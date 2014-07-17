@@ -141,6 +141,10 @@ class DbOpenMessage(BaseMessage):
         return self
 
     def set_serialization_type(self, serialization_type):
+        #TODO Implement version 22 of the protocol
+        if serialization_type == SERIALIZATION_SERIAL_BIN:
+            raise NotImplementedError
+
         try:
             if SERIALIZATION_TYPES.index( serialization_type ) is not None:
                 # user choice storage if present

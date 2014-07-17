@@ -48,12 +48,13 @@ class RecordUpdateMessage(BaseMessage):
             # mandatory if not passed by method
             self._record_content = params[2]
 
-            self._update_content = params[3]  # optional
+            self.set_record_type( params[3] )  # optional
 
-            self.set_record_type( params[4] )  # optional
+            self._record_version_policy = params[4]  # optional
+            self._mode_async = params[5]  # optional
 
-            self._record_version_policy = params[5]  # optional
-            self._mode_async = params[6]  # optional
+            self._update_content = params[6]  # optional
+
         except IndexError:
             # Use default for non existent indexes
             pass

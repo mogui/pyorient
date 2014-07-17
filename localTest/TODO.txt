@@ -1,0 +1,18 @@
+
+- version 21
+    REQUEST_SBTREE_BONSAI_GET_ENTRIES_MAJOR (which is used to iterate through SBTree) now gets
+    "pageSize" as int as last argument. Version 20 had a fixed pageSize=5.
+    The new version provides configurable pageSize by client.
+    Default pageSize value for protocol=20 has been changed to 128.
+
+- version 22
+    Binary Serialization
+- version 22
+    REQUEST_CONNECT and REQUEST_OPEN now send the document serialization
+    format that the client require
+
+- version 23
+    Add support of updateContent flag to UPDATE_RECORD and COMMIT
+       ( UPDATE_RECORD done )
+
+- Test All with protocol version > 21
