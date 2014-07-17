@@ -64,7 +64,7 @@ class RecordUpdateMessage(BaseMessage):
         self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
         self._append( ( FIELD_LONG, int(self._cluster_position) ) )
 
-        if self._protocol >= 23:
+        if self.get_protocol() >= 23:
             self._append( ( FIELD_BOOLEAN, self._update_content ) )
 
         self._append( ( FIELD_STRING, o_record_enc.getRaw() ) )
@@ -77,7 +77,7 @@ class RecordUpdateMessage(BaseMessage):
     def fetch_response(self):
 
         self._append( FIELD_INT )  # record-version
-        if self._protocol > 23:
+        if self.get_protocol() > 23:
             self._append( FIELD_INT )  # count-of-collection-changes
 
         return super( RecordUpdateMessage, self ).fetch_response()

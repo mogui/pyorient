@@ -32,7 +32,7 @@ class ConnectMessage(BaseMessage):
                 # Use default for non existent indexes
                 pass
 
-        if self._protocol > 21:
+        if self.get_protocol() > 21:
             #TODO Implement version 22 of the protocol
             connect_string = (FIELD_STRINGS, [self._client_id,
                                               self._serialization_type,

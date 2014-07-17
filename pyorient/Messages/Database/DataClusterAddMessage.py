@@ -31,7 +31,6 @@ class DataClusterAddMessage(BaseMessage):
 
             # mandatory if not passed by method
             self.set_cluster_type( params[1] )
-
             self._cluster_location = params[2]
             self._datasegment_name = params[3]
 
@@ -43,12 +42,15 @@ class DataClusterAddMessage(BaseMessage):
                 params[1] + ' is not a valid data cluster type', []
             )
 
-        self._append( ( FIELD_STRING, self._cluster_type ) )
-        self._append( ( FIELD_STRING, self._cluster_name ) )
-        self._append( ( FIELD_STRING, self._cluster_location ) )
-        self._append( ( FIELD_STRING, self._datasegment_name ) )
+        if self.get_protocol() < 24:
+            self._append( ( FIELD_STRING, self._cluster_type ) )
+            self._append( ( FIELD_STRING, self._cluster_name ) )
+            self._append( ( FIELD_STRING, self._cluster_location ) )
+            self._append( ( FIELD_STRING, self._datasegment_name ) )
+        else:
+            self._append( ( FIELD_STRING, self._cluster_name ) )
 
-        if self._protocol >= 18:
+        if self.get_protocol() >= 18:
             self._append( ( FIELD_SHORT, self._new_cluster_id ) )
 
         return super( DataClusterAddMessage, self ).prepare()
