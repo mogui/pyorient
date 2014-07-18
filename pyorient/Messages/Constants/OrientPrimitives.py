@@ -7,6 +7,7 @@ DB_TYPES            = (
     DB_TYPE_GRAPH,
 )
 
+# LOCAL deprecated from version 1.5 and removed in protocol 24
 STORAGE_TYPE_LOCAL  = 'local'
 STORAGE_TYPE_PLOCAL = 'plocal'
 STORAGE_TYPE_MEMORY = 'memory'

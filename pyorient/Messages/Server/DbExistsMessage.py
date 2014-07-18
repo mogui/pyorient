@@ -9,10 +9,15 @@ from pyorient.utils import *
 class DbExistsMessage(BaseMessage):
 
     _db_name = ''
-    _storage_type = STORAGE_TYPE_LOCAL
+    _storage_type = ''
 
     def __init__(self, _orient_socket ):
         super( DbExistsMessage, self ).__init__(_orient_socket)
+
+        if self.get_protocol() > 16:  # 1.5-SNAPSHOT
+            self._storage_type = STORAGE_TYPE_PLOCAL
+        else:
+            self._storage_type = STORAGE_TYPE_LOCAL
 
         # order matters
         self._append( ( FIELD_BYTE, DB_EXIST ) )

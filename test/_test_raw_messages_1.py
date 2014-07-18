@@ -72,7 +72,7 @@ class CommandTestCase(unittest.TestCase):
 
         db_name = "GratefulDeadConcerts"
         # params = ( db_name, STORAGE_TYPE_MEMORY )
-        params = ( db_name, STORAGE_TYPE_LOCAL )
+        params = ( db_name, STORAGE_TYPE_PLOCAL )
 
         msg = DbExistsMessage( connection )
 
@@ -134,7 +134,7 @@ class CommandTestCase(unittest.TestCase):
 
         try:
             ( DbCreateMessage( connection ) ).prepare(
-                ("db_test", DB_TYPE_DOCUMENT, STORAGE_TYPE_LOCAL)
+                ("db_test", DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
             ).send_message().fetch_response()
 
             assert True
@@ -162,7 +162,7 @@ class CommandTestCase(unittest.TestCase):
         response = ''
         try:
             ( DbCreateMessage( connection ) ).prepare(
-                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_LOCAL)
+                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
             ).send_message().fetch_response()
         except PyOrientCommandException, e:
             assert True
@@ -173,7 +173,7 @@ class CommandTestCase(unittest.TestCase):
 
         msg = DbExistsMessage( connection )
 
-        msg.prepare( (db_name, STORAGE_TYPE_LOCAL) )
+        msg.prepare( (db_name, STORAGE_TYPE_PLOCAL) )
         # msg.prepare( [db_name] )
         exists = msg.send_message().fetch_response()
         assert exists is True
@@ -225,7 +225,7 @@ class CommandTestCase(unittest.TestCase):
         print "Creation again"
         try:
             ( DbCreateMessage( connection ) ).prepare(
-                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_LOCAL)
+                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
             ).send_message().fetch_response()
             assert True
         except PyOrientCommandException, e:

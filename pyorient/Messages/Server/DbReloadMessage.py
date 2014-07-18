@@ -24,32 +24,25 @@ class DbReloadMessage(BaseMessage):
 
         cluster_num = super( DbReloadMessage, self ).fetch_response()[0]
 
-        for n in range(0, cluster_num):
-            self._append( FIELD_STRING )  # cluster_name
-            self._append( FIELD_SHORT )  # cluster_id
-            self._append( FIELD_STRING )  # cluster_type
-            self._append( FIELD_SHORT )  # cluster_segment_id
-
-        response = super( DbReloadMessage, self ).fetch_response(True)
-
         clusters = []
-        for n in range(0, cluster_num):
-            x = n * 4
-            cluster_name = response[x]
-            cluster_id = response[x + 1]
-            cluster_type = response[x + 2]
-            cluster_segment_data_id = response[x + 3]
-            if self.get_protocol() < 24:
-                clusters.append({
-                    "name": cluster_name,
-                    "id": cluster_id,
-                    "type": cluster_type,
-                    "segment": cluster_segment_data_id
-                })
-            else:
-                clusters.append({
-                    "name": cluster_name,
-                    "id": cluster_id
-                })
+        try:
+            for x in range(0, cluster_num ):
+                if self.get_protocol() < 24:
+                    cluster = {
+                        "name": self._decode_field( FIELD_STRING ),  # cluster_name
+                        "id": self._decode_field( FIELD_SHORT ),  # cluster_id
+                        "type": self._decode_field( FIELD_STRING ),  # cluster_type
+                        "segment": self._decode_field( FIELD_SHORT ),  # cluster release
+                    }
+                else:
+                    cluster = {
+                        "name": self._decode_field( FIELD_STRING ),  # cluster_name
+                        "id": self._decode_field( FIELD_SHORT ),  # cluster_id
+                    }
+                clusters.append( cluster )
+
+        except IndexError:
+            # Should not happen because of protocol check
+            pass
 
         return clusters

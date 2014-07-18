@@ -7,12 +7,5 @@
 
 - version 22
     Binary Serialization
-- version 22
     REQUEST_CONNECT and REQUEST_OPEN now send the document serialization
     format that the client require
-
-- version 23
-    Add support of updateContent flag to UPDATE_RECORD and COMMIT
-       ( UPDATE_RECORD done )
-
-- Test All with protocol version > 21

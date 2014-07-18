@@ -55,8 +55,30 @@ class RecordCreateMessage(BaseMessage):
 
         self._append( FIELD_LONG )  # cluster-position
         self._append( FIELD_INT )  # record-version
+        if self.get_protocol() > 23:
+            self._append( FIELD_INT )  # count-of-collection-changes
 
-        return super( RecordCreateMessage, self ).fetch_response()
+        result = super( RecordCreateMessage, self ).fetch_response()
+
+        _changes = []
+        try:
+            if self.get_protocol() > 23 and result[2] > 0:
+
+                for x in range( 0, result[2] ):
+                    change = [
+                        self._decode_field( FIELD_LONG ),  # (uuid-most-sig-bits:long)
+                        self._decode_field( FIELD_LONG ),  # (uuid-least-sig-bits:long)
+                        self._decode_field( FIELD_LONG ),  # (updated-file-id:long)
+                        self._decode_field( FIELD_LONG ),  # (updated-page-index:long)
+                        self._decode_field( FIELD_INT )    # (updated-page-offset:int)
+                    ]
+                    _changes.append( change )
+
+        except IndexError:
+            # Should not happen because of protocol check
+            pass
+
+        return [ result[0], result[1], _changes ]
 
     def set_data_segment_id(self, data_segment_id):
         self._data_segment_id = data_segment_id
