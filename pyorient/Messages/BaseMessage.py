@@ -305,7 +305,10 @@ class BaseMessage(object):
         else:
             # read record
             __res = self._decode_field( FIELD_RECORD )
-            _res = ORecordDecoder( __res['content'] )
+
+            # bug in orientdb csv serialization in snapshot 2.0
+            _res = ORecordDecoder( __res['content'].rstrip() )
+            # _res = ORecordDecoder( __res['content'] )
             res = OrientRecord(
                 _res.data, o_class=_res.className,
                 rid=__res['rid'], version=__res['version']

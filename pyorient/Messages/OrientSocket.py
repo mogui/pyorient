@@ -48,10 +48,10 @@ class OrientSocket(object):
             if self.protocol > SUPPORTED_PROTOCOL:
                 raise PyOrientWrongProtocolVersionException(
                     "Protocol version " + str(self.protocol) +
-                    " is not supported yet by this client.")
+                    " is not supported yet by this client.", [])
             self._connected = True
         except socket.error, e:
-            raise PyOrientConnectionException( "Socket Error: %s" % e, e.errno )
+            raise PyOrientConnectionException( "Socket Error: %s" % e, [] )
 
     def close(self):
         self.host = ''
