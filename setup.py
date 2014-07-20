@@ -19,10 +19,8 @@
 from setuptools import setup
 
 setup(name='pyorient',
-    version='0.1.0',
-    author='Niko Usai',
-    author_email='mogui83@gmail.com',
-    url='http://mogui.it',
+    version='1.0.0',
+    author='Niko Usai <mogui83@gmail.com>, Domenico Lupinetti <ostico@gmail.com>',
     description='OrientDB client library',
     long_description=open('README.md').read(),
     license='LICENSE',

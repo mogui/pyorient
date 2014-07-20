@@ -1,7 +1,6 @@
 import sys
-import unittest
 import os
-
+import unittest
 
 os.environ['DEBUG'] = "1"
 if os.path.realpath( '../' ) not in sys.path:
@@ -10,9 +9,9 @@ if os.path.realpath( '../' ) not in sys.path:
 if os.path.realpath( '.' ) not in sys.path:
     sys.path.insert( 0, os.path.realpath( '.' ) )
 
-from pyorient.utils import *
+from pyorient.Commons.utils import *
 from pyorient.Messages.Constants.OrientPrimitives import *
-from pyorient.OrientException import *
+from pyorient.Commons.OrientException import *
 from pyorient.Messages.OrientSocket import OrientSocket
 from pyorient.Messages.Server.ConnectMessage import ConnectMessage
 from pyorient.Messages.Server.DbExistsMessage import DbExistsMessage
@@ -24,7 +23,7 @@ from pyorient.Messages.Server.ShutdownMessage import ShutdownMessage
 
 from pyorient.Messages.Database.DbCloseMessage import DbCloseMessage
 from pyorient.Messages.Database.DbSizeMessage import DbSizeMessage
-from pyorient.Messages.Database.SQLCommandMessage import SQLCommandMessage
+from pyorient.Messages.Database.CommandMessage import CommandMessage
 
 
 class CommandTestCase(unittest.TestCase):
@@ -42,11 +41,11 @@ class CommandTestCase(unittest.TestCase):
         assert msg.get_protocol() != -1
 
         session_id = msg.prepare( ("admin", "admin") )\
-            .send_message().fetch_response()
+            .fetch_response()
         """
         alternative use
             session_id = msg.set_user("admin").set_pass("admin").prepare()\
-            .send_message().fetch_response()
+            .fetch_response()
         """
 
         assert session_id == connection.session_id
@@ -64,7 +63,7 @@ class CommandTestCase(unittest.TestCase):
         assert msg.get_protocol() != -1
 
         session_id = msg.prepare( ("admin", "admin") )\
-            .send_message().fetch_response()
+            .fetch_response()
 
         print "Sid: %s" % session_id
         assert session_id == connection.session_id
@@ -76,7 +75,7 @@ class CommandTestCase(unittest.TestCase):
 
         msg = DbExistsMessage( connection )
 
-        exists = msg.prepare( params ).send_message().fetch_response()
+        exists = msg.prepare( params ).fetch_response()
         assert exists is True
 
         msg.close()
@@ -91,7 +90,7 @@ class CommandTestCase(unittest.TestCase):
         assert conn_msg.get_protocol() != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") )\
-            .send_message().fetch_response()
+            .fetch_response()
 
         print "Sid: %s" % session_id
         assert session_id == connection.session_id
@@ -103,7 +102,7 @@ class CommandTestCase(unittest.TestCase):
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
-        ).send_message().fetch_response()
+        ).fetch_response()
 
         print "Cluster: %s" % cluster_info
         assert len(cluster_info) != 0
@@ -122,7 +121,7 @@ class CommandTestCase(unittest.TestCase):
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
-        ).send_message().fetch_response()
+        ).fetch_response()
 
         print "Cluster: %s" % cluster_info
         assert len(cluster_info) != 0
@@ -135,7 +134,7 @@ class CommandTestCase(unittest.TestCase):
         try:
             ( DbCreateMessage( connection ) ).prepare(
                 ("db_test", DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
-            ).send_message().fetch_response()
+            ).fetch_response()
 
             assert True
             # exit(1)  # this should not happen if you have database
@@ -150,7 +149,7 @@ class CommandTestCase(unittest.TestCase):
         print "Protocol: %r" % conn_msg.get_protocol()
 
         session_id = conn_msg.prepare( ("admin", "admin") )\
-            .send_message().fetch_response()
+            .fetch_response()
 
         print "Sid: %s" % session_id
         assert session_id == connection.session_id
@@ -163,7 +162,7 @@ class CommandTestCase(unittest.TestCase):
         try:
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
-            ).send_message().fetch_response()
+            ).fetch_response()
         except PyOrientCommandException, e:
             assert True
             print e.message
@@ -175,7 +174,7 @@ class CommandTestCase(unittest.TestCase):
 
         msg.prepare( (db_name, STORAGE_TYPE_PLOCAL) )
         # msg.prepare( [db_name] )
-        exists = msg.send_message().fetch_response()
+        exists = msg.fetch_response()
         assert exists is True
 
         msg.close()
@@ -185,7 +184,7 @@ class CommandTestCase(unittest.TestCase):
         connection = OrientSocket( "localhost", int( 2424 ) )
         try:
             ( DbDropMessage( connection ) ).prepare(["test"]) \
-                .send_message().fetch_response()
+                .fetch_response()
 
             #expected Exception
             assert False
@@ -202,7 +201,7 @@ class CommandTestCase(unittest.TestCase):
         assert connection.protocol != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") ) \
-            .send_message().fetch_response()
+            .fetch_response()
 
         print "Sid: %s" % session_id
         assert session_id == connection.session_id
@@ -213,32 +212,32 @@ class CommandTestCase(unittest.TestCase):
         db_name = "my_little_test"
 
         msg = DbExistsMessage( connection )
-        exists = msg.prepare( [db_name] ).send_message().fetch_response()
+        exists = msg.prepare( [db_name] ).fetch_response()
 
         print "Before %r" % exists
 
         assert exists is True  # should happen every time because of latest test
         if exists is True:
             ( DbDropMessage( connection ) ).prepare([db_name]) \
-                .send_message().fetch_response()
+                .fetch_response()
 
         print "Creation again"
         try:
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
-            ).send_message().fetch_response()
+            ).fetch_response()
             assert True
         except PyOrientCommandException, e:
             print e.message
             assert False  # No expected Exception
 
         msg = DbExistsMessage( connection )
-        exists = msg.prepare( [db_name] ).send_message().fetch_response()
+        exists = msg.prepare( [db_name] ).fetch_response()
         assert  exists is True
 
         # at the end drop the test database
         ( DbDropMessage( connection ) ).prepare([db_name]) \
-            .send_message().fetch_response()
+            .fetch_response()
 
         msg.close()
         print "After %r" % exists
@@ -250,7 +249,7 @@ class CommandTestCase(unittest.TestCase):
         assert connection.protocol != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") ) \
-            .send_message().fetch_response()
+            .fetch_response()
 
         print "Sid: %s" % session_id
         assert session_id == connection.session_id
@@ -259,7 +258,7 @@ class CommandTestCase(unittest.TestCase):
         c_msg = DbCloseMessage( connection )
 
         closing = c_msg.prepare(None)\
-            .send_message().fetch_response()
+            .fetch_response()
         assert closing is 0
 
     def test_db_reload(self):
@@ -267,7 +266,7 @@ class CommandTestCase(unittest.TestCase):
         connection, cluster_info = self.test_db_open_not_connected()
 
         reload_msg = DbReloadMessage( connection )
-        cluster_reload = reload_msg.prepare().send_message().fetch_response()
+        cluster_reload = reload_msg.prepare().fetch_response()
 
         print "Cluster: %s" % cluster_info
         assert cluster_info == cluster_reload
@@ -277,7 +276,7 @@ class CommandTestCase(unittest.TestCase):
         connection, cluster_info = self.test_db_open_not_connected()
 
         reload_msg = DbSizeMessage( connection )
-        size = reload_msg.prepare().send_message().fetch_response()
+        size = reload_msg.prepare().fetch_response()
 
         print "Size: %s" % size
         assert size != 0
@@ -296,11 +295,11 @@ class CommandTestCase(unittest.TestCase):
         assert msg.get_protocol() != -1
 
         sid = msg.prepare( ("admin", "admin") )\
-            .send_message().fetch_response()
+            .fetch_response()
         """
         alternative use
             session_id = msg.set_user("admin").set_pass("admin").prepare()\
-            .send_message().fetch_response()
+            .fetch_response()
         """
         print "%r" % sid
         assert sid != -1
@@ -324,13 +323,13 @@ class CommandTestCase(unittest.TestCase):
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
-        ).send_message().fetch_response()
+        ).fetch_response()
         assert len(cluster_info) != 0
 
-        req_msg = SQLCommandMessage( connection )
+        req_msg = CommandMessage( connection )
 
         res = req_msg.prepare( [ QUERY_SYNC, "select * from followed_by limit 1" ] ) \
-            .send_message().fetch_response()
+            .fetch_response()
 
         print "%r" % res[0].rid
         print "%r" % res[0].o_class

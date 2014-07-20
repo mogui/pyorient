@@ -1,10 +1,12 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
-from Constants.BinaryTypes import *
-from Constants.ClientConstants import *
-from pyorient.utils import *
 import socket
 import struct
+
+from Constants.BinaryTypes import *
+from Constants.ClientConstants import *
+from pyorient.Commons.utils import *
+
 
 try:
     from cStringIO import StringIO
@@ -80,10 +82,10 @@ class OrientSocket(object):
                 if is_debug_verbose():
                     tmp = self._socket.recv( _len_to_read - buf.tell() )
                     buf.write( tmp )
-                    import pyorient.hexdump
+                    import pyorient.Commons.hexdump
                     print( "\n          -------------------\n" )
                     print( "    To read was: " + str( _len_to_read ) )
-                    print( pyorient.hexdump.hexdump(tmp, 'return') )
+                    print( pyorient.Commons.hexdump.hexdump(tmp, 'return') )
                     print( "    left: " + str( _len_to_read - buf.tell() ) )
 
                 else:
