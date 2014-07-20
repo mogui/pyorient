@@ -4,11 +4,10 @@ from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.BinaryTypes import *
-from pyorient.ORecordCoder import *
-from pyorient.utils import *
+from pyorient.Commons.utils import *
 
 
-class SQLCommandMessage(BaseMessage):
+class CommandMessage(BaseMessage):
 
     _query = ''
     _limit = 20
@@ -17,7 +16,7 @@ class SQLCommandMessage(BaseMessage):
     _mod_byte = 's'
 
     def __init__(self, _orient_socket):
-        super( SQLCommandMessage, self ).__init__(_orient_socket)
+        super( CommandMessage, self ).__init__(_orient_socket)
 
         self._append( ( FIELD_BYTE, COMMAND ) )
 
@@ -64,12 +63,12 @@ class SQLCommandMessage(BaseMessage):
         self._append( ( FIELD_BYTE, self._mod_byte ) )
         self._append( ( FIELD_STRING, payload ) )
 
-        return super( SQLCommandMessage, self ).prepare()
+        return super( CommandMessage, self ).prepare()
 
     def fetch_response(self):
 
         # decode header only
-        void = super( SQLCommandMessage, self ).fetch_response()
+        void = super( CommandMessage, self ).fetch_response()
 
         if self._command_type is QUERY_ASYNC:
             _results = self._read_async_records()
@@ -114,10 +113,10 @@ class SQLCommandMessage(BaseMessage):
             res = [ self._read_record() ]
         elif response_type == 'a':
             self._append( FIELD_STRING )
-            res = [ super( SQLCommandMessage, self ).fetch_response(True)[0] ]
+            res = [ super( CommandMessage, self ).fetch_response(True)[0] ]
         elif response_type == 'l':
             self._append( FIELD_INT )
-            list_len = super( SQLCommandMessage, self ).fetch_response(True)[0]
+            list_len = super( CommandMessage, self ).fetch_response(True)[0]
 
             for n in range(0, list_len):
                 res.append( self._read_record() )

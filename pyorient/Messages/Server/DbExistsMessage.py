@@ -4,7 +4,7 @@ from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.BinaryTypes import *
-from pyorient.utils import *
+from pyorient.Commons.utils import *
 
 class DbExistsMessage(BaseMessage):
 

@@ -13,11 +13,13 @@ DATA_CLUSTER_DROP       = chr(11)
 DATA_CLUSTER_COUNT      = chr(12)
 DATA_CLUSTER_DATA_RANGE = chr(13)
 
-RECORD_LOAD         = chr(30)
-RECORD_CREATE       = chr(31)
-RECORD_UPDATE       = chr(32)
-RECORD_DELETE       = chr(33)
+RECORD_LOAD             = chr(30)
+RECORD_CREATE           = chr(31)
+RECORD_UPDATE           = chr(32)
+RECORD_DELETE           = chr(33)
 
-COMMAND             = chr(41)
+COMMAND                 = chr(41)
 
-DB_RELOAD           = chr(73)
+TX_COMMIT               = chr(60)  # To be implemented
+
+DB_RELOAD               = chr(73)

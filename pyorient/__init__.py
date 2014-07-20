@@ -1,51 +1,51 @@
-#   Copyright 2012 Niko Usai <usai.niko@gmail.com>, http://mogui.it
-#
-#   this file is part of pyorient
-#
-#   Licensed under the Apache License, Version 2.0 (the "License");
-#   you may not use this file except in compliance with the License.
-#   You may obtain a copy of the License at
-#
-#       http://www.apache.org/licenses/LICENSE-2.0
-#
-#   Unless required by applicable law or agreed to in writing, software
-#   distributed under the License is distributed on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-#   See the License for the specific language governing permissions and
-#   limitations under the License.
+__author__ = 'Ostico <ostico@gmail.com>'
 
-__author__ = 'mogui'
-import base64
+from pyorient.OrientDBFactory import OrientDBFactory
+from pyorient.Messages.OrientSocket import OrientSocket
+from pyorient.Commons.OrientException import *
+from pyorient.Commons.OrientTypes import *
 
-# from OrientDB import *
-# from OrientException import *
-# from OrientTypes import *
-
-
-# cluster costants
-CLUSTER_PHYSICAL     = "PHYSICAL"
-CLUSTER_LOGICAL      = "LOGICAL"
-CLUSTER_MEMORY       = "MEMORY"
-CLUSTER_DEFAULT_SIZE = -1
-
-# Commands costants
-QUERY_SYNC  = "com.orientechnologies.orient.core.sql.query.OSQLSynchQuery"
-QUERY_ASYNC = "com.orientechnologies.orient.core.sql.query.OSQLAsynchQuery"
-QUERY_CMD   = "com.orientechnologies.orient.core.sql.OCommandSQL"
-
-# Debug levels constants
-PARANOID = 9
-DEBUG    = 8
-NOTICE   = 7
-INFO     = 6
-NORMAL   = 5
-WARNING  = 4
-CRITICAL = 3
-FATAL    = 2
-SILENT   = 1
+SHUTDOWN                 = "ShutdownMessage"
+CONNECT                  = "ConnectMessage"
+DB_OPEN                  = "DbOpenMessage"
+DB_CREATE                = "DbCreateMessage"
+DB_CLOSE                 = "DbCloseMessage"
+DB_EXIST                 = "DbExistsMessage"
+DB_DROP                  = "DbDropMessage"
+DB_SIZE                  = "DbSizeMessage"
+DB_COUNT_RECORDS         = "DbCountRecordsMessage"
+DATA_CLUSTER_ADD         = "DataClusterAddMessage"
+DATA_CLUSTER_DROP        = "DataClusterDropMessage"
+DATA_CLUSTER_COUNT       = "DataClusterCountMessage"
+DATA_CLUSTER_DATA_RANGE  = "DataClusterDataRangeMessage"
+RECORD_LOAD              = "RecordLoadMessage"
+RECORD_CREATE            = "RecordCreateMessage"
+RECORD_UPDATE            = "RecordUpdateMessage"
+RECORD_DELETE            = "RecordDeleteMessage"
+COMMAND                  = "CommandMessage"
+DB_RELOAD                = "DbReloadMessage"
 
 
+# Orient User Primitives
 
+DB_TYPE_DOCUMENT    = 'document'
+DB_TYPE_GRAPH       = 'graph'
+# LOCAL deprecated from version 1.5 and removed in protocol 24
+STORAGE_TYPE_LOCAL  = 'local'
+STORAGE_TYPE_PLOCAL = 'plocal'
+STORAGE_TYPE_MEMORY = 'memory'
 
+QUERY_SYNC    = "com.orientechnologies.orient.core.sql.query.OSQLSynchQuery"
+QUERY_ASYNC   = "com.orientechnologies.orient.core.sql.query.OSQLAsynchQuery"
+QUERY_CMD     = "com.orientechnologies.orient.core.sql.OCommandSQL"
+QUERY_GREMLIN = "com.orientechnologies.orient.graph.gremlin.OCommandGremlin"
 
+SERIALIZATION_DOCUMENT2CSV = "ORecordDocument2csv"
+SERIALIZATION_SERIAL_BIN   = "ORecordSerializerBinary"
 
+RECORD_TYPE_BYTES    = 'b'
+RECORD_TYPE_DOCUMENT = 'd'
+RECORD_TYPE_FLAT     = 'f'
+
+CLUSTER_TYPE_PHYSICAL = 'PHYSICAL'
+CLUSTER_TYPE_MEMORY   = 'MEMORY'

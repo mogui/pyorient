@@ -1,1 +1,1 @@
-__author__ = 'gremorian'
+__author__ = 'Ostico <ostico@gmail.com>'

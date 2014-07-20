@@ -4,7 +4,7 @@ from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.BinaryTypes import *
-from pyorient.utils import *
+from pyorient.Commons.utils import *
 
 
 class DbCreateMessage(BaseMessage):
@@ -41,7 +41,10 @@ class DbCreateMessage(BaseMessage):
         return super( DbCreateMessage, self ).prepare()
 
     def fetch_response(self):
-        return super( DbCreateMessage, self ).fetch_response()
+        super( DbCreateMessage, self ).fetch_response()
+        # set database opened
+        self._orientSocket.db_opened = self._db_name
+        return
 
     def set_db_name(self, db_name):
         self._db_name = db_name

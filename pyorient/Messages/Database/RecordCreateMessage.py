@@ -4,8 +4,8 @@ from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.BinaryTypes import *
-from pyorient.ORecordCoder import *
-from pyorient.utils import *
+from pyorient.Commons.ORecordCoder import *
+from pyorient.Commons.utils import *
 
 
 class RecordCreateMessage(BaseMessage):
@@ -78,7 +78,11 @@ class RecordCreateMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
-        return [ result[0], result[1], _changes ]
+        return [ OrientRecord(
+            self._record_content,
+            version=result[1],
+            rid="#" + str(self._cluster_id) + ":" + str(result[0])
+        ), _changes ]
 
     def set_data_segment_id(self, data_segment_id):
         self._data_segment_id = data_segment_id

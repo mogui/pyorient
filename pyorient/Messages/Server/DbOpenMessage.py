@@ -4,6 +4,7 @@ from pyorient.Messages.Server.ConnectMessage import *
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.Messages.BaseMessage import BaseMessage
+from pyorient.Commons.utils import *
 
 
 class DbOpenMessage(BaseMessage):
@@ -25,7 +26,7 @@ class DbOpenMessage(BaseMessage):
         # set session id and protocol
         self._session_id = conn_message\
             .prepare( ( self._user, self._pass, self._client_id ) )\
-            .send_message().fetch_response()
+            .fetch_response()
         # now, self._session_id and _orient_socket.session_id are updated
         self.get_protocol()
 

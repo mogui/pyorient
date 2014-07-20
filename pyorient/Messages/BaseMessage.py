@@ -1,12 +1,14 @@
+
 __author__ = 'Ostico <ostico@gmail.com>'
 
 import struct
 
-import pyorient.Messages.OrientSocket
-from pyorient.utils import *
-from pyorient.OrientException import *
+from pyorient.Commons.hexdump import hexdump
+from pyorient.Commons.utils import *
 from Constants.BinaryTypes import *
-from pyorient.ORecordCoder import *
+from pyorient.Commons.ORecordCoder import *
+from pyorient.Commons.OrientException import *
+from pyorient.Messages.OrientSocket import OrientSocket
 
 
 class BaseMessage(object):
@@ -20,7 +22,7 @@ class BaseMessage(object):
     def database_opened(self):
         return self._db_opened
 
-    def __init__(self, sock=pyorient.Messages.OrientSocket):
+    def __init__(self, sock=OrientSocket):
         """
         :type sock: OrientSocket
         """
@@ -57,6 +59,7 @@ class BaseMessage(object):
         self._output_buffer = ''.join(
             self._encode_field( x ) for x in self._fields_definition
         )
+        self._send_message()
         return self
 
     def get_protocol(self):
@@ -134,7 +137,6 @@ class BaseMessage(object):
 
     def dump_streams(self):
         if is_debug_active():
-            from pyorient.hexdump import hexdump
             print "\nRequest :"
             hexdump( self._output_buffer )
             print "\nResponse:"
@@ -150,11 +152,11 @@ class BaseMessage(object):
         return self
 
     def __str__(self):
-        from pyorient.hexdump import hexdump
-        return hexdump( ''.join( map( str, self._fields_definition ) ),
+        from pyorient.Commons.hexdump import hexdump
+        return hexdump( ''.join( map( str, self._body ) ),
                         'return' )
 
-    def send_message(self):
+    def _send_message(self):
         self._orientSocket.write( self._output_buffer )
         self._reset_fields_definition()
         return self
@@ -294,7 +296,7 @@ class BaseMessage(object):
             (cluster-position:long)(record-version:int)(record-content:bytes)
 
         :raise: Exception
-        :return: OrientRecordLink|OrientRecord
+        :return: OrientRecordLink,OrientRecord
         """
         marker = self._decode_field( FIELD_SHORT )  # marker
 
