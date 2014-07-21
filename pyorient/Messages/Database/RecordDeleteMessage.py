@@ -27,7 +27,7 @@ class RecordDeleteMessage(BaseMessage):
             self._cluster_id = params[0]
 
             # mandatory if not passed by method
-            self._cluster_position = params[1]
+            self.set_cluster_position( params[1] )
 
             self._record_version = params[2]   # optional
             self._mode_async = params[3]  # optional
@@ -55,7 +55,13 @@ class RecordDeleteMessage(BaseMessage):
         return self
 
     def set_cluster_position(self, _cluster_position):
-        self._cluster_position = _cluster_position
+        try:
+            _cluster, _position = _cluster_position.split( ':' )
+        except AttributeError:
+            # Rid position INT provided
+            _position = _cluster_position
+
+        self._cluster_position = _position
         return self
 
     def set_mode_async(self):

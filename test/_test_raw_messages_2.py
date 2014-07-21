@@ -55,13 +55,13 @@ class CommandTestCase(unittest.TestCase):
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
-        ).fetch_response()
+        ).send().fetch_response()
         assert len(cluster_info) != 0
 
         req_msg = RecordLoadMessage( connection )
 
         res = req_msg.prepare( [ "#11:0", "*:-1" ] ) \
-            .fetch_response()
+            .send().fetch_response()
 
         assert res.rid == "#11:0"
         assert res.o_class == 'followed_by'
@@ -85,7 +85,7 @@ class CommandTestCase(unittest.TestCase):
         conn_msg = ConnectMessage( connection )
         # print "Protocol: %r" % conn_msg.get_protocol()
         session_id = conn_msg.prepare( ("admin", "admin") )\
-            .fetch_response()
+            .send().fetch_response()
 
         # print "Sid: %s" % session_id
         assert session_id == connection.session_id
@@ -93,7 +93,7 @@ class CommandTestCase(unittest.TestCase):
 
         try:
             count_msg = DbCountRecordsMessage( connection )
-            res = count_msg.prepare().fetch_response()
+            res = count_msg.prepare().send().fetch_response()
             assert False  # we expect an exception because we need a db opened
         except PyOrientDatabaseException:
             assert True
@@ -112,7 +112,7 @@ class CommandTestCase(unittest.TestCase):
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
-        ).fetch_response()
+        ).send().fetch_response()
         assert len(cluster_info) != 0
 
         session_id = connection.session_id
@@ -121,7 +121,7 @@ class CommandTestCase(unittest.TestCase):
         assert session_id != -1
 
         count_msg = DbCountRecordsMessage( connection )
-        res = count_msg.prepare().fetch_response()
+        res = count_msg.prepare().send().fetch_response()
 
         # print res
         assert res is not 0
@@ -136,7 +136,7 @@ class CommandTestCase(unittest.TestCase):
         assert connection.protocol != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") ) \
-            .fetch_response()
+            .send().fetch_response()
 
         # print "Sid: %s" % session_id
         assert session_id == connection.session_id
@@ -147,7 +147,7 @@ class CommandTestCase(unittest.TestCase):
         db_name = "my_little_test"
 
         msg = DbExistsMessage( connection )
-        exists = msg.prepare( [db_name] ).fetch_response()
+        exists = msg.prepare( [db_name] ).send().fetch_response()
 
         print "Before %r" % exists
         if exists is False:
@@ -155,7 +155,7 @@ class CommandTestCase(unittest.TestCase):
             try:
                 ( DbCreateMessage( connection ) ).prepare(
                     (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
-                ).fetch_response()
+                ).send().fetch_response()
                 assert True
             except PyOrientCommandException, e:
                 print e.message
@@ -164,29 +164,29 @@ class CommandTestCase(unittest.TestCase):
         msg = DbOpenMessage( connection )
         cluster_info = msg.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
-        ).fetch_response()
+        ).send().fetch_response()
         # print cluster_info
         assert len(cluster_info) != 0
 
         rec = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
         rec_position = ( RecordCreateMessage(connection) )\
             .prepare( ( 1, rec ) )\
-            .fetch_response()
+            .send().fetch_response()
 
-        # print rec_position
-        assert rec_position[0] != 0
+        print "New Rec Position: %s" % rec_position[0].rid
+        assert rec_position[0].rid is not None
 
         rec = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
         update_success = ( RecordUpdateMessage(connection) )\
-            .prepare( ( 1, rec_position[0], rec ) )\
-            .fetch_response()
+            .prepare( ( 1, rec_position[0].rid, rec ) )\
+            .send().fetch_response()
 
         # print update_success
         assert update_success[0] != 0
 
         res = ( CommandMessage( connection ) )\
-            .prepare( [ QUERY_SYNC, "select from #1:" + str(rec_position[0]) ] )\
-            .fetch_response()
+            .prepare( [ QUERY_SYNC, "select from " + rec_position[0].rid ] )\
+            .send().fetch_response()
 
         # print "%r" % res[0].rid
         # print "%r" % res[0].o_class
@@ -204,7 +204,7 @@ class CommandTestCase(unittest.TestCase):
 
         # at the end drop the test database
         ( DbDropMessage( connection ) ).prepare([db_name]) \
-            .fetch_response()
+            .send().fetch_response()
 
 
     def test_record_delete(self):
@@ -215,7 +215,7 @@ class CommandTestCase(unittest.TestCase):
         assert connection.protocol != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") ) \
-            .fetch_response()
+            .send().fetch_response()
 
         print "Sid: %s" % session_id
         assert session_id == connection.session_id
@@ -224,7 +224,7 @@ class CommandTestCase(unittest.TestCase):
         db_name = "my_little_test"
 
         msg = DbExistsMessage( connection )
-        exists = msg.prepare( [db_name] ).fetch_response()
+        exists = msg.prepare( [db_name] ).send().fetch_response()
 
         print "Before %r" % exists
         if exists is False:
@@ -232,7 +232,7 @@ class CommandTestCase(unittest.TestCase):
             try:
                 ( DbCreateMessage( connection ) ).prepare(
                     (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
-                ).fetch_response()
+                ).send().fetch_response()
                 assert True
             except PyOrientCommandException, e:
                 print e.message
@@ -241,22 +241,22 @@ class CommandTestCase(unittest.TestCase):
         msg = DbOpenMessage( connection )
         cluster_info = msg.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
-        ).fetch_response()
+        ).send().fetch_response()
 
         assert len(cluster_info) != 0
 
         rec = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
         rec_position = ( RecordCreateMessage(connection) )\
             .prepare( ( 1, rec ) )\
-            .fetch_response()
+            .send().fetch_response()
 
-        print rec_position
-        assert rec_position[0] != 0
+        print "New Rec Position: %s" % rec_position[0].rid
+        assert rec_position[0].rid is not None
 
         ######################## Check Success
         res = ( CommandMessage( connection ) )\
-            .prepare( [ QUERY_SYNC, "select from #1:" + str(rec_position[0]) ] )\
-            .fetch_response()
+            .prepare( [ QUERY_SYNC, "select from " + str(rec_position[0].rid) ] )\
+            .send().fetch_response()
 
         # print "%r" % res[0].rid
         # print "%r" % res[0].o_class
@@ -275,21 +275,21 @@ class CommandTestCase(unittest.TestCase):
         ######################## Delete Rid
 
         del_msg = (RecordDeleteMessage(connection))
-        deletion = del_msg.prepare( ( 1, rec_position[0] ) )\
-            .fetch_response()
+        deletion = del_msg.prepare( ( 1, rec_position[0].rid ) )\
+            .send().fetch_response()
 
         assert deletion is True
 
         # now try a failure in deletion for wrong rid
         del_msg = (RecordDeleteMessage(connection))
         deletion = del_msg.prepare( ( 1, 11111 ) )\
-            .fetch_response()
+            .send().fetch_response()
 
         assert deletion is False
 
         # at the end drop the test database
         ( DbDropMessage( connection ) ).prepare([db_name]) \
-            .fetch_response()
+            .send().fetch_response()
 
 
     def test_data_cluster_count(self):
@@ -304,7 +304,7 @@ class CommandTestCase(unittest.TestCase):
         db_name = "GratefulDeadConcerts"
         cluster_info = msg.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
-        ).fetch_response()
+        ).send().fetch_response()
 
         print cluster_info
         assert len(cluster_info) != 0
@@ -312,7 +312,7 @@ class CommandTestCase(unittest.TestCase):
 
         count_msg = DataClusterCountMessage( connection )
         res1 = count_msg.set_count_tombstones(1)\
-            .prepare( [ range(0, 11) ] ).fetch_response()
+            .prepare( [ range(0, 11) ] ).send().fetch_response()
 
         print res1
         assert res1 is not 0
@@ -320,7 +320,7 @@ class CommandTestCase(unittest.TestCase):
 
         count_msg = DataClusterCountMessage( connection )
         res2 = count_msg.set_count_tombstones(1)\
-            .prepare( [ range(0, 11), 1 ] ).fetch_response()
+            .prepare( [ range(0, 11), 1 ] ).send().fetch_response()
 
         print res2
         assert res2 is not 0
@@ -328,7 +328,7 @@ class CommandTestCase(unittest.TestCase):
 
         count_msg = DataClusterCountMessage( connection )
         res3 = count_msg.set_count_tombstones(1).set_cluster_ids( range(0, 11) )\
-            .prepare().fetch_response()
+            .prepare().send().fetch_response()
 
         print res3
         assert res3 is not 0
@@ -344,7 +344,7 @@ class CommandTestCase(unittest.TestCase):
 
         open_msg.set_db_name('GratefulDeadConcerts')\
             .set_user('admin').set_pass('admin').prepare()\
-            .fetch_response()
+            .send().fetch_response()
 
         try_select_async = CommandMessage(connection)
 
@@ -355,7 +355,7 @@ class CommandTestCase(unittest.TestCase):
                         .prepare()\
 
 
-        response = try_select_async.fetch_response()
+        response = try_select_async.send().fetch_response()
 
         assert response is not []
         assert response[0].rid is not None  # assert no exception
@@ -376,11 +376,11 @@ class CommandTestCase(unittest.TestCase):
         db = DbOpenMessage(connection)
         cluster_info = db.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
-        ).fetch_response()
+        ).send().fetch_response()
 
         datarange = DataClusterDataRangeMessage(connection)
         try:
-            value = datarange.prepare(32767).fetch_response()
+            value = datarange.prepare(32767).send().fetch_response()
         except PyOrientCommandException, e:
             assert e.message == "32767 - java.lang.ArrayIndexOutOfBoundsException"
 
@@ -392,7 +392,7 @@ class CommandTestCase(unittest.TestCase):
         db = DbOpenMessage(connection)
         cluster_info = db.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
-        ).fetch_response()
+        ).send().fetch_response()
 
         # print cluster_info
 
@@ -401,7 +401,7 @@ class CommandTestCase(unittest.TestCase):
         for cluster in cluster_info:
             # os.environ['DEBUG'] = '0'  # silence debug
             datarange = DataClusterDataRangeMessage(connection)
-            value = datarange.prepare(cluster['id']).fetch_response()
+            value = datarange.prepare(cluster['id']).send().fetch_response()
             print "Cluster Name: %s, ID: %u: %s " \
                   % ( cluster['name'], cluster['id'], value )
             assert value is not []
