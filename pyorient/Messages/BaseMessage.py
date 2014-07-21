@@ -59,7 +59,6 @@ class BaseMessage(object):
         self._output_buffer = ''.join(
             self._encode_field( x ) for x in self._fields_definition
         )
-        self._send_message()
         return self
 
     def get_protocol(self):
@@ -156,7 +155,7 @@ class BaseMessage(object):
         return hexdump( ''.join( map( str, self._body ) ),
                         'return' )
 
-    def _send_message(self):
+    def send(self):
         self._orientSocket.write( self._output_buffer )
         self._reset_fields_definition()
         return self

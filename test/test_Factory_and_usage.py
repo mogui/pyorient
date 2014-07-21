@@ -21,30 +21,30 @@ class CommandTestCase(unittest.TestCase):
         factory = pyorient.OrientDBFactory('localhost', 2424)
 
         factory.get_message( pyorient.CONNECT ).prepare( ("admin", "admin") )\
-            .fetch_response()
+            .send().fetch_response()
 
         exists = factory.get_message( pyorient.DB_EXIST )\
             .prepare( ['demo_db', pyorient.STORAGE_TYPE_MEMORY] )\
-            .fetch_response()
+            .send().fetch_response()
 
         if exists is True:
             open_msg = factory.get_message( pyorient.DB_OPEN )
             clusters = open_msg.prepare( ( 'demo_db', 'admin', 'admin' ) )\
-                .fetch_response()
+                .send().fetch_response()
         else:
             create_msg = factory.get_message( pyorient.DB_CREATE )
             """:type create_msg: pyorient.Messages.Server.DbCreateMessage """
             clusters = create_msg.prepare(
                 ( 'demo_db', pyorient.DB_TYPE_DOCUMENT, pyorient.STORAGE_TYPE_MEMORY )
-            ).fetch_response()
+            ).send().fetch_response()
 
         try:
             create_class = factory.get_message( pyorient.COMMAND )
             """:type create_class: pyorient.Messages.Database.CommandMessage"""
             create_class.prepare( ( pyorient.QUERY_CMD, "create class demo_class" ) )\
-                .fetch_response()
+                .send().fetch_response()
             clusters = factory.get_message(pyorient.DB_RELOAD).prepare()\
-                .fetch_response()
+                .send().fetch_response()
         except pyorient.PyOrientCommandException:
             pass
 
@@ -57,7 +57,7 @@ class CommandTestCase(unittest.TestCase):
 
         insert = factory.get_message( pyorient.COMMAND )\
             .prepare( ( pyorient.QUERY_CMD, insert_query ) )
-        sql_insert_result = insert.fetch_response()
+        sql_insert_result = insert.send().fetch_response()
 
         cluster = 1
         for x in clusters:
@@ -67,12 +67,12 @@ class CommandTestCase(unittest.TestCase):
 
         load = ( factory.get_message(pyorient.RECORD_CREATE) )\
             .prepare( [cluster, rec] )\
-            .fetch_response()
+            .send().fetch_response()
 
 
         drop_db_result = ( factory.get_message(pyorient.DB_DROP) )\
             .prepare(['demo_db', pyorient.STORAGE_TYPE_MEMORY])\
-            .fetch_response()
+            .send().fetch_response()
 
         # print clusters
         # print sql_insert_result

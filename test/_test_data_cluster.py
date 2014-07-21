@@ -35,7 +35,7 @@ class CommandTestCase(unittest.TestCase):
         db_name = 'GratefulDeadConcerts'
         db_open = DbOpenMessage( connection )
         clusters = db_open.prepare( ( db_name, 'admin', 'admin' ) ) \
-            .fetch_response()
+            .send().fetch_response()
 
         # print clusters
         _created_clusters = []
@@ -46,21 +46,21 @@ class CommandTestCase(unittest.TestCase):
                     'my_cluster_' + str( random.randint( 0, 999999999 ) ),
                     CLUSTER_TYPE_PHYSICAL    # 'PHYSICAL'
                 ]
-            ).fetch_response()
+            ).send().fetch_response()
             _created_clusters.append( new_cluster_id )
             print "New cluster ID: %u" % new_cluster_id
 
         os.environ['DEBUG'] = '0'  # silence debug
 
         _reload = DbReloadMessage(connection)
-        new_cluster_list =_reload.prepare().fetch_response()
+        new_cluster_list =_reload.prepare().send().fetch_response()
 
         new_cluster_list.sort(key=lambda cluster: cluster['id'])
 
         _list = []
         for cluster in new_cluster_list:
             datarange = DataClusterDataRangeMessage(connection)
-            value = datarange.prepare(cluster['id']).fetch_response()
+            value = datarange.prepare(cluster['id']).send().fetch_response()
             print "Cluster Name: %s, ID: %u: %s " \
                   % ( cluster['name'], cluster['id'], value )
             _list.append( cluster['id'] )
@@ -80,20 +80,20 @@ class CommandTestCase(unittest.TestCase):
         for _cid in _created_clusters:
             drop_c = DataClusterDropMessage( connection )
             print "Drop cluster %u" % _cid
-            res = drop_c.prepare( _cid ).fetch_response()
+            res = drop_c.prepare( _cid ).send().fetch_response()
             if res is True:
                 print "Done"
             else:
                 raise Exception( "Cluster " + str(_cid) + " failed")
 
         _reload = DbReloadMessage(connection)
-        new_cluster_list = _reload.prepare().fetch_response()
+        new_cluster_list = _reload.prepare().send().fetch_response()
         new_cluster_list.sort(key=lambda cluster: cluster['id'])
 
         _list = []
         for cluster in new_cluster_list:
             datarange = DataClusterDataRangeMessage(connection)
-            value = datarange.prepare(cluster['id']).fetch_response()
+            value = datarange.prepare(cluster['id']).send().fetch_response()
             print "Cluster Name: %s, ID: %u: %s " \
                   % ( cluster['name'], cluster['id'], value )
             _list.append( cluster['id'] )
