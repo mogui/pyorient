@@ -8,12 +8,13 @@ from pyorient.Commons.utils import *
 
 
 class DbDropMessage(BaseMessage):
-    _db_name = ''
-    _storage_type = ''
 
     def __init__(self, _orient_socket ):
         super( DbDropMessage, self ).\
             __init__(_orient_socket)
+
+        self._db_name = ''
+        self._storage_type = ''
 
         if self.get_protocol() > 16:  # 1.5-SNAPSHOT
             self._storage_type = STORAGE_TYPE_PLOCAL
@@ -50,11 +51,10 @@ class DbDropMessage(BaseMessage):
         return self
 
     def set_storage_type(self, storage_type):
-        try:
-            if STORAGE_TYPES.index( storage_type ) is not None:
-                # user choice storage if present
-                self._storage_type = storage_type
-        except ValueError:
+        if storage_type in STORAGE_TYPES:
+            # user choice storage if present
+            self._storage_type = storage_type
+        else:
             raise PyOrientBadMethodCallException(
                 storage_type + ' is not a valid storage type', []
             )

@@ -2,19 +2,23 @@ __author__ = 'Ostico <ostico@gmail.com>'
 
 from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
+from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.Commons.utils import *
 
 
 class RecordDeleteMessage(BaseMessage):
 
-    _cluster_id = 0
-    _cluster_position = 0
-    _record_version = -1
-    _mode_async = 0  # means synchronous mode
-
     def __init__(self, _orient_socket ):
         super( RecordDeleteMessage, self ).__init__(_orient_socket)
+
+        self._cluster_id = 0
+        self._cluster_position = 0
+        self._record_version = -1
+        self._mode_async = 0  # means synchronous mode
+
+        # only needed for transactions
+        self._record_type = RECORD_TYPE_DOCUMENT
 
         # order matters
         self._append( ( FIELD_BYTE, RECORD_DELETE ) )
@@ -52,6 +56,10 @@ class RecordDeleteMessage(BaseMessage):
 
     def set_cluster_id(self, cluster_id):
         self._cluster_id = cluster_id
+        return self
+
+    def set_record_type(self, _record_type):
+        self._record_type = _record_type
         return self
 
     def set_cluster_position(self, _cluster_position):

@@ -92,6 +92,7 @@ class BaseMessage(object):
                 # useful only for java clients
                 serialized_exception = self._decode_field( FIELD_STRING )
                 # trash
+                # print "%r" % serialized_exception
                 del serialized_exception
 
             raise PyOrientCommandException(

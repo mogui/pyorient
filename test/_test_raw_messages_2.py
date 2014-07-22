@@ -154,7 +154,7 @@ class CommandTestCase(unittest.TestCase):
             print "Creation"
             try:
                 ( DbCreateMessage( connection ) ).prepare(
-                    (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
+                    (db_name, DB_TYPE_GRAPH, STORAGE_TYPE_PLOCAL)
                 ).send().fetch_response()
                 assert True
             except PyOrientCommandException, e:
@@ -163,12 +163,21 @@ class CommandTestCase(unittest.TestCase):
 
         msg = DbOpenMessage( connection )
         cluster_info = msg.prepare(
-            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
+            (db_name, "admin", "admin", DB_TYPE_GRAPH, "")
         ).send().fetch_response()
         # print cluster_info
         assert len(cluster_info) != 0
 
-        rec = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
+        try:
+            create_class = CommandMessage(connection)
+            create_class.prepare((QUERY_CMD, "create class my_class extends V"))\
+                .send().fetch_response()
+        except PyOrientCommandException:
+            # class my_class already exists
+            pass
+
+        # classes are not allowed in record create/update/load
+        rec = { '@my_class': { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' } }
         rec_position = ( RecordCreateMessage(connection) )\
             .prepare( ( 1, rec ) )\
             .send().fetch_response()
@@ -176,7 +185,7 @@ class CommandTestCase(unittest.TestCase):
         print "New Rec Position: %s" % rec_position[0].rid
         assert rec_position[0].rid is not None
 
-        rec = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
+        rec = { '@my_class': { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' } }
         update_success = ( RecordUpdateMessage(connection) )\
             .prepare( ( 1, rec_position[0].rid, rec ) )\
             .send().fetch_response()
@@ -188,12 +197,13 @@ class CommandTestCase(unittest.TestCase):
             .prepare( [ QUERY_SYNC, "select from " + rec_position[0].rid ] )\
             .send().fetch_response()
 
-        # print "%r" % res[0].rid
-        # print "%r" % res[0].o_class
-        # print "%r" % res[0].version
-        # print "%r" % res[0].alloggio
-        # print "%r" % res[0].lavoro
-        # print "%r" % res[0].vacanza
+        # print res
+        print "%r" % res[0].rid
+        print "%r" % res[0].o_class
+        print "%r" % res[0].version
+        print "%r" % res[0].alloggio
+        print "%r" % res[0].lavoro
+        print "%r" % res[0].vacanza
 
         assert res[0].rid == '#1:2'
         assert res[0].o_class is None
@@ -382,7 +392,7 @@ class CommandTestCase(unittest.TestCase):
         try:
             value = datarange.prepare(32767).send().fetch_response()
         except PyOrientCommandException, e:
-            assert e.message == "32767 - java.lang.ArrayIndexOutOfBoundsException"
+            assert "java.lang.ArrayIndexOutOfBoundsException" in e.message
 
     def test_data_range(self):
         connection = OrientSocket( 'localhost', 2424 )
