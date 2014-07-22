@@ -10,27 +10,30 @@ from pyorient.Commons.utils import *
 
 class RecordUpdateMessage(BaseMessage):
 
-    _data_segment_id = -1  # default
-    _cluster_id = 0
-    _cluster_position = 0
-    _record_content = ''
-
-    # True:  content of record has been changed
-    #        and content should be updated in storage
-    # False: the record was modified but its own content has not been changed.
-    #        So related collections (e.g. rid-bags) have to be updated, but
-    #        record version and content should not be.
-    # NOT USED before protocol 23
-    _update_content = True
-
-    # > -1 default Standard document update (version control)
-    _record_version_policy = -1
-
-    _record_type = RECORD_TYPE_DOCUMENT
-    _mode_async = 0  # means synchronous mode
-
     def __init__(self, _orient_socket ):
         super( RecordUpdateMessage, self ).__init__(_orient_socket)
+
+        self._data_segment_id = -1  # default
+        self._cluster_id = 0
+        self._cluster_position = 0
+        self._record_content = ''
+
+        # True:  content of record has been changed
+        #        and content should be updated in storage
+        # False: the record was modified but its own content has not been changed.
+        #        So related collections (e.g. rid-bags) have to be updated, but
+        #        record version and content should not be.
+        # NOT USED before protocol 23
+        self._update_content = True
+
+        # > -1 default Standard document update (version control)
+        self._record_version_policy = -1
+
+        # Used for transactions
+        self._record_version = -1
+
+        self._record_type = RECORD_TYPE_DOCUMENT
+        self._mode_async = 0  # means synchronous mode
 
         # order matters
         self._append( ( FIELD_BYTE, RECORD_UPDATE ) )
@@ -48,22 +51,27 @@ class RecordUpdateMessage(BaseMessage):
             # mandatory if not passed by method
             self._record_content = params[2]
 
-            self.set_record_type( params[3] )  # optional
+            self._record_version = params[3]  # Optional|Needed for transaction
 
-            self._record_version_policy = params[4]  # optional
-            self._mode_async = params[5]  # optional
+            self.set_record_type( params[4] )  # optional
 
-            self._update_content = params[6]  # optional
+            self._record_version_policy = params[5]  # optional
+            self._mode_async = params[6]  # optional
+
+            self._update_content = params[7]  # optional
 
         except IndexError:
             # Use default for non existent indexes
             pass
 
-        record = OrientRecord( self._record_content )
-        o_record_enc = ORecordEncoder(record)
+        record = self._record_content
+        if not isinstance( record, OrientRecord ):
+            record = self._record_content = OrientRecord( record )
+
+        o_record_enc = ORecordEncoder( record )
 
         self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self._append( ( FIELD_LONG, int(self._cluster_position) ) )
+        self._append( ( FIELD_LONG, long(self._cluster_position) ) )
 
         if self.get_protocol() >= 23:
             self._append( ( FIELD_BOOLEAN, self._update_content ) )
@@ -126,11 +134,10 @@ class RecordUpdateMessage(BaseMessage):
         return self
 
     def set_record_type(self, record_type ):
-        try:
-            if RECORD_TYPES.index( record_type ) is not None:
-                # user choice storage if present
-                self._record_type = record_type
-        except ValueError:
+        if record_type in RECORD_TYPES:
+            # user choice storage if present
+            self._record_type = record_type
+        else:
             raise PyOrientBadMethodCallException(
                 record_type + ' is not a valid record type', []
             )

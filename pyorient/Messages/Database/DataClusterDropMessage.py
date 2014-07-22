@@ -8,11 +8,11 @@ from pyorient.Commons.utils import *
 
 class DataClusterDropMessage(BaseMessage):
 
-    _cluster_id = 0
-    _count_tombstones = 0
-
     def __init__(self, _orient_socket ):
         super( DataClusterDropMessage, self ).__init__(_orient_socket)
+
+        self._cluster_id = 0
+        self._count_tombstones = 0
 
         # order matters
         self._append( ( FIELD_BYTE, DATA_CLUSTER_DROP ) )

@@ -9,13 +9,12 @@ from pyorient.Commons.utils import *
 
 class RecordLoadMessage(BaseMessage):
 
-    _record_id = ''
-    _fetch_plan = '*:0'
-
-    cached_records = []
-
     def __init__(self, _orient_socket ):
         super( RecordLoadMessage, self ).__init__(_orient_socket)
+
+        self._record_id = ''
+        self._fetch_plan = '*:0'
+        self.cached_records = []
 
         # order matters
         self._append( ( FIELD_BYTE, RECORD_LOAD ) )

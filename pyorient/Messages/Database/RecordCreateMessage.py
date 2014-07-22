@@ -10,14 +10,14 @@ from pyorient.Commons.utils import *
 
 class RecordCreateMessage(BaseMessage):
 
-    _data_segment_id = -1  # default
-    _cluster_id = 0
-    _record_content = ''
-    _record_type = RECORD_TYPE_DOCUMENT
-    _mode_async = 0  # means synchronous mode
-
     def __init__(self, _orient_socket ):
         super( RecordCreateMessage, self ).__init__(_orient_socket)
+
+        self._data_segment_id = -1  # default
+        self._cluster_id = 0
+        self._record_content = OrientRecord
+        self._record_type = RECORD_TYPE_DOCUMENT
+        self._mode_async = 0  # means synchronous mode
 
         # order matters
         self._append( ( FIELD_BYTE, RECORD_CREATE ) )
@@ -38,8 +38,11 @@ class RecordCreateMessage(BaseMessage):
             # Use default for non existent indexes
             pass
 
-        record = OrientRecord( self._record_content )
-        o_record_enc = ORecordEncoder(record)
+        record = self._record_content
+        if not isinstance( record, OrientRecord ):
+            record = self._record_content = OrientRecord( record )
+
+        o_record_enc = ORecordEncoder( record )
 
         if self.get_protocol() < 24:
             self._append( ( FIELD_INT, int(self._data_segment_id) ) )
@@ -78,11 +81,12 @@ class RecordCreateMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
-        return [ OrientRecord(
-            self._record_content,
+        self._record_content.update(
             version=result[1],
             rid="#" + str(self._cluster_id) + ":" + str(result[0])
-        ), _changes ]
+        )
+
+        return [ self._record_content, _changes ]
 
     def set_data_segment_id(self, data_segment_id):
         self._data_segment_id = data_segment_id
@@ -97,11 +101,10 @@ class RecordCreateMessage(BaseMessage):
         return self
 
     def set_record_type(self, record_type ):
-        try:
-            if RECORD_TYPES.index( record_type ) is not None:
-                # user choice storage if present
-                self._record_type = record_type
-        except ValueError:
+        if record_type in RECORD_TYPES:
+            # user choice storage if present
+            self._record_type = record_type
+        else:
             raise PyOrientBadMethodCallException(
                 record_type + ' is not a valid record type', []
             )

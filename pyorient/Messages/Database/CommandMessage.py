@@ -9,14 +9,14 @@ from pyorient.Commons.utils import *
 
 class CommandMessage(BaseMessage):
 
-    _query = ''
-    _limit = 20
-    _fetch_plan = '*:0'
-    _command_type = QUERY_SYNC
-    _mod_byte = 's'
-
     def __init__(self, _orient_socket):
         super( CommandMessage, self ).__init__(_orient_socket)
+
+        self._query = ''
+        self._limit = 20
+        self._fetch_plan = '*:0'
+        self._command_type = QUERY_SYNC
+        self._mod_byte = 's'
 
         self._append( ( FIELD_BYTE, COMMAND ) )
 
@@ -78,11 +78,10 @@ class CommandMessage(BaseMessage):
             return self._read_sync()
 
     def set_command_type(self, _command_type):
-        try:
-            if QUERY_TYPES.index( _command_type ) is not None:
-                # user choice storage if present
-                self._command_type = _command_type
-        except ValueError:
+        if _command_type in QUERY_TYPES:
+            # user choice if present
+            self._command_type = _command_type
+        else:
             raise PyOrientBadMethodCallException(
                 _command_type + ' is not a valid command type', []
             )
@@ -113,6 +112,7 @@ class CommandMessage(BaseMessage):
             res = [ self._read_record() ]
         elif response_type == 'a':
             self._append( FIELD_STRING )
+            self._append( FIELD_CHAR )
             res = [ super( CommandMessage, self ).fetch_response(True)[0] ]
         elif response_type == 'l':
             self._append( FIELD_INT )

@@ -9,15 +9,14 @@ from pyorient.Commons.utils import *
 
 class DataClusterAddMessage(BaseMessage):
 
-    _cluster_name     = ''
-    _cluster_type     = CLUSTER_TYPE_PHYSICAL
-    _cluster_location = 'default'
-    _datasegment_name = 'default'
-    _new_cluster_id   = -1
-
-
     def __init__(self, _orient_socket ):
         super( DataClusterAddMessage, self ).__init__(_orient_socket)
+
+        self._cluster_name     = ''
+        self._cluster_type     = CLUSTER_TYPE_PHYSICAL
+        self._cluster_location = 'default'
+        self._datasegment_name = 'default'
+        self._new_cluster_id   = -1
 
         # order matters
         self._append( ( FIELD_BYTE, DATA_CLUSTER_ADD ) )
@@ -64,11 +63,10 @@ class DataClusterAddMessage(BaseMessage):
         return self
 
     def set_cluster_type(self, _cluster_type):
-        try:
-            if CLUSTER_TYPES.index( _cluster_type ) is not None:
-                # user choice storage if present
-                self._cluster_type = _cluster_type
-        except ValueError:
+        if _cluster_type in CLUSTER_TYPES:
+            # user choice storage if present
+            self._cluster_type = _cluster_type
+        else:
             raise PyOrientBadMethodCallException(
                 _cluster_type + ' is not a valid cluster type', []
             )

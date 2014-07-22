@@ -9,15 +9,16 @@ from pyorient.Commons.utils import *
 
 class DbOpenMessage(BaseMessage):
 
-    _user = ''
-    _pass = ''
-    _client_id = ''
-    _db_name = ''
-    _db_type = DB_TYPE_DOCUMENT
-    _serialization_type = SERIALIZATION_DOCUMENT2CSV
-
     def __init__(self, _orient_socket):
         super( DbOpenMessage, self ).__init__(_orient_socket)
+
+        self._user = ''
+        self._pass = ''
+        self._client_id = ''
+        self._db_name = ''
+        self._db_type = DB_TYPE_DOCUMENT
+        self._serialization_type = SERIALIZATION_DOCUMENT2CSV
+
         self._append( ( FIELD_BYTE, DB_OPEN ) )
 
     def _perform_connection(self):
@@ -115,10 +116,10 @@ class DbOpenMessage(BaseMessage):
         return self
 
     def set_db_type(self, db_type):
-        try:
-            if DB_TYPES.index( db_type ) is not None:
-                self._db_type = db_type
-        except ValueError:
+        if db_type in DB_TYPES:
+            # user choice storage if present
+            self._db_type = db_type
+        else:
             raise PyOrientBadMethodCallException(
                 db_type + ' is not a valid database type', []
             )
@@ -141,11 +142,10 @@ class DbOpenMessage(BaseMessage):
         if serialization_type == SERIALIZATION_SERIAL_BIN:
             raise NotImplementedError
 
-        try:
-            if SERIALIZATION_TYPES.index( serialization_type ) is not None:
-                # user choice storage if present
-                self._serialization_type = serialization_type
-        except ValueError:
+        if serialization_type in SERIALIZATION_TYPES:
+            # user choice storage if present
+            self._serialization_type = serialization_type
+        else:
             raise PyOrientBadMethodCallException(
                 serialization_type + ' is not a valid serialization type', []
             )

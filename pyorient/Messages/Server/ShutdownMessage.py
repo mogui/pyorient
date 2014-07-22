@@ -8,12 +8,11 @@ from pyorient.Commons.utils import *
 
 class ShutdownMessage(BaseMessage):
 
-    _user = ''
-    _pass = ''
-
     def __init__(self, _orient_socket ):
-        super( ShutdownMessage, self ).\
-            __init__(_orient_socket)
+        super( ShutdownMessage, self ).__init__(_orient_socket)
+
+        self._user = ''
+        self._pass = ''
 
         # order matters
         self._append( ( FIELD_BYTE, SHUTDOWN ) )
