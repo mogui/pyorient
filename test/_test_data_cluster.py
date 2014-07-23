@@ -24,7 +24,7 @@ from pyorient.Messages.Database.DataClusterDropMessage import DataClusterDropMes
 from pyorient.Commons.ORecordCoder import *
 
 
-class CommandTestCase(unittest.TestCase):
+class DataClusterTestCase(unittest.TestCase):
     """ Command Test Case """
 
     def test_data_cluster_add_drop(self):

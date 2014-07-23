@@ -33,7 +33,7 @@ from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDa
 from pyorient.Commons.OrientTypes import *
 
 
-class CommandTestCase(unittest.TestCase):
+class RawMessages_2_TestCase(unittest.TestCase):
     """ Command Test Case """
 
     def test_record_object(self):
