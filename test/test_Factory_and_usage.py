@@ -78,15 +78,15 @@ class CommandTestCase(unittest.TestCase):
 
         # print clusters
         # print sql_insert_result
-        # print load[0].rid
+        # print load.rid
         # print drop_db_result
 
         assert isinstance( clusters, list )
         assert len( clusters ) != 0
         assert isinstance( sql_insert_result, list )
         assert len( sql_insert_result ) == 0
-        assert isinstance( load[0], pyorient.OrientRecord )
-        assert load[0].rid != -1
+        assert isinstance( load, pyorient.OrientRecord )
+        assert load.rid != -1
         assert isinstance( drop_db_result, list )
         assert len( drop_db_result ) == 0
 
@@ -115,43 +115,53 @@ class CommandTestCase(unittest.TestCase):
             #######################################
 
         # execute real create
-        real_create = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
-        real_rec_position = ( factory.get_message(pyorient.RECORD_CREATE) )\
-            .prepare( ( 3, real_create ) )\
+        rec = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
+        rec_position = ( factory.get_message(pyorient.RECORD_CREATE) )\
+            .prepare( ( 3, rec ) )\
             .send().fetch_response()
 
-        # Begin a transaction
-        tx_msg = ( factory.get_message(pyorient.TX_COMMIT) )
+        # prepare for an update
+        rec3 = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
+        update_success = ( factory.get_message(pyorient.RECORD_UPDATE) )\
+            .prepare( ( 3, rec_position.rid, rec3, rec_position.version ) )
 
-        # create a record
+        # prepare transaction
         rec1 = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
         rec_position1 = ( factory.get_message(pyorient.RECORD_CREATE) )\
             .prepare( ( -1, rec1 ) )
 
-        # update old record
-        rec2 = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
-        update_success = ( factory.get_message(pyorient.RECORD_UPDATE) )\
-            .prepare(
-                ( 3, real_rec_position[0].rid, rec2, real_rec_position[0].version )
-            )
+        rec2 = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
+        rec_position2 = ( factory.get_message(pyorient.RECORD_CREATE) )\
+            .prepare( ( -1, rec2 ) )
 
-        # delete old record
-        delete_msg = ( factory.get_message(pyorient.RECORD_DELETE) )\
-            .prepare(( 3, real_rec_position[0].rid ))
 
-        tx_msg.attach(rec_position1)
-        tx_msg.attach(update_success)
-        tx_msg.attach(delete_msg)
+        # create another real record
+        rec = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
+        rec_position = ( factory.get_message(pyorient.RECORD_CREATE) )\
+            .prepare( ( 3, rec ) )\
+            .send().fetch_response()
 
-        res = tx_msg.commit()
+        delete_msg = ( factory.get_message(pyorient.RECORD_DELETE) )
+        delete_msg.prepare( ( 3, rec_position.rid ) )
 
-        assert res == { 'changes': [],
-                        'created': [{'client_c_id': -1,
-                                     'client_c_pos': -2,
-                                     'created_c_id': 3,
-                                     'created_c_pos': 1}],
-                        'updated': [{'new_version': 1, 'updated_c_id': 3,
-                                     'updated_c_pos': 1}]}
+
+        tx = ( factory.get_message(pyorient.TX_COMMIT) )
+        tx.begin()
+        tx.attach( rec_position1 )
+        tx.attach( rec_position1 )
+        tx.attach( rec_position2 )
+        tx.attach( update_success )
+        tx.attach( delete_msg )
+        res = tx.commit()
+
+        for k, v in res.iteritems():
+            print k + " -> " + v.vacanza
+
+        assert len(res) == 4
+        assert res["#3:0"].vacanza == 'montagna'
+        assert res["#3:2"].vacanza == 'mare'
+        assert res["#3:3"].vacanza == 'mare'
+        assert res["#3:4"].vacanza == 'lago'
 
         ( factory.get_message(pyorient.DB_DROP) ).prepare(
             ['demo_db', pyorient.STORAGE_TYPE_MEMORY ]) \
