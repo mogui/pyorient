@@ -26,7 +26,7 @@ from pyorient.Messages.Database.DbSizeMessage import DbSizeMessage
 from pyorient.Messages.Database.CommandMessage import CommandMessage
 
 
-class CommandTestCase(unittest.TestCase):
+class RawMessages_1_TestCase(unittest.TestCase):
     """ Command Test Case """
 
     def test_not_singleton_socket(self):

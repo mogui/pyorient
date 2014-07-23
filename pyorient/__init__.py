@@ -24,6 +24,7 @@ RECORD_UPDATE            = "RecordUpdateMessage"
 RECORD_DELETE            = "RecordDeleteMessage"
 COMMAND                  = "CommandMessage"
 DB_RELOAD                = "DbReloadMessage"
+TX_COMMIT                = "TXCommitMessage"
 
 
 # Orient User Primitives

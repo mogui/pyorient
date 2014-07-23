@@ -35,8 +35,66 @@ from pyorient.Messages.Database.TXCommitMessage import TXCommitMessage
 from pyorient.Commons.OrientTypes import *
 
 
-class CommandTestCase(unittest.TestCase):
+class RawMessages_5_TestCase(unittest.TestCase):
     """ Command Test Case """
+
+    def test_attach_class_hint(self):
+        try:
+            connection = OrientSocket( "localhost", int( 2424 ) )
+            tx = TXCommitMessage(connection)
+            tx.begin()
+            tx.attach([1, 2, 3])
+            assert False  # should not happens
+        except AssertionError, e:
+            assert 'A subclass of BaseMessage was expected' == e.message
+            assert True
+
+    def test_private_prepare(self):
+        try:
+            connection = OrientSocket( "localhost", int( 2424 ) )
+            DbOpenMessage( connection )\
+                .prepare(
+                    ("GratefulDeadConcerts", "admin", "admin", DB_TYPE_DOCUMENT, "")
+                ).send().fetch_response()
+    
+            tx = TXCommitMessage(connection)
+            tx.begin()
+            tx.prepare()
+            assert False
+        except AttributeError, e:
+            print e.message
+            assert True
+    
+    
+    def test_private_send(self):
+        try:
+            connection = OrientSocket( "localhost", int( 2424 ) )
+            DbOpenMessage( connection )\
+                .prepare(
+                    ("GratefulDeadConcerts", "admin", "admin", DB_TYPE_DOCUMENT, "")
+                ).send().fetch_response()
+            tx = TXCommitMessage(connection)
+            tx.begin()
+            tx.send()
+            assert False
+        except AttributeError, e:
+            print e.message
+            assert True
+    
+    def test_private_fetch(self):
+        try:
+            connection = OrientSocket( "localhost", int( 2424 ) )
+            DbOpenMessage( connection )\
+                .prepare(
+                    ("GratefulDeadConcerts", "admin", "admin", DB_TYPE_DOCUMENT, "")
+                ).send().fetch_response()
+            tx = TXCommitMessage(connection)
+            tx.begin()
+            tx.fetch_response()
+            assert False
+        except AttributeError, e:
+            print e.message
+            assert True
 
     def test_transaction(self):
         connection = OrientSocket( "localhost", int( 2424 ) )
@@ -99,10 +157,10 @@ class CommandTestCase(unittest.TestCase):
 
         tx = TXCommitMessage(connection)
         tx.begin()
-        tx.append( rec_position1 )
-        tx.append( rec_position1 )
-        tx.append( update_success )
-        tx.append( delete_msg )
+        tx.attach( rec_position1 )
+        tx.attach( rec_position1 )
+        tx.attach( update_success )
+        tx.attach( delete_msg )
         res = tx.commit()
 
         assert res == { 'changes': [],
@@ -127,5 +185,7 @@ class CommandTestCase(unittest.TestCase):
             .send().fetch_response()
 
 
-
+# test_private_prepare()
+# test_private_send()
+# test_private_fetch()
 # test_transaction()

@@ -32,6 +32,7 @@ class OrientDBFactory(object):
         RecordLoadMessage="pyorient.Messages.Database.RecordLoadMessage",
         RecordUpdateMessage="pyorient.Messages.Database.RecordUpdateMessage",
         CommandMessage="pyorient.Messages.Database.CommandMessage",
+        TXCommitMessage="pyorient.Messages.Database.TXCommitMessage",
     )
 
     def __init__(self, host='localhost', port=2424):
@@ -64,7 +65,8 @@ class OrientDBFactory(object):
                  pyorient.Messages.Database.RecordDeleteMessage,
                  pyorient.Messages.Database.RecordLoadMessage,
                  pyorient.Messages.Database.RecordUpdateMessage,
-                 pyorient.Messages.Database.CommandMessage
+                 pyorient.Messages.Database.CommandMessage,
+                 pyorient.Messages.Database.TXCommitMessage,
         :param command: str
         """
         try:
