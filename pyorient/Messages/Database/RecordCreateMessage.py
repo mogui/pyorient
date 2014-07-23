@@ -86,7 +86,7 @@ class RecordCreateMessage(BaseMessage):
             rid="#" + str(self._cluster_id) + ":" + str(result[0])
         )
 
-        return [ self._record_content, _changes ]
+        return self._record_content #  [ self._record_content, _changes ]
 
     def set_data_segment_id(self, data_segment_id):
         self._data_segment_id = data_segment_id

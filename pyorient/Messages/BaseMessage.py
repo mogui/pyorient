@@ -153,8 +153,8 @@ class BaseMessage(object):
 
     def __str__(self):
         from pyorient.Commons.hexdump import hexdump
-        return hexdump( ''.join( map( str, self._body ) ),
-                        'return' )
+        return "\n_output_buffer: \n" + hexdump( self._output_buffer, 'return' ) \
+               + "\n\n_input_buffer: \n" + hexdump( self._input_buffer, 'return' )
 
     def send(self):
         self._orientSocket.write( self._output_buffer )

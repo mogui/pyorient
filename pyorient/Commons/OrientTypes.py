@@ -26,7 +26,7 @@ class OrientRecord(object):
                 self._set_keys( content[key] )
 
     def __str__(self):
-        return self.__o_class + str(
+        return str(self.__o_class) + str(
             [x for x in self.__dict__ if not x.startswith('_Orient')])
 
     def update(self, **kwargs):

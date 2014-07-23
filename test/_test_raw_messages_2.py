@@ -182,19 +182,19 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( ( 1, rec ) )\
             .send().fetch_response()
 
-        print "New Rec Position: %s" % rec_position[0].rid
-        assert rec_position[0].rid is not None
+        print "New Rec Position: %s" % rec_position.rid
+        assert rec_position.rid is not None
 
         rec = { '@my_class': { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' } }
         update_success = ( RecordUpdateMessage(connection) )\
-            .prepare( ( 1, rec_position[0].rid, rec ) )\
+            .prepare( ( 1, rec_position.rid, rec ) )\
             .send().fetch_response()
 
         # print update_success
         assert update_success[0] != 0
 
         res = ( CommandMessage( connection ) )\
-            .prepare( [ QUERY_SYNC, "select from " + rec_position[0].rid ] )\
+            .prepare( [ QUERY_SYNC, "select from " + rec_position.rid ] )\
             .send().fetch_response()
 
         # print res
@@ -260,12 +260,12 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( ( 1, rec ) )\
             .send().fetch_response()
 
-        print "New Rec Position: %s" % rec_position[0].rid
-        assert rec_position[0].rid is not None
+        print "New Rec Position: %s" % rec_position.rid
+        assert rec_position.rid is not None
 
         ######################## Check Success
         res = ( CommandMessage( connection ) )\
-            .prepare( [ QUERY_SYNC, "select from " + str(rec_position[0].rid) ] )\
+            .prepare( [ QUERY_SYNC, "select from " + str(rec_position.rid) ] )\
             .send().fetch_response()
 
         # print "%r" % res[0].rid
@@ -285,7 +285,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         ######################## Delete Rid
 
         del_msg = (RecordDeleteMessage(connection))
-        deletion = del_msg.prepare( ( 1, rec_position[0].rid ) )\
+        deletion = del_msg.prepare( ( 1, rec_position.rid ) )\
             .send().fetch_response()
 
         assert deletion is True
