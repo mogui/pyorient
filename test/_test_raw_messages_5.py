@@ -111,7 +111,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             print "Creation"
             try:
                 ( DbCreateMessage( connection ) ).prepare(
-                    (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
+                    (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_MEMORY)
                 ).send().fetch_response()
                 assert True
             except PyOrientCommandException, e:
@@ -140,6 +140,10 @@ class RawMessages_5_TestCase(unittest.TestCase):
             .prepare( ( 3, rec ) )\
             .send().fetch_response()
 
+        # prepare for an update
+        rec3 = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
+        update_success = ( RecordUpdateMessage(connection) )\
+            .prepare( ( 3, rec_position.rid, rec3, rec_position.version ) )
 
 
         # prepare transaction
@@ -147,43 +151,43 @@ class RawMessages_5_TestCase(unittest.TestCase):
         rec_position1 = ( RecordCreateMessage(connection) )\
             .prepare( ( -1, rec1 ) )
 
-        # update old record
-        rec2 = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
-        update_success = ( RecordUpdateMessage(connection) )\
-            .prepare( ( 3, rec_position[0].rid, rec2, rec_position[0].version ) )
+        rec2 = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
+        rec_position2 = ( RecordCreateMessage(connection) )\
+            .prepare( ( -1, rec2 ) )
+
+
+        # create another real record
+        rec = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
+        rec_position = ( RecordCreateMessage(connection) )\
+            .prepare( ( 3, rec ) )\
+            .send().fetch_response()
 
         delete_msg = RecordDeleteMessage(connection)
-        r = delete_msg.prepare(( 3, rec_position[0].rid ))
+        delete_msg.prepare( ( 3, rec_position.rid ) )
+
 
         tx = TXCommitMessage(connection)
         tx.begin()
         tx.attach( rec_position1 )
         tx.attach( rec_position1 )
+        tx.attach( rec_position2 )
         tx.attach( update_success )
         tx.attach( delete_msg )
         res = tx.commit()
 
-        assert res == { 'changes': [],
-                        'created': [{'client_c_id': -1,
-                                     'client_c_pos': -3,
-                                     'created_c_id': 3,
-                                     'created_c_pos': 2},
-                                    {'client_c_id': -1,
-                                     'client_c_pos': -2,
-                                     'created_c_id': 3,
-                                     'created_c_pos': 1}],
-                        'updated': [{'new_version': 1, 'updated_c_id': 3,
-                                     'updated_c_pos': 2},
-                                    {'new_version': 1, 'updated_c_id': 3,
-                                     'updated_c_pos': 1}]}
+        for k, v in res.iteritems():
+            print k + " -> " + v.vacanza
 
-        PrettyPrinter(indent=2).pprint( res )
+        assert len(res) == 4
+        assert res["#3:0"].vacanza == 'montagna'
+        assert res["#3:2"].vacanza == 'mare'
+        assert res["#3:3"].vacanza == 'mare'
+        assert res["#3:4"].vacanza == 'lago'
 
         # print ""
         # # at the end drop the test database
-        ( DbDropMessage( connection ) ).prepare([db_name, STORAGE_TYPE_PLOCAL]) \
+        ( DbDropMessage( connection ) ).prepare([db_name, STORAGE_TYPE_MEMORY]) \
             .send().fetch_response()
-
 
 # test_private_prepare()
 # test_private_send()

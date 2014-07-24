@@ -98,7 +98,7 @@ class CommandTestCase(unittest.TestCase):
             .send().fetch_response()
 
         exists = factory.get_message( pyorient.DB_EXIST )\
-            .prepare( ['demo_db', pyorient.STORAGE_TYPE_MEMORY] )\
+            .prepare( ['test_tx', pyorient.STORAGE_TYPE_MEMORY] )\
             .send().fetch_response()
 
         if exists is True:
