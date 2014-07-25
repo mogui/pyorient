@@ -1,6 +1,5 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
-from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Database._TXCommitMessage import _TXCommitMessage
 
 

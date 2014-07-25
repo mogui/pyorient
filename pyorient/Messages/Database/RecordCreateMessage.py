@@ -27,7 +27,7 @@ class RecordCreateMessage(BaseMessage):
 
         try:
             # mandatory if not passed by method
-            self._cluster_id = params[0]
+            self.set_cluster_id( params[0] )
 
             # mandatory if not passed by method
             self._record_content = params[1]
@@ -93,7 +93,7 @@ class RecordCreateMessage(BaseMessage):
         return self
 
     def set_cluster_id(self, cluster_id):
-        self._cluster_id = cluster_id
+        self._cluster_id = parse_cluster_id(cluster_id)
         return self
 
     def set_record_content(self, record):

@@ -28,7 +28,7 @@ class RecordDeleteMessage(BaseMessage):
 
         try:
             # mandatory if not passed by method
-            self._cluster_id = params[0]
+            self.set_cluster_id( params[0] )
 
             # mandatory if not passed by method
             self.set_cluster_position( params[1] )
@@ -55,21 +55,15 @@ class RecordDeleteMessage(BaseMessage):
         return self
 
     def set_cluster_id(self, cluster_id):
-        self._cluster_id = cluster_id
+        self._cluster_id = parse_cluster_id(cluster_id)
+        return self
+
+    def set_cluster_position(self, _cluster_position):
+        self._cluster_position = parse_cluster_position(_cluster_position)
         return self
 
     def set_record_type(self, _record_type):
         self._record_type = _record_type
-        return self
-
-    def set_cluster_position(self, _cluster_position):
-        try:
-            _cluster, _position = _cluster_position.split( ':' )
-        except AttributeError:
-            # Rid position INT provided
-            _position = _cluster_position
-
-        self._cluster_position = _position
         return self
 
     def set_mode_async(self):

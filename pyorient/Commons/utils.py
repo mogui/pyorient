@@ -60,3 +60,27 @@ def need_db_opened(wrap):
         return wrap(*args, **kwargs)
 
     return wrap_function
+
+
+def parse_cluster_id(cluster_id):
+    try:
+        _cluster_id, _position = cluster_id.split( ':' )
+        if _cluster_id[0] is '#':
+            _cluster_id = _cluster_id[1:]
+    except (AttributeError, ValueError):
+        # Rid position INT provided
+        # or string but with no ":"
+        # so treat it as one param
+        _cluster_id = cluster_id
+    return _cluster_id
+
+
+def parse_cluster_position(_cluster_position):
+    try:
+        _cluster, _position = _cluster_position.split( ':' )
+    except (AttributeError, ValueError):
+        # Rid position INT provided
+        # or string but with no ":"
+        # so treat it as one param
+        _position = _cluster_position
+    return _position
