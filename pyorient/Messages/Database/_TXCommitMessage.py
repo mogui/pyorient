@@ -8,7 +8,6 @@ from pyorient.Messages.Database.RecordCreateMessage import RecordCreateMessage
 from pyorient.Messages.Database.RecordDeleteMessage import RecordDeleteMessage
 from pyorient.Commons.utils import *
 from pyorient.Commons.ORecordCoder import *
-import hashlib
 
 
 class _TXCommitMessage(BaseMessage):

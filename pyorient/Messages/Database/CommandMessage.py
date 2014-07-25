@@ -35,9 +35,9 @@ class CommandMessage(BaseMessage):
                 # Use default for non existent indexes
                 pass
 
-        if self._command_type is QUERY_CMD \
-                or self._command_type is QUERY_SYNC \
-                or self._command_type is QUERY_GREMLIN:
+        if self._command_type == QUERY_CMD \
+                or self._command_type == QUERY_SYNC \
+                or self._command_type == QUERY_GREMLIN:
             self._mod_byte = 's'
         else:
             self._mod_byte = 'a'
@@ -47,9 +47,9 @@ class CommandMessage(BaseMessage):
             ( FIELD_STRING, self._query )
         ]
 
-        if self._command_type is QUERY_ASYNC \
-                or self._command_type is QUERY_SYNC \
-                or self._command_type is QUERY_GREMLIN:
+        if self._command_type == QUERY_ASYNC \
+                or self._command_type == QUERY_SYNC \
+                or self._command_type == QUERY_GREMLIN:
             # set limit from sql string every times override the limit param
             _payload_definition.append( ( FIELD_INT, self._limit ) )
             _payload_definition.append( ( FIELD_STRING, self._fetch_plan ) )
@@ -70,7 +70,7 @@ class CommandMessage(BaseMessage):
         # decode header only
         void = super( CommandMessage, self ).fetch_response()
 
-        if self._command_type is QUERY_ASYNC:
+        if self._command_type == QUERY_ASYNC:
             _results = self._read_async_records()
             # cache = _results['cached']
             return _results['async']
@@ -110,6 +110,9 @@ class CommandMessage(BaseMessage):
             return None
         elif response_type == 'r':
             res = [ self._read_record() ]
+            self._append( FIELD_CHAR )
+            # end Line \x00
+            _res = super( CommandMessage, self ).fetch_response(True)
         elif response_type == 'a':
             self._append( FIELD_STRING )
             self._append( FIELD_CHAR )

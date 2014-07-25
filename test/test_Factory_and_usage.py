@@ -84,7 +84,7 @@ class CommandTestCase(unittest.TestCase):
         assert isinstance( clusters, list )
         assert len( clusters ) != 0
         assert isinstance( sql_insert_result, list )
-        assert len( sql_insert_result ) == 0
+        assert len( sql_insert_result ) == 1
         assert isinstance( load, pyorient.OrientRecord )
         assert load.rid != -1
         assert isinstance( drop_db_result, list )
@@ -166,3 +166,91 @@ class CommandTestCase(unittest.TestCase):
         ( factory.get_message(pyorient.DB_DROP) ).prepare(
             ['demo_db', pyorient.STORAGE_TYPE_MEMORY ]) \
             .send().fetch_response()
+
+    def test_command(self):
+
+        connection = pyorient.OrientSocket( "localhost", int( 2424 ) )
+
+        factory = pyorient.OrientDBFactory(connection)
+
+
+        session_id = ( factory.get_message(pyorient.CONNECT) ).prepare( ("admin", "admin") )\
+            .send().fetch_response()
+
+        db_name = "tmp_test1"
+
+        try:
+
+            print ""
+            # at the end drop the test database
+            ( factory.get_message(pyorient.DB_DROP) ).prepare([db_name, pyorient.STORAGE_TYPE_MEMORY]) \
+                .send().fetch_response()
+
+        except pyorient.PyOrientCommandException, e:
+            print e.message
+        finally:
+            ( factory.get_message(pyorient.DB_CREATE) ).prepare(
+                (db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
+            ).send().fetch_response()
+
+        # open as serialize2binary
+        msg = factory.get_message(pyorient.DB_OPEN)
+        cluster_info = msg.prepare(
+            (db_name, "admin", "admin", pyorient.DB_TYPE_DOCUMENT, "", pyorient.SERIALIZATION_DOCUMENT2CSV)
+        ).send().fetch_response()
+
+        # ##################
+
+        create_class = factory.get_message(pyorient.COMMAND)
+        ins_msg1 = factory.get_message(pyorient.COMMAND)
+        ins_msg2 = factory.get_message(pyorient.COMMAND)
+        ins_msg3 = factory.get_message(pyorient.COMMAND)
+        ins_msg4 = factory.get_message(pyorient.COMMAND)
+        upd_msg5 = factory.get_message(pyorient.RECORD_UPDATE)
+
+        req_msg = factory.get_message(pyorient.COMMAND)
+
+        create_class.prepare( ( pyorient.QUERY_CMD, "create class c_test extends V" ) )
+        ins_msg1.prepare( ( pyorient.QUERY_CMD, "insert into c_test ( Band, Song ) values( 'AC/DC', 'Hells Bells' )") )
+        ins_msg2.prepare( ( pyorient.QUERY_CMD, "insert into c_test ( Band, Song ) values( 'AC/DC', 'Who Made Who' )") )
+        ins_msg3.prepare( ( pyorient.QUERY_CMD, "insert into c_test ( Band, Song ) values( 'AC/DC', 'T.N.T.' )") )
+        ins_msg4.prepare( ( pyorient.QUERY_CMD, "insert into c_test ( Band, Song ) values( 'AC/DC', 'High Voltage' )") )
+
+
+        cluster = create_class.send().fetch_response()
+        rec1 = ins_msg1.send().fetch_response()
+        rec2 = ins_msg2.send().fetch_response()
+        rec3 = ins_msg3.send().fetch_response()
+        rec4 = ins_msg4.send().fetch_response()
+
+        rec1 = rec1[0]
+        upd_res = upd_msg5.prepare( ( rec1.rid, rec1.rid, { 'Band': 'Metallica', 'Song': 'One' } ) )\
+            .send().fetch_response()
+
+        res = req_msg.prepare( [ pyorient.QUERY_SYNC, "select from c_test" ] ) \
+            .send().fetch_response()
+
+        assert isinstance(cluster, list)
+        assert rec1.rid == res[0].rid
+        assert rec1.version != res[0].version
+        assert res[0].version == upd_res[0]
+
+        assert len(res) == 4
+        assert res[0].rid == '#11:0'
+        assert res[0].Band == 'Metallica'
+        assert res[0].Song == 'One'
+
+        assert res[3].Song == 'High Voltage'
+
+        # for x in res:
+        #     print "############"
+        #     print "%r" % x.rid
+        #     print "%r" % x.o_class
+        #     print "%r" % x.version
+        #     print "%r" % x.Band
+        #     print "%r" % x.Song
+
+        # print ""
+        # # at the end drop the test database
+        # ( DbDropMessage( connection ) ).prepare([db_name, STORAGE_TYPE_MEMORY]) \
+        #     .send().fetch_response()
