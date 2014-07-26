@@ -132,5 +132,20 @@ class CommandMessage(BaseMessage):
             #       knows that it's available for later access
             cached_results = self._read_async_records()
             # cache = cached_results['cached']
+        else:
+            msg = ""
+            import pyorient.Commons.hexdump
+            import socket
+            self._orientSocket._socket.settimeout(5)
+            try:
+                m = self._orientSocket.read(1)
+                while m != "":
+                    msg += m
+                    m = self._orientSocket.read(1)
+            except socket.timeout, e:
+                print "************* " + str(e) + " *************"
+                pass
+            pyorient.Commons.hexdump.hexdump(msg)
+            exit(1)
 
         return res

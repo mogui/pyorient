@@ -118,25 +118,26 @@ class _TXCommitMessage(BaseMessage):
             except KeyError:
                 pass
 
-        items = self._decode_field(FIELD_INT)
-        for x in range(0, items):
-            # (count-of-collection-changes:int)
-            # [
-            # (uuid-most-sig-bits:long)
-            #     (uuid-least-sig-bits:long)
-            #     (updated-file-id:long)
-            #     (updated-page-index:long)
-            #     (updated-page-offset:int)
-            # ]*
-            result['updated'].append(
-                {
-                    'uuid_high': self._decode_field(FIELD_LONG),
-                    'uuid_low': self._decode_field(FIELD_LONG),
-                    'file_id': self._decode_field(FIELD_LONG),
-                    'page_index': self._decode_field(FIELD_LONG),
-                    'page_offset': self._decode_field(FIELD_INT),
-                }
-            )
+        if self.get_protocol() > 23:
+            items = self._decode_field(FIELD_INT)
+            for x in range(0, items):
+                # (count-of-collection-changes:int)
+                # [
+                # (uuid-most-sig-bits:long)
+                #     (uuid-least-sig-bits:long)
+                #     (updated-file-id:long)
+                #     (updated-page-index:long)
+                #     (updated-page-offset:int)
+                # ]*
+                result['updated'].append(
+                    {
+                        'uuid_high': self._decode_field(FIELD_LONG),
+                        'uuid_low': self._decode_field(FIELD_LONG),
+                        'file_id': self._decode_field(FIELD_LONG),
+                        'page_index': self._decode_field(FIELD_LONG),
+                        'page_offset': self._decode_field(FIELD_INT),
+                    }
+                )
 
         self.dump_streams()
 
@@ -157,8 +158,12 @@ class _TXCommitMessage(BaseMessage):
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
                 ( FIELD_INT, int(getattr(operation, "_record_version")) ),
                 ( FIELD_STRING, o_record_enc.getRaw() ),
-                ( FIELD_BOOLEAN, bool(getattr(operation, "_update_content")) )
             ))
+
+            if self.get_protocol() >= 23:
+                self._operation_stack[-1] = \
+                    self._operation_stack[-1] +\
+                    ( ( FIELD_BOOLEAN, bool(getattr(operation, "_update_content") ) ), )
 
             self._pre_operation_records[
                 str(getattr(operation, "_cluster_position"))

@@ -23,20 +23,28 @@ class CommandTestCase(unittest.TestCase):
         factory.get_message( pyorient.CONNECT ).prepare( ("admin", "admin") )\
             .send().fetch_response()
 
+        db_name = 'demo_db'
+
         exists = factory.get_message( pyorient.DB_EXIST )\
-            .prepare( ['demo_db', pyorient.STORAGE_TYPE_MEMORY] )\
+            .prepare( [db_name, pyorient.STORAGE_TYPE_MEMORY] )\
             .send().fetch_response()
 
-        if exists is True:
-            open_msg = factory.get_message( pyorient.DB_OPEN )
-            clusters = open_msg.prepare( ( 'demo_db', 'admin', 'admin' ) )\
+        print "Before %r" % exists
+        try:
+            ( factory.get_message( pyorient.DB_DROP ) ).prepare([db_name]) \
                 .send().fetch_response()
-        else:
-            create_msg = factory.get_message( pyorient.DB_CREATE )
-            """:type create_msg: pyorient.Messages.Server.DbCreateMessage """
-            clusters = create_msg.prepare(
-                ( 'demo_db', pyorient.DB_TYPE_DOCUMENT, pyorient.STORAGE_TYPE_MEMORY )
+            assert True
+        except pyorient.PyOrientCommandException, e:
+            print e.message
+        finally:
+            ( factory.get_message( pyorient.DB_CREATE ) ).prepare(
+                (db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
             ).send().fetch_response()
+
+        msg = factory.get_message( pyorient.DB_OPEN )
+        clusters = msg.prepare(
+            (db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, "")
+        ).send().fetch_response()
 
         #######################################
 
@@ -97,20 +105,28 @@ class CommandTestCase(unittest.TestCase):
         factory.get_message( pyorient.CONNECT ).prepare( ("admin", "admin") )\
             .send().fetch_response()
 
+        db_name = 'test_transactions'
+
         exists = factory.get_message( pyorient.DB_EXIST )\
-            .prepare( ['test_tx', pyorient.STORAGE_TYPE_MEMORY] )\
+            .prepare( [db_name, pyorient.STORAGE_TYPE_MEMORY] )\
             .send().fetch_response()
 
-        if exists is True:
-            open_msg = factory.get_message( pyorient.DB_OPEN )
-            clusters = open_msg.prepare( ( 'demo_db', 'admin', 'admin' ) )\
+        print "Before %r" % exists
+        try:
+            ( factory.get_message( pyorient.DB_DROP ) ).prepare([db_name]) \
                 .send().fetch_response()
-        else:
-            create_msg = factory.get_message( pyorient.DB_CREATE )
-            """:type create_msg: pyorient.Messages.Server.DbCreateMessage """
-            clusters = create_msg.prepare(
-                ( 'demo_db', pyorient.DB_TYPE_DOCUMENT, pyorient.STORAGE_TYPE_MEMORY )
+            assert True
+        except pyorient.PyOrientCommandException, e:
+            print e.message
+        finally:
+            ( factory.get_message( pyorient.DB_CREATE ) ).prepare(
+                (db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
             ).send().fetch_response()
+
+        msg = factory.get_message( pyorient.DB_OPEN )
+        cluster_info = msg.prepare(
+            (db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, "")
+        ).send().fetch_response()
 
             #######################################
 
@@ -164,7 +180,7 @@ class CommandTestCase(unittest.TestCase):
         assert res["#3:4"].vacanza == 'lago'
 
         ( factory.get_message(pyorient.DB_DROP) ).prepare(
-            ['demo_db', pyorient.STORAGE_TYPE_MEMORY ]) \
+            [db_name, pyorient.STORAGE_TYPE_MEMORY ]) \
             .send().fetch_response()
 
     def test_command(self):
@@ -254,3 +270,6 @@ class CommandTestCase(unittest.TestCase):
         # # at the end drop the test database
         # ( DbDropMessage( connection ) ).prepare([db_name, STORAGE_TYPE_MEMORY]) \
         #     .send().fetch_response()
+
+
+x = CommandTestCase('test_hi_level_transaction').run()
