@@ -150,16 +150,16 @@ class RawMessages_2_TestCase(unittest.TestCase):
         exists = msg.prepare( [db_name] ).send().fetch_response()
 
         print "Before %r" % exists
-        if exists is False:
-            print "Creation"
-            try:
-                ( DbCreateMessage( connection ) ).prepare(
-                    (db_name, DB_TYPE_GRAPH, STORAGE_TYPE_PLOCAL)
-                ).send().fetch_response()
-                assert True
-            except PyOrientCommandException, e:
-                print e.message
-                assert False  # No expected Exception
+        try:
+            ( DbDropMessage( connection ) ).prepare([db_name]) \
+                .send().fetch_response()
+            assert True
+        except PyOrientCommandException, e:
+            print e.message
+        finally:
+            ( DbCreateMessage( connection ) ).prepare(
+                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
+            ).send().fetch_response()
 
         msg = DbOpenMessage( connection )
         cluster_info = msg.prepare(
@@ -237,16 +237,16 @@ class RawMessages_2_TestCase(unittest.TestCase):
         exists = msg.prepare( [db_name] ).send().fetch_response()
 
         print "Before %r" % exists
-        if exists is False:
-            print "Creation"
-            try:
-                ( DbCreateMessage( connection ) ).prepare(
-                    (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
-                ).send().fetch_response()
-                assert True
-            except PyOrientCommandException, e:
-                print e.message
-                assert False  # No expected Exception
+        try:
+            ( DbDropMessage( connection ) ).prepare([db_name]) \
+                .send().fetch_response()
+            assert True
+        except PyOrientCommandException, e:
+            print e.message
+        finally:
+            ( DbCreateMessage( connection ) ).prepare(
+                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
+            ).send().fetch_response()
 
         msg = DbOpenMessage( connection )
         cluster_info = msg.prepare(
@@ -427,3 +427,5 @@ class RawMessages_2_TestCase(unittest.TestCase):
 # test_query_async()
 # test_wrong_data_range()
 # test_data_range()
+
+# v = RawMessages_2_TestCase('test_record_create_update').run()

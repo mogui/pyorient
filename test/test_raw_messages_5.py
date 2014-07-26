@@ -107,21 +107,21 @@ class RawMessages_5_TestCase(unittest.TestCase):
         exists = msg.prepare( [db_name] ).send().fetch_response()
 
         print "Before %r" % exists
-        if exists is False:
-            print "Creation"
-            try:
-                ( DbCreateMessage( connection ) ).prepare(
-                    (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_MEMORY)
-                ).send().fetch_response()
-                assert True
-            except PyOrientCommandException, e:
-                print e.message
-                assert False  # No expected Exception
-        else:
-            msg = DbOpenMessage( connection )
-            cluster_info = msg.prepare(
-                (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
+        try:
+            ( DbDropMessage( connection ) ).prepare([db_name]) \
+                .send().fetch_response()
+            assert True
+        except PyOrientCommandException, e:
+            print e.message
+        finally:
+            ( DbCreateMessage( connection ) ).prepare(
+                (db_name, DB_TYPE_GRAPH, STORAGE_TYPE_PLOCAL)
             ).send().fetch_response()
+
+        msg = DbOpenMessage( connection )
+        cluster_info = msg.prepare(
+            (db_name, "admin", "admin", DB_TYPE_GRAPH, "")
+        ).send().fetch_response()
 
         try:
             create_class = CommandMessage(connection)

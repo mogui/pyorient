@@ -86,16 +86,36 @@ class RecordUpdateMessage(BaseMessage):
     def fetch_response(self):
 
         self._append( FIELD_INT )  # record-version
-        if self.get_protocol() > 23:
-            self._append( FIELD_INT )  # count-of-collection-changes
-
         result = super( RecordUpdateMessage, self ).fetch_response()
+
+        # There are some strange behaviours with protocols between 19 and 23
+        # the INT ( count-of-collection-changes ) in documentation
+        # is present, but don't know why,
+        #
+        # Not every time this INT is present!!!!
+        # The next fetch too.
+        #
+        # So, i double check for protocol here
+        # and add a socket timeout.
+        if self.get_protocol() > 19:
+            import socket
+            try:
+                self._orientSocket._socket.settimeout(0.5)
+                self._append( FIELD_INT )  # count-of-collection-changes
+                chng = super( RecordUpdateMessage, self ).fetch_response(True)
+                result.append(chng[0])
+            except socket.error, e:
+                # socket timeout ignore
+                # print e
+                pass
+            finally:
+                self._orientSocket._socket.settimeout(None)  # reset timeout
 
         _changes = []
         try:
-            if self.get_protocol() > 23 and result[2] > 0:
+            if result[1] > 0 and self.get_protocol() > 23:
 
-                for x in range( 0, result[2] ):
+                for x in range( 0, result[1] ):
                     change = [
                         self._decode_field( FIELD_LONG ),  # (uuid-most-sig-bits:long)
                         self._decode_field( FIELD_LONG ),  # (uuid-least-sig-bits:long)
@@ -106,10 +126,11 @@ class RecordUpdateMessage(BaseMessage):
                     _changes.append( change )
 
         except IndexError:
-            # Should not happen because of protocol check
-            pass
+            # append an empty field
+            result.append(None)
 
         return [ result[0], result[1], _changes ]
+
 
     def set_data_segment_id(self, data_segment_id):
         self._data_segment_id = data_segment_id
