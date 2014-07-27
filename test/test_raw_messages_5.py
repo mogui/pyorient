@@ -40,7 +40,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
 
     def test_attach_class_hint(self):
         try:
-            connection = OrientSocket( "localhost", int( 2424 ) )
+            connection = OrientSocket( "localhost", 2424 )
             tx = TXCommitMessage(connection)
             tx.begin()
             tx.attach([1, 2, 3])
@@ -51,7 +51,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
 
     def test_private_prepare(self):
         try:
-            connection = OrientSocket( "localhost", int( 2424 ) )
+            connection = OrientSocket( "localhost", 2424 )
             DbOpenMessage( connection )\
                 .prepare(
                     ("GratefulDeadConcerts", "admin", "admin", DB_TYPE_DOCUMENT, "")
@@ -68,7 +68,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
     
     def test_private_send(self):
         try:
-            connection = OrientSocket( "localhost", int( 2424 ) )
+            connection = OrientSocket( "localhost", 2424 )
             DbOpenMessage( connection )\
                 .prepare(
                     ("GratefulDeadConcerts", "admin", "admin", DB_TYPE_DOCUMENT, "")
@@ -83,7 +83,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
     
     def test_private_fetch(self):
         try:
-            connection = OrientSocket( "localhost", int( 2424 ) )
+            connection = OrientSocket( "localhost", 2424 )
             DbOpenMessage( connection )\
                 .prepare(
                     ("GratefulDeadConcerts", "admin", "admin", DB_TYPE_DOCUMENT, "")
@@ -97,7 +97,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             assert True
 
     def test_transaction(self):
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         session_id = ( ConnectMessage( connection ) ).prepare( ("admin", "admin") )\
             .send().fetch_response()
 

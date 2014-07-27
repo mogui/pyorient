@@ -185,7 +185,7 @@ class CommandTestCase(unittest.TestCase):
 
     def test_command(self):
 
-        connection = pyorient.OrientSocket( "localhost", int( 2424 ) )
+        connection = pyorient.OrientSocket( "localhost", 2424 )
 
         factory = pyorient.OrientDBFactory(connection)
 

@@ -43,7 +43,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         assert x.o_class is None
 
     def test_record_load(self):
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
 
         # print "Sid, should be -1 : %s" % connection.session_id
         assert connection.session_id == -1
@@ -76,7 +76,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
 
     def test_record_count_with_no_opened_db(self):
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
 
         # print "Sid, should be -1 : %s" % connection.session_id
         assert connection.session_id == -1
@@ -100,7 +100,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
 
     def test_record_count(self):
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
 
         # print "Sid, should be -1 : %s" % connection.session_id
         assert connection.session_id == -1
@@ -130,7 +130,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
     def test_record_create_update(self):
 
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         conn_msg = ConnectMessage( connection )
         # print "Protocol: %r" % conn_msg.get_protocol()
         assert connection.protocol != -1
@@ -219,7 +219,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
     def test_record_delete(self):
 
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
 
         conn_msg = ConnectMessage( connection )
         assert connection.protocol != -1
@@ -304,7 +304,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
     def test_data_cluster_count(self):
 
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         assert connection.session_id == -1
 
         # ##################
