@@ -30,12 +30,12 @@ class RawMessages_1_TestCase(unittest.TestCase):
     """ Command Test Case """
 
     def test_not_singleton_socket(self):
-        connection = OrientSocket( "localhost", int( 2424 ) )
-        connection2 = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
+        connection2 = OrientSocket( "localhost", 2424 )
         assert id(connection.get_connection()) != id(connection2.get_connection())
 
     def test_connection(self):
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         msg = ConnectMessage( connection )
         print "%r" % msg.get_protocol()
         assert msg.get_protocol() != -1
@@ -57,7 +57,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
     def test_db_exists(self):
 
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         msg = ConnectMessage( connection )
         print "%r" % msg.get_protocol()
         assert msg.get_protocol() != -1
@@ -83,7 +83,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
     def test_db_open_connected(self):
 
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         conn_msg = ConnectMessage( connection )
 
         print "%r" % conn_msg.get_protocol()
@@ -109,7 +109,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
     def test_db_open_not_connected(self):
 
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
 
         print "Sid, should be -1 : %s" % connection.session_id
         assert connection.session_id == -1
@@ -129,7 +129,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
     def test_db_create_without_connect(self):
 
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
 
         try:
             ( DbCreateMessage( connection ) ).prepare(
@@ -144,7 +144,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
     def test_db_create_with_connect(self):
 
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         conn_msg = ConnectMessage( connection )
         print "Protocol: %r" % conn_msg.get_protocol()
 
@@ -181,7 +181,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         print "%r" % exists
 
     def test_db_drop_without_connect(self):
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         try:
             ( DbDropMessage( connection ) ).prepare(["test"]) \
                 .send().fetch_response()
@@ -195,7 +195,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
     def test_db_create_with_drop(self):
 
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         conn_msg = ConnectMessage( connection )
         print "Protocol: %r" % conn_msg.get_protocol()
         assert connection.protocol != -1
@@ -243,7 +243,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         print "After %r" % exists
 
     def test_db_close(self):
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         conn_msg = ConnectMessage( connection )
         print "Protocol: %r" % conn_msg.get_protocol()
         assert connection.protocol != -1
@@ -289,7 +289,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
               inspect.currentframe().f_back.f_lineno
         return
 
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
         msg = ConnectMessage( connection )
         print "%r" % msg.get_protocol()
         assert msg.get_protocol() != -1
@@ -311,7 +311,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         assert res[:] == []
 
     def test_command(self):
-        connection = OrientSocket( "localhost", int( 2424 ) )
+        connection = OrientSocket( "localhost", 2424 )
 
         print "Sid, should be -1 : %s" % connection.session_id
         assert connection.session_id == -1
