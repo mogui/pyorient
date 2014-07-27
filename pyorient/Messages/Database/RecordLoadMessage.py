@@ -19,7 +19,7 @@ class RecordLoadMessage(BaseMessage):
         # order matters
         self._append( ( FIELD_BYTE, RECORD_LOAD ) )
 
-    @need_connected
+    @need_db_opened
     def prepare(self, params=None):
 
         try:
@@ -41,20 +41,21 @@ class RecordLoadMessage(BaseMessage):
 
         return super( RecordLoadMessage, self ).prepare()
 
-    @need_db_opened
     def fetch_response(self):
         self._append( FIELD_BYTE )
         _status = super( RecordLoadMessage, self ).fetch_response()[0]
 
+        __record = []
         _record = OrientRecord()
-
         if _status != 0:
             self._append( FIELD_BYTES )
             self._append( FIELD_INT )
             self._append( FIELD_BYTE )
 
-            __record = super( RecordLoadMessage, self ).fetch_response(True)[0]
-            _record = ORecordDecoder( __record )
+            __record = super( RecordLoadMessage, self ).fetch_response(True)
+            # bug in orientdb csv serialization in snapshot 2.0,
+            # strip trailing spaces
+            _record = ORecordDecoder( __record[0].rstrip() )
 
             cached_results = self._read_async_records()  # get cache
             self.cached_records = cached_results['cached']
@@ -62,7 +63,8 @@ class RecordLoadMessage(BaseMessage):
         return OrientRecord(
             _record.data,
             o_class=_record.className,
-            rid=self._record_id
+            rid=self._record_id,
+            version=__record[1]
         )
 
     def set_record_id(self, _record_id):

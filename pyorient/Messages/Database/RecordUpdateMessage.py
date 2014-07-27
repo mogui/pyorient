@@ -129,7 +129,11 @@ class RecordUpdateMessage(BaseMessage):
             # append an empty field
             result.append(None)
 
-        return [ result[0], result[1], _changes ]
+        self._record_content.update(
+            version=result[0]
+        )
+
+        return [ self._record_content, result[1], _changes ]
 
 
     def set_data_segment_id(self, data_segment_id):
