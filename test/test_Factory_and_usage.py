@@ -249,7 +249,7 @@ class CommandTestCase(unittest.TestCase):
         assert isinstance(cluster, list)
         assert rec1.rid == res[0].rid
         assert rec1.version != res[0].version
-        assert res[0].version == upd_res[0]
+        assert res[0].version == upd_res[0].version
 
         assert len(res) == 4
         assert res[0].rid == '#11:0'
@@ -266,10 +266,44 @@ class CommandTestCase(unittest.TestCase):
         #     print "%r" % x.Band
         #     print "%r" % x.Song
 
+
+        # classes are allowed in record create/update/load
+        rec = { '@c_test': { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' } }
+        rec_position = ( factory.get_message(pyorient.RECORD_CREATE) )\
+            .prepare( ( cluster[0], rec ) )\
+            .send().fetch_response()
+
+        print "New Rec Position: %s" % rec_position.rid
+        assert rec_position.rid is not None
+
+        rec = { '@c_test': { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' } }
+        update_success = ( factory.get_message(pyorient.RECORD_UPDATE) )\
+            .prepare( ( rec_position.rid, rec_position.rid, rec ) )\
+            .send().fetch_response()
+
+
+        req_msg = factory.get_message(pyorient.RECORD_LOAD)
+        res = req_msg.prepare( [ rec_position.rid, "*:-1" ] ) \
+            .send().fetch_response()
+
+        # print res
+        # print res.rid
+        # print res.o_class
+        # print res.version
+        # print res.alloggio
+        # print res.lavoro
+        # print res.vacanza
+
+        assert res.rid == "#11:4"
+        assert res.o_class == "c_test"
+        assert res.alloggio == 'albergo'
+        assert not hasattr( res, 'Band')
+        assert not hasattr( res, 'Song')
+
         # print ""
         # # at the end drop the test database
         # ( DbDropMessage( connection ) ).prepare([db_name, STORAGE_TYPE_MEMORY]) \
         #     .send().fetch_response()
 
 
-x = CommandTestCase('test_hi_level_transaction').run()
+# x = CommandTestCase('test_hi_level_transaction').run()

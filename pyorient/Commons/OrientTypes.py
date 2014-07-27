@@ -35,6 +35,7 @@ class OrientRecord(object):
         if self.__o_class is None:
             self.__o_class = kwargs.get('o_class', None)
 
+
 class OrientRecordLink(object):
     def __init__(self, recordlink):
         cid, rpos = recordlink.split(":")
