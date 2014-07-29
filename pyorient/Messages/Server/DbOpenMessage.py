@@ -17,7 +17,6 @@ class DbOpenMessage(BaseMessage):
         self._client_id = ''
         self._db_name = ''
         self._db_type = DB_TYPE_DOCUMENT
-        self._serialization_type = SERIALIZATION_DOCUMENT2CSV
 
         self._append( ( FIELD_BYTE, DB_OPEN ) )
 
@@ -108,6 +107,9 @@ class DbOpenMessage(BaseMessage):
 
         # set database opened
         self._orientSocket.db_opened = self._db_name
+
+        # set serialization type, as global in the orient socket class
+        self._orientSocket.serialization_type = self._serialization_type
 
         return clusters
 
