@@ -6,6 +6,7 @@ import struct
 from Constants.BinaryTypes import *
 from Constants.ClientConstants import *
 from pyorient.Commons.utils import *
+from Constants.OrientPrimitives import *
 
 
 try:
@@ -29,6 +30,7 @@ class OrientSocket(object):
         self.protocol = -1
         self.session_id = -1
         self.db_opened = None
+        self.serialization_type = SERIALIZATION_DOCUMENT2CSV
 
     def get_connection(self):
         try:

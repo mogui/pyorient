@@ -42,6 +42,7 @@ class BaseMessage(object):
 
         self._command = chr(0)
         self._db_opened = self._orientSocket.db_opened
+        self._serialization_type = self._orientSocket.serialization_type
         self._output_buffer = ''
         self._input_buffer = ''
 
