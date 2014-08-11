@@ -18,8 +18,6 @@ except ImportError:
 class OrientSocket(object):
     """docstring for OrientSocket"""
 
-    MAX_READ_LENGTH = 512000
-
     def __init__(self, host, port):
 
         self._connected = False
@@ -43,7 +41,7 @@ class OrientSocket(object):
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._socket.connect( (self.host, self.port) )
-            self._socket.settimeout(5.0)  # 15 secs of timeout
+            self._socket.settimeout(30.0)  # 30 secs of timeout
             _value = self._socket.recv( FIELD_SHORT['bytes'] )
             self.protocol = struct.unpack('!h', _value)[0]
             if self.protocol > SUPPORTED_PROTOCOL:
@@ -77,7 +75,9 @@ class OrientSocket(object):
 
         buf = StringIO()
         try:
+
             while buf.tell() < _len_to_read:
+                
                 tmp = self._socket.recv( _len_to_read - buf.tell() )
                 buf.write( tmp )
 
@@ -91,8 +91,10 @@ class OrientSocket(object):
             buf.seek(0)
             return buf.read( _len_to_read )
         except socket.timeout, e:
-            raise PyOrientConnectionException(
-                "Timeout reading from socket: %s" % e, [] )
+            # we don't set false because of
+            # RecordUpdateMessage/RecordCreateMessage trick
+            """:see RecordUpdateMessage.py """
+            raise e
         except Exception, e:
             self._connected = False
             raise e
