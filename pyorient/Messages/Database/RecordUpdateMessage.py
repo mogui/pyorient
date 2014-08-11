@@ -100,11 +100,11 @@ class RecordUpdateMessage(BaseMessage):
         if self.get_protocol() > 19:
             import socket
             try:
-                self._orientSocket._socket.settimeout(0.5)
+                self._orientSocket._socket.settimeout(0.1)
                 self._append( FIELD_INT )  # count-of-collection-changes
                 chng = super( RecordUpdateMessage, self ).fetch_response(True)
                 result.append(chng[0])
-            except socket.error, e:
+            except socket.timeout, e:
                 # socket timeout ignore
                 # print e
                 pass

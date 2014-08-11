@@ -306,4 +306,4 @@ class CommandTestCase(unittest.TestCase):
         #     .send().fetch_response()
 
 
-# x = CommandTestCase('test_hi_level_transaction').run()
+x = CommandTestCase('test_command').run()
