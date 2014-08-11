@@ -43,6 +43,7 @@ class OrientSocket(object):
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._socket.connect( (self.host, self.port) )
+            self._socket.settimeout(5.0)  # 15 secs of timeout
             _value = self._socket.recv( FIELD_SHORT['bytes'] )
             self.protocol = struct.unpack('!h', _value)[0]
             if self.protocol > SUPPORTED_PROTOCOL:
@@ -89,6 +90,9 @@ class OrientSocket(object):
 
             buf.seek(0)
             return buf.read( _len_to_read )
+        except socket.timeout, e:
+            raise PyOrientConnectionException(
+                "Timeout reading from socket: %s" % e, [] )
         except Exception, e:
             self._connected = False
             raise e
