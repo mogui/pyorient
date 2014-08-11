@@ -33,11 +33,7 @@ class OrientSocket(object):
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
 
     def get_connection(self):
-        try:
-            if self._socket.connect_ex((self.host, self.port)) is not 106:
-                self.connect()
-        except socket.error, e:
-            # catch socket Exception 'Bad file descriptor' if connection closed
+        if not self._connected:
             self.connect()
 
         return self._socket
@@ -55,6 +51,7 @@ class OrientSocket(object):
                     " is not supported yet by this client.", [])
             self._connected = True
         except socket.error, e:
+            self._connected = False
             raise PyOrientConnectionException( "Socket Error: %s" % e, [] )
 
     def close(self):
@@ -63,6 +60,7 @@ class OrientSocket(object):
         self.protocol = -1
         self.session_id = -1
         self._socket.close()
+        self._connected = False
 
     def write(self, buff):
         return self._socket.send(buff)
@@ -78,24 +76,21 @@ class OrientSocket(object):
 
         buf = StringIO()
         try:
-
             while buf.tell() < _len_to_read:
+                tmp = self._socket.recv( _len_to_read - buf.tell() )
+                buf.write( tmp )
 
                 if is_debug_verbose():
-                    tmp = self._socket.recv( _len_to_read - buf.tell() )
-                    buf.write( tmp )
                     import pyorient.Commons.hexdump
                     print( "\n          -------------------\n" )
                     print( "    To read was: " + str( _len_to_read ) )
                     print( pyorient.Commons.hexdump.hexdump(tmp, 'return') )
                     print( "    left: " + str( _len_to_read - buf.tell() ) )
 
-                else:
-                    buf.write( self._socket.recv( _len_to_read - buf.tell() ) )
-
             buf.seek(0)
             return buf.read( _len_to_read )
         except Exception, e:
+            self._connected = False
             raise e
         finally:
             buf.close()
