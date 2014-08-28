@@ -1,12 +1,13 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 from pyorient.Commons.OrientException import *
 from pyorient.Messages.OrientSocket import OrientSocket
+import pyorient
 
 
 #
 # OrientDB Message Factory
 #
-class OrientDBFactory(object):
+class OrientDBFactory():
     _connection = None
 
     _Messages = dict(
@@ -43,6 +44,37 @@ class OrientDBFactory(object):
             connection = host
 
         self._connection = connection
+
+    def __getattr__(self, item):
+
+        if item == "query_sync":
+            _Message = self.get_message("CommandMessage")
+            def wrapper(*args, **kw):
+                return _Message.prepare( ( pyorient.QUERY_CMD, ) + args )\
+                    .send().fetch_response()
+            return wrapper
+
+        elif item == "query_async":
+            _Message = self.get_message("CommandMessage")
+            def wrapper(*args, **kw):
+                return _Message.prepare( ( pyorient.QUERY_CMD, ) + args  )\
+                    .send().fetch_response()
+            return wrapper
+
+        elif item == "query_command":
+            _Message = self.get_message("CommandMessage")
+            def wrapper(*args, **kw):
+                return _Message.prepare( ( pyorient.QUERY_CMD, ) + args )\
+                    .send().fetch_response()
+            return wrapper
+
+        else:
+            _names = "".join( [i.capitalize() for i in item.split('_')] )
+            _Message = self.get_message(_names + "Message")
+
+            def wrapper(*args, **kw):
+                return _Message.prepare( args ).send().fetch_response()
+            return wrapper
 
     def get_message(self, command=None):
         """

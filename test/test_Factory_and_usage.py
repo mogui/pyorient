@@ -305,5 +305,27 @@ class CommandTestCase(unittest.TestCase):
         # ( DbDropMessage( connection ) ).prepare([db_name, STORAGE_TYPE_MEMORY]) \
         #     .send().fetch_response()
 
+    def test_NewIface(self):
 
-x = CommandTestCase('test_command').run()
+            client = pyorient.OrientDBFactory("localhost", 2424)
+            session_id = client.connect( "admin", "admin" )
+
+            db_name = "tmp_test1"
+
+            try:
+
+                print ""
+                client.db_drop( db_name, pyorient.STORAGE_TYPE_MEMORY )
+                # at the end drop the test database
+
+            except pyorient.PyOrientCommandException, e:
+                print e.message
+            finally:
+                client.db_create(db_name,pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
+
+            msg = client.db_open( db_name, "admin", "admin" )
+            print msg
+
+# x = CommandTestCase('test_command').run()
+
+x = CommandTestCase('test_NewIface').run()
