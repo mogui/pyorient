@@ -31,7 +31,7 @@ from pyorient.Messages.Database.RecordUpdateMessage import RecordUpdateMessage
 from pyorient.Messages.Database.RecordDeleteMessage import RecordDeleteMessage
 from pyorient.Messages.Database.DataClusterCountMessage import DataClusterCountMessage
 from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDataRangeMessage
-from pyorient.Messages.Database.TXCommitMessage import TXCommitMessage
+from pyorient.Messages.Database.TxCommitMessage import TXCommitMessage
 from pyorient.Commons.OrientTypes import *
 
 

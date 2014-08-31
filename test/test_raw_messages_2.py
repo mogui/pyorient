@@ -356,27 +356,28 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .set_user('admin').set_pass('admin').prepare()\
             .send().fetch_response()
 
+        def _test_callback(record):
+            assert record is not []
+            assert record.rid is not None  # assert no exception
+            # print record
+            # print record.rid
+            # print record.o_class
+            # print record.__getattribute__('in')
+            # print record.out
+
         try_select_async = CommandMessage(connection)
 
         try_select_async.set_command_type(QUERY_ASYNC)\
                         .set_query("select from followed_by")\
                         .set_limit(50)\
                         .set_fetch_plan("*:0")\
+                        .set_callback( _test_callback )\
                         .prepare()\
 
 
         response = try_select_async.send().fetch_response()
 
-        assert response is not []
-        assert response[0].rid is not None  # assert no exception
-        assert response[1].rid is not None  # assert no exception
-        assert response[2].rid is not None  # assert no exception
-        # for x in response:
-        #     print x
-        #     print x.rid
-        #     print x.o_class
-        #     print x.__getattribute__('in')
-        #     print x.out
+        assert len(response) == 0
 
     def test_wrong_data_range(self):
         connection = OrientSocket( 'localhost', 2424 )

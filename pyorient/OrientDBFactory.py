@@ -33,7 +33,7 @@ class OrientDBFactory():
         RecordLoadMessage="pyorient.Messages.Database.RecordLoadMessage",
         RecordUpdateMessage="pyorient.Messages.Database.RecordUpdateMessage",
         CommandMessage="pyorient.Messages.Database.CommandMessage",
-        TXCommitMessage="pyorient.Messages.Database.TXCommitMessage",
+        TxCommitMessage="pyorient.Messages.Database.TxCommitMessage",
     )
 
     def __init__(self, host='localhost', port=2424):
@@ -47,34 +47,30 @@ class OrientDBFactory():
 
     def __getattr__(self, item):
 
-        if item == "query_sync":
-            _Message = self.get_message("CommandMessage")
-            def wrapper(*args, **kw):
-                return _Message.prepare( ( pyorient.QUERY_CMD, ) + args )\
-                    .send().fetch_response()
-            return wrapper
+        _names = "".join( [i.capitalize() for i in item.split('_')] )
+        _Message = self.get_message(_names + "Message")
 
-        elif item == "query_async":
-            _Message = self.get_message("CommandMessage")
-            def wrapper(*args, **kw):
-                return _Message.prepare( ( pyorient.QUERY_CMD, ) + args  )\
-                    .send().fetch_response()
-            return wrapper
+        def wrapper(*args, **kw):
+            return _Message.prepare( args ).send().fetch_response()
+        return wrapper
 
-        elif item == "query_command":
-            _Message = self.get_message("CommandMessage")
-            def wrapper(*args, **kw):
-                return _Message.prepare( ( pyorient.QUERY_CMD, ) + args )\
-                    .send().fetch_response()
-            return wrapper
+    def command(self, *args):
+        _Message = self.get_message("CommandMessage")
+        return _Message.prepare( ( pyorient.QUERY_CMD, ) + args )\
+            .send().fetch_response()
 
-        else:
-            _names = "".join( [i.capitalize() for i in item.split('_')] )
-            _Message = self.get_message(_names + "Message")
+    def query(self, *args):
+        _Message = self.get_message("CommandMessage")
+        return _Message.prepare( ( pyorient.QUERY_SYNC, ) + args )\
+            .send().fetch_response()
 
-            def wrapper(*args, **kw):
-                return _Message.prepare( args ).send().fetch_response()
-            return wrapper
+    def query_async(self, *args):
+        _Message = self.get_message("CommandMessage")
+        return _Message.prepare( ( pyorient.QUERY_ASYNC, ) + args )\
+            .send().fetch_response()
+
+    def tx_commit(self):
+        return self.get_message("TxCommitMessage")
 
     def get_message(self, command=None):
         """

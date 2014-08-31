@@ -230,10 +230,12 @@ class _TXCommitMessage(BaseMessage):
         self._pre_operation_records = {}
         self._operation_records = {}
         self._temp_cluster_position_seq = -2
+        self._orientSocket.in_transaction = True
         self.get_transaction_id()
         return self
 
     def commit(self):
+        self._orientSocket.in_transaction = False
         result = self.prepare().send().fetch_response()
         self._operation_stack = []
         self._pre_operation_records = {}
@@ -248,4 +250,5 @@ class _TXCommitMessage(BaseMessage):
         self._operation_records = {}
         self._tx_id = -1
         self._temp_cluster_position_seq = -2
+        self._orientSocket.in_transaction = False
         return self
