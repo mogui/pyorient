@@ -25,6 +25,10 @@ class RecordLoadMessage(BaseMessage):
         try:
             self._record_id = params[0]  # mandatory if not passed with set
             self._fetch_plan = params[1]  # user choice if present
+
+            # callback function use to operate
+            # over the async fetched records
+            self._callback = params[2]
         except IndexError:
             # Use default for non existent indexes
             pass
@@ -73,4 +77,12 @@ class RecordLoadMessage(BaseMessage):
 
     def set_fetch_plan(self, _fetch_plan):
         self._fetch_plan = _fetch_plan
+        return self
+
+    def set_callback(self, func):
+        if hasattr(func, '__call__'):
+            self._callback = func
+        else:
+            raise PyOrientBadMethodCallException( func + " is not a callable "
+                                                         "function", [])
         return self

@@ -29,6 +29,7 @@ class OrientSocket(object):
         self.session_id = -1
         self.db_opened = None
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
+        self.in_transaction = False
 
     def get_connection(self):
         if not self._connected:

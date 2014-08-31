@@ -85,6 +85,10 @@ class RecordUpdateMessage(BaseMessage):
 
     def fetch_response(self):
 
+        # skip execution in case of transaction
+        if self._orientSocket.in_transaction is True:
+            return self
+
         self._append( FIELD_INT )  # record-version
         result = super( RecordUpdateMessage, self ).fetch_response()
 

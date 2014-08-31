@@ -47,6 +47,11 @@ class RecordDeleteMessage(BaseMessage):
         return super( RecordDeleteMessage, self ).prepare()
 
     def fetch_response(self):
+
+        # skip execution in case of transaction
+        if self._orientSocket.in_transaction is True:
+            return self
+
         self._append( FIELD_BOOLEAN )  # payload-status
         return super( RecordDeleteMessage, self ).fetch_response()[0]
 

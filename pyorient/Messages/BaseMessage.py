@@ -46,6 +46,12 @@ class BaseMessage(object):
         self._output_buffer = ''
         self._input_buffer = ''
 
+        #callback function for async queries
+        self._callback = None
+
+        global in_transaction
+        in_transaction = False
+
     def _update_socket_id(self):
         """Force update of socket id from inside the class"""
         self._orientSocket.session_id = self._session_id
@@ -158,8 +164,10 @@ class BaseMessage(object):
                + "\n\n_input_buffer: \n" + hexdump( self._input_buffer, 'return' )
 
     def send(self):
-        self._orientSocket.write( self._output_buffer )
-        self._reset_fields_definition()
+        if self._orientSocket.in_transaction is False:
+            self._orientSocket.write( self._output_buffer )
+            self._reset_fields_definition()
+
         return self
 
     def close(self):
@@ -270,9 +278,11 @@ class BaseMessage(object):
                 _record = self._read_record()
 
                 if _status == 1:  # async record type
-                    async_records.append( _record )  # save in async
+                    # async_records.append( _record )  # save in async
+                    self._callback( _record )  # save in async
                 elif _status == 2:  # cache
-                    cached_records.append( _record )  # save in cache
+                    # cached_records.append( _record )  # save in cache
+                    self._callback( _record )  # save in cache
 
             except Exception:
                 pass

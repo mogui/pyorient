@@ -31,6 +31,11 @@ class CommandMessage(BaseMessage):
                 self._query = params[1]
                 self._limit = params[2]
                 self._fetch_plan = params[3]
+
+                # callback function use to operate
+                # over the async fetched records
+                self._callback = params[4]
+
             except IndexError:
                 # Use default for non existent indexes
                 pass
@@ -40,6 +45,9 @@ class CommandMessage(BaseMessage):
                 or self._command_type == QUERY_GREMLIN:
             self._mod_byte = 's'
         else:
+            if self._callback is None:
+                raise PyOrientBadMethodCallException( "No callback was "
+                                                                  "provided.",[])
             self._mod_byte = 'a'
 
         _payload_definition = [
@@ -66,6 +74,10 @@ class CommandMessage(BaseMessage):
         return super( CommandMessage, self ).prepare()
 
     def fetch_response(self):
+
+        # skip execution in case of transaction
+        if self._orientSocket.in_transaction is True:
+            return self
 
         # decode header only
         void = super( CommandMessage, self ).fetch_response()
@@ -149,3 +161,11 @@ class CommandMessage(BaseMessage):
             exit(1)
 
         return res
+
+    def set_callback(self, func):
+        if hasattr(func, '__call__'):
+            self._callback = func
+        else:
+            raise PyOrientBadMethodCallException( func + " is not a callable "
+                                                         "function", [])
+        return self

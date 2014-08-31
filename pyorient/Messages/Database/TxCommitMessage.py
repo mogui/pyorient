@@ -6,7 +6,7 @@ from pyorient.Messages.Database._TXCommitMessage import _TXCommitMessage
 #
 # Facade pattern for Commit Message
 #
-class TXCommitMessage:
+class TxCommitMessage:
 
     def __init__(self, _orient_socket):
         self._transaction = _TXCommitMessage(_orient_socket)
