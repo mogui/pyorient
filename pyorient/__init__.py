@@ -15,6 +15,7 @@
 #   limitations under the License.
 
 __author__ = 'mogui'
+
 import base64
 import _pyorient
 
@@ -27,29 +28,22 @@ from OrientTypes import *
 #
 
 # cluster costants
-CLUSTER_PHYSICAL     = _pyorient.CLUSTER_PHYSICAL
-CLUSTER_LOGICAL      = _pyorient.CLUSTER_LOGICAL     
-CLUSTER_MEMORY       = _pyorient.CLUSTER_MEMORY      
+CLUSTER_PHYSICAL = _pyorient.CLUSTER_PHYSICAL
+CLUSTER_LOGICAL = _pyorient.CLUSTER_LOGICAL
+CLUSTER_MEMORY = _pyorient.CLUSTER_MEMORY
 CLUSTER_DEFAULT_SIZE = _pyorient.CLUSTER_DEFAULT_SIZE
 
 # command costants
-QUERY_SYNC = _pyorient.QUERY_SYNC 
+QUERY_SYNC = _pyorient.QUERY_SYNC
 QUERY_ASYNC = _pyorient.QUERY_ASYNC
 
 # debug levels constants
 PARANOID = _pyorient.PARANOID
-DEBUG    = _pyorient.DEBUG
-NOTICE   = _pyorient.NOTICE
-INFO     = _pyorient.INFO
-NORMAL   = _pyorient.NORMAL
-WARNING  = _pyorient.WARNING
+DEBUG = _pyorient.DEBUG
+NOTICE = _pyorient.NOTICE
+INFO = _pyorient.INFO
+NORMAL = _pyorient.NORMAL
+WARNING = _pyorient.WARNING
 CRITICAL = _pyorient.CRITICAL
-FATAL    = _pyorient.FATAL
-SILENT   = _pyorient.SILENT
-
-
-
-
-
-
-		
+FATAL = _pyorient.FATAL
+SILENT = _pyorient.SILENT
