@@ -1,4 +1,4 @@
 
 NAME = "OrientDB Python binary client (pyorient)"
 VERSION = "1.0"
-SUPPORTED_PROTOCOL = 24
+SUPPORTED_PROTOCOL = 25

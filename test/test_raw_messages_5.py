@@ -31,7 +31,7 @@ from pyorient.Messages.Database.RecordUpdateMessage import RecordUpdateMessage
 from pyorient.Messages.Database.RecordDeleteMessage import RecordDeleteMessage
 from pyorient.Messages.Database.DataClusterCountMessage import DataClusterCountMessage
 from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDataRangeMessage
-from pyorient.Messages.Database.TxCommitMessage import TXCommitMessage
+from pyorient.Messages.Database.TxCommitMessage import TxCommitMessage
 from pyorient.Commons.OrientTypes import *
 
 
@@ -41,7 +41,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
     def test_attach_class_hint(self):
         try:
             connection = OrientSocket( "localhost", 2424 )
-            tx = TXCommitMessage(connection)
+            tx = TxCommitMessage(connection)
             tx.begin()
             tx.attach([1, 2, 3])
             assert False  # should not happens
@@ -57,7 +57,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
                     ("GratefulDeadConcerts", "admin", "admin", DB_TYPE_DOCUMENT, "")
                 ).send().fetch_response()
     
-            tx = TXCommitMessage(connection)
+            tx = TxCommitMessage(connection)
             tx.begin()
             tx.prepare()
             assert False
@@ -73,7 +73,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
                 .prepare(
                     ("GratefulDeadConcerts", "admin", "admin", DB_TYPE_DOCUMENT, "")
                 ).send().fetch_response()
-            tx = TXCommitMessage(connection)
+            tx = TxCommitMessage(connection)
             tx.begin()
             tx.send()
             assert False
@@ -88,7 +88,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
                 .prepare(
                     ("GratefulDeadConcerts", "admin", "admin", DB_TYPE_DOCUMENT, "")
                 ).send().fetch_response()
-            tx = TXCommitMessage(connection)
+            tx = TxCommitMessage(connection)
             tx.begin()
             tx.fetch_response()
             assert False
@@ -166,7 +166,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
         delete_msg.prepare( ( 3, rec_position.rid ) )
 
 
-        tx = TXCommitMessage(connection)
+        tx = TxCommitMessage(connection)
         tx.begin()
         tx.attach( rec_position1 )
         tx.attach( rec_position1 )

@@ -58,9 +58,13 @@ class RawMessages_2_TestCase(unittest.TestCase):
         ).send().fetch_response()
         assert len(cluster_info) != 0
 
+        def _test_callback(record):
+            assert record is not []
+            assert record.rid is not None  # assert no exception
+
         req_msg = RecordLoadMessage( connection )
 
-        res = req_msg.prepare( [ "#11:0", "*:-1" ] ) \
+        res = req_msg.prepare( [ "#11:0", "*:-1", _test_callback ] ) \
             .send().fetch_response()
 
         assert res.rid == "#11:0"
@@ -377,7 +381,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         response = try_select_async.send().fetch_response()
 
-        assert len(response) == 0
+        assert response is None
 
     def test_wrong_data_range(self):
         connection = OrientSocket( 'localhost', 2424 )

@@ -28,7 +28,7 @@ class RecordLoadMessage(BaseMessage):
 
             # callback function use to operate
             # over the async fetched records
-            self._callback = params[2]
+            self.set_callback( params[2] )
         except IndexError:
             # Use default for non existent indexes
             pass
@@ -61,8 +61,7 @@ class RecordLoadMessage(BaseMessage):
             # strip trailing spaces
             _record = ORecordDecoder( __record[0].rstrip() )
 
-            cached_results = self._read_async_records()  # get cache
-            self.cached_records = cached_results['cached']
+            self._read_async_records()  # get cache
 
         return OrientRecord(
             _record.data,
