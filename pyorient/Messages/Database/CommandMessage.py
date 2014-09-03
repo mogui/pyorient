@@ -34,7 +34,7 @@ class CommandMessage(BaseMessage):
 
                 # callback function use to operate
                 # over the async fetched records
-                self._callback = params[4]
+                self.set_callback( params[4] )
 
             except IndexError:
                 # Use default for non existent indexes
@@ -83,9 +83,7 @@ class CommandMessage(BaseMessage):
         void = super( CommandMessage, self ).fetch_response()
 
         if self._command_type == QUERY_ASYNC:
-            _results = self._read_async_records()
-            # cache = _results['cached']
-            return _results['async']
+            self._read_async_records()
         else:
             return self._read_sync()
 

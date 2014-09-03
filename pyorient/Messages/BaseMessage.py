@@ -269,11 +269,13 @@ class BaseMessage(object):
         """
         _status = self._decode_field( FIELD_BYTE )  # status
 
-        async_records = []
-        cached_records = []
         while _status != 0:
 
             try:
+
+                # if a callback for the cache is not set, raise exception
+                if not hasattr(self._callback, '__call__'):
+                    raise AttributeError()
 
                 _record = self._read_record()
 
@@ -284,13 +286,19 @@ class BaseMessage(object):
                     # cached_records.append( _record )  # save in cache
                     self._callback( _record )  # save in cache
 
-            except Exception:
+            except AttributeError:
+                # AttributeError: 'RecordLoadMessage' object has
+                # no attribute '_command_type'
+                raise PyOrientBadMethodCallException(
+                    str(self._callback) + " is not a callable function", [])
+
+            except Exception, e:
+                print e.message
                 pass
             finally:
                 # read new status and flush the debug buffer
                 _status = self._decode_field( FIELD_BYTE )  # status
 
-        return {'async': async_records, 'cached': cached_records}
 
     def _read_record(self):
         """
