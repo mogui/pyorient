@@ -11,6 +11,6 @@ client.**command**( *command_type, query, limit, fetch_plan, callback* )
 - **command_type** - type of command ASYNC or NOT
 - **query** - the effective query
 - **limit**	- limit results
-- **fetc_plan** - fetch plan to use in the query
+- **fetch_plan** - fetch plan to use in the query
 
 ---
