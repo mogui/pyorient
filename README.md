@@ -23,7 +23,7 @@ then you can run tests with:
 
 ## Usage
 
-For full range of commands refer to this page: [API](https://github.com/mogui/pyorient/wiki/API) or read the tests!
+A full range of commands will be available soon, for now you have to read the tests.
 
 ### Init the client
 
