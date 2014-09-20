@@ -125,9 +125,9 @@ A full range of commands will be available soon, for now you have to read the te
 	tx.attach( update_record )
 	res = tx.commit()
 
-	assert res["#3:1"].holiday == 'surf'
+	assert res["#3:1"].holiday == 'mountain'
 	assert res["#3:2"].holiday == 'surf'
-	assert res["#3:3"].holiday == 'mountain'
+	assert res["#3:3"].holiday == 'surf'
 
 ## Contributions
 
