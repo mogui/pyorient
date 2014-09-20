@@ -27,7 +27,7 @@ For full range of commands refer to this page: [API](https://github.com/mogui/py
 
 ### init the client
 
-	client = pyorient.OrientDBFactory("localhost", 2424)
+	client = pyorient.OrientDB("localhost", 2424)
     session_id = client.connect( "admin", "admin" )
     
 ### Add a cluster

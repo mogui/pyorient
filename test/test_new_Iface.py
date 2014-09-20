@@ -18,7 +18,7 @@ class CommandTestCase(unittest.TestCase):
 
     def test_new_client_interface(self):
 
-            client = pyorient.OrientDBFactory("localhost", 2424)
+            client = pyorient.OrientDB("localhost", 2424)
             session_id = client.connect( "admin", "admin" )
 
             db_name = "GratefulDeadConcerts"
@@ -134,7 +134,7 @@ class CommandTestCase(unittest.TestCase):
 
     def test_transaction_new_iface(self):
 
-        client = pyorient.OrientDBFactory('localhost', 2424)
+        client = pyorient.OrientDB('localhost', 2424)
 
         client.connect( "admin", "admin" )
 

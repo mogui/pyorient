@@ -7,7 +7,7 @@ import pyorient
 #
 # OrientDB Message Factory
 #
-class OrientDBFactory():
+class OrientDB():
     _connection = None
 
     _Messages = dict(
@@ -54,20 +54,93 @@ class OrientDBFactory():
             return _Message.prepare( args ).send().fetch_response()
         return wrapper
 
+    # SERVER COMMANDS
+
+    def connect(self, *args):
+        return self.get_message("ConnectMessage") \
+            .prepare(args).send().fetch_response()
+
+    def db_count_records(self, *args):
+        return self.get_message("DbCountRecordsMessage") \
+            .prepare(args).send().fetch_response()
+
+    def db_create(self, *args):
+        return self.get_message("DbCreateMessage") \
+            .prepare(args).send().fetch_response()
+
+    def db_drop(self, *args):
+        return self.get_message("DbDropMessage") \
+            .prepare(args).send().fetch_response()
+
+    def db_exists(self, *args):
+        return self.get_message("DbExistsMessage") \
+            .prepare(args).send().fetch_response()
+
+    def db_open(self, *args):
+        return self.get_message("DbOpenMessage") \
+            .prepare(args).send().fetch_response()
+
+    def db_reload(self, *args):
+        return self.get_message("DbReloadMessage") \
+            .prepare(args).send().fetch_response()
+
+    def shutdown(self, *args):
+        return self.get_message("ShutdownMessage") \
+            .prepare(args).send().fetch_response()
+
+    #DATABASE COMMANDS
+
     def command(self, *args):
-        _Message = self.get_message("CommandMessage")
-        return _Message.prepare( ( pyorient.QUERY_CMD, ) + args )\
-            .send().fetch_response()
+        return self.get_message("CommandMessage") \
+            .prepare(( pyorient.QUERY_CMD, ) + args).send().fetch_response()
 
     def query(self, *args):
-        _Message = self.get_message("CommandMessage")
-        return _Message.prepare( ( pyorient.QUERY_SYNC, ) + args )\
-            .send().fetch_response()
+        return self.get_message("CommandMessage") \
+            .prepare(( pyorient.QUERY_SYNC, ) + args).send().fetch_response()
 
     def query_async(self, *args):
-        _Message = self.get_message("CommandMessage")
-        return _Message.prepare( ( pyorient.QUERY_ASYNC, ) + args )\
-            .send().fetch_response()
+        return self.get_message("CommandMessage") \
+            .prepare(( pyorient.QUERY_ASYNC, ) + args).send().fetch_response()
+
+    def data_cluster_add(self, *args):
+        return self.get_message("DataClusterAddMessage") \
+            .prepare(args).send().fetch_response()
+
+    def data_cluster_count(self, *args):
+        return self.get_message("DataClusterCountMessage") \
+            .prepare(args).send().fetch_response()
+
+    def data_cluster_data_range(self, *args):
+        return self.get_message("DataClusterDataRangeMessage") \
+            .prepare(args).send().fetch_response()
+
+    def data_cluster_drop(self, *args):
+        return self.get_message("DataClusterDropMessage") \
+            .prepare(args).send().fetch_response()
+
+    def db_close(self, *args):
+        return self.get_message("DbCloseMessage") \
+            .prepare(args).send().fetch_response()
+
+    def db_size(self, *args):
+        return self.get_message("DbSizeMessage") \
+            .prepare(args).send().fetch_response()
+
+    def record_create(self, *args):
+        return self.get_message("RecordCreateMessage") \
+            .prepare(args).send().fetch_response()
+
+    def record_delete(self, *args):
+        return self.get_message("RecordDeleteMessage") \
+            .prepare(args).send().fetch_response()
+
+    def record_load(self, *args):
+        return self.get_message("RecordLoadMessage") \
+            .prepare(args).send().fetch_response()
+
+    def record_update(self, *args):
+        return self.get_message("RecordUpdateMessage") \
+            .prepare(args).send().fetch_response()
 
     def tx_commit(self):
         return self.get_message("TxCommitMessage")
