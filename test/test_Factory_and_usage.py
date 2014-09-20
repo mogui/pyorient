@@ -18,7 +18,7 @@ class CommandTestCase(unittest.TestCase):
 
     def test_hi_level_interface(self):
 
-        factory = pyorient.OrientDBFactory('localhost', 2424)
+        factory = pyorient.OrientDB('localhost', 2424)
 
         factory.get_message( pyorient.CONNECT ).prepare( ("admin", "admin") )\
             .send().fetch_response()
@@ -100,7 +100,7 @@ class CommandTestCase(unittest.TestCase):
 
     def test_hi_level_transaction(self):
 
-        factory = pyorient.OrientDBFactory('localhost', 2424)
+        factory = pyorient.OrientDB('localhost', 2424)
 
         factory.get_message( pyorient.CONNECT ).prepare( ("admin", "admin") )\
             .send().fetch_response()
@@ -187,7 +187,7 @@ class CommandTestCase(unittest.TestCase):
 
         connection = pyorient.OrientSocket( "localhost", 2424 )
 
-        factory = pyorient.OrientDBFactory(connection)
+        factory = pyorient.OrientDB(connection)
 
 
         session_id = ( factory.get_message(pyorient.CONNECT) ).prepare( ("admin", "admin") )\
