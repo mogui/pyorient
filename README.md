@@ -25,7 +25,7 @@ then you can run tests with:
 
 For full range of commands refer to this page: [API](https://github.com/mogui/pyorient/wiki/API) or read the tests!
 
-### init the client
+### Init the client
 
 	client = pyorient.OrientDB("localhost", 2424)
     session_id = client.connect( "admin", "admin" )
