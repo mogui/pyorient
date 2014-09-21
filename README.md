@@ -1,6 +1,6 @@
 # pyorient
 
-[Orientdb](chcadas161.emea.guccigroup.dom/IntMailTrack) driver for python that uses the binary protocol.
+[Orientdb](http://www.orientechnologies.com/) driver for python that uses the binary protocol.
 
 Pyorient works with orientdb version 1.7 and later.
 
