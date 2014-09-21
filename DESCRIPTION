@@ -1,1 +1,0 @@
-pyorient is a wrapper over the c library [**liborient**](https://github.com/dam2k/liborient) which is a client for the Binary Protocol of the **NoSQL Graph-Document DBMS** [**OrientDB**](http://www.orientdb.org/) (at version 1.0.1)
