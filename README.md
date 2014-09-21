@@ -144,4 +144,4 @@ A full range of commands will be available soon, for now you have to read the te
 
 ## Copyright
 
-Copyright © 2012 Niko Usai. See LICENSE for details.
+Copyright © 2014 Niko Usai, Domenico Lupinetti. See LICENSE for details.
