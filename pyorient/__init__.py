@@ -1,9 +1,9 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
-from pyorient.OrientDB import OrientDB
-from pyorient.Messages.OrientSocket import OrientSocket
-from pyorient.Commons.OrientException import *
-from pyorient.Commons.OrientTypes import *
+from .OrientDB import OrientDB
+from .Messages.OrientSocket import OrientSocket
+from .Commons.OrientException import *
+from .Commons.OrientTypes import *
 
 SHUTDOWN                 = "ShutdownMessage"
 CONNECT                  = "ConnectMessage"
