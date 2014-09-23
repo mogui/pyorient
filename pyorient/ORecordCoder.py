@@ -106,7 +106,7 @@ class ORecordEncoder(object):
                 ret = "[" + ','.join(
                     map(lambda elem: self.parseValue(type(value[0])(elem)),
                         value)) + ']'
-            except ValueError, e:
+            except ValueError as e:
                 raise Exception("wrong type commistion")
         elif isinstance(value, dict):
             ret = "{" + ','.join(map(
@@ -131,12 +131,12 @@ class ORecordDecoder(object):
 
 
     def __init__(self, content):
-        # public 
+        # public
         self.className = None
         self.content = content
         self.data = {}
 
-        # private 
+        # private
         self._state = STATE_GUESS
         self._buffer = ''
         self._continue = True
@@ -195,7 +195,7 @@ class ORecordDecoder(object):
                 if not self._isCollection and not self._isMap:
                     tt, tvalue = self.__stackPop()
                     tt, tname = self.__stackPop()
-                    #print("%s -> %s" % (tname, tvalue))    
+                    #print("%s -> %s" % (tname, tvalue))
                     self.data[tname] = tvalue
 
             elif tokenType == TTYPE_NULL:
@@ -494,7 +494,7 @@ class ORecordDecoder(object):
             tokenValue = False
             self._i += 4
         else:
-            # @TODO raise an exception 
+            # @TODO raise an exception
             pass
         self._state = STATE_COMMA
         self.__stackPush(TTYPE_BOOLEAN, tokenValue)
@@ -530,4 +530,4 @@ class ORecordDecoder(object):
                 break
 
         if depth != False:
-            return self._stackTokenValues[depth] 
+            return self._stackTokenValues[depth]

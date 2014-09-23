@@ -9,9 +9,9 @@ if os.path.realpath( '../' ) not in sys.path:
 if os.path.realpath( '.' ) not in sys.path:
     sys.path.insert( 0, os.path.realpath( '.' ) )
 
-from pyorient.Commons.utils import *
+from pyorient.utils import *
 from pyorient.Messages.Constants.OrientPrimitives import *
-from pyorient.Commons.OrientException import *
+from OrientException import *
 from pyorient.Messages.OrientSocket import OrientSocket
 from pyorient.Messages.Server.ConnectMessage import ConnectMessage
 from pyorient.Messages.Server.DbExistsMessage import DbExistsMessage
@@ -138,7 +138,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
             assert True
             # exit(1)  # this should not happen if you have database
-        except PyOrientConnectionException, e:
+        except PyOrientConnectionExceptionas e:
             assert True
             print e.message
 
@@ -163,7 +163,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
             ).send().fetch_response()
-        except PyOrientCommandException, e:
+        except PyOrientCommandException as e:
             assert True
             print e.message
 
@@ -189,7 +189,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
             #expected Exception
             assert False
             # exit(1)  # this should not happen if you have database
-        except PyOrientConnectionException, e:
+        except PyOrientConnectionExceptionas e:
             assert True
             print e.message
 
@@ -227,7 +227,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
             ).send().fetch_response()
             assert True
-        except PyOrientCommandException, e:
+        except PyOrientCommandException as e:
             print e.message
             assert False  # No expected Exception
 

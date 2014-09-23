@@ -13,10 +13,13 @@
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 #   See the License for the specific language governing permissions and
 #   limitations under the License.
-import ConfigParser
+try:
+    import configparser
+except ImportError:
+    import ConfigParser as configparser
 
 def getTestConfig():
-	config = ConfigParser.RawConfigParser()
+	config = configparser.RawConfigParser()
 	config.read('tests.cfg')
 
 	# getfloat() raises an exception if the value is not a float

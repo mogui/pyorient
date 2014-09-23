@@ -3,10 +3,10 @@ __author__ = 'Ostico <ostico@gmail.com>'
 import socket
 import struct
 
-from Constants.BinaryTypes import *
-from Constants.ClientConstants import *
-from pyorient.Commons.utils import *
-from Constants.OrientPrimitives import *
+from .Constants.BinaryTypes import *
+from .Constants.ClientConstants import *
+from .utils import *
+from .Constants.OrientPrimitives import *
 
 
 try:
@@ -50,7 +50,7 @@ class OrientSocket(object):
                     "Protocol version " + str(self.protocol) +
                     " is not supported yet by this client.", [])
             self._connected = True
-        except socket.error, e:
+        except socket.error as e:
             self._connected = False
             raise PyOrientConnectionException( "Socket Error: %s" % e, [] )
 
@@ -78,25 +78,25 @@ class OrientSocket(object):
         try:
 
             while buf.tell() < _len_to_read:
-                
+
                 tmp = self._socket.recv( _len_to_read - buf.tell() )
                 buf.write( tmp )
 
                 if is_debug_verbose():
-                    import pyorient.Commons.hexdump
+                    import hexdump
                     print( "\n          -------------------\n" )
                     print( "    To read was: " + str( _len_to_read ) )
-                    print( pyorient.Commons.hexdump.hexdump(tmp, 'return') )
+                    print( hexdump.hexdump(tmp, 'return') )
                     print( "    left: " + str( _len_to_read - buf.tell() ) )
 
             buf.seek(0)
             return buf.read( _len_to_read )
-        except socket.timeout, e:
+        except socket.timeout as e:
             # we don't set false because of
             # RecordUpdateMessage/RecordCreateMessage trick
             """:see RecordUpdateMessage.py """
             raise e
-        except Exception, e:
+        except Exception as e:
             self._connected = False
             raise e
         finally:

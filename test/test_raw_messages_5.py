@@ -13,9 +13,9 @@ if os.path.realpath( '../' ) not in sys.path:
 if os.path.realpath( '.' ) not in sys.path:
     sys.path.insert( 0, os.path.realpath( '.' ) )
 
-from pyorient.Commons.utils import *
+from pyorient.utils import *
 from pyorient.Messages.Constants.OrientPrimitives import *
-from pyorient.Commons.OrientException import *
+from OrientException import *
 from pyorient.Messages.OrientSocket import OrientSocket
 from pyorient.Messages.Server.ConnectMessage import ConnectMessage
 from pyorient.Messages.Server.DbExistsMessage import DbExistsMessage
@@ -32,7 +32,7 @@ from pyorient.Messages.Database.RecordDeleteMessage import RecordDeleteMessage
 from pyorient.Messages.Database.DataClusterCountMessage import DataClusterCountMessage
 from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDataRangeMessage
 from pyorient.Messages.Database.TxCommitMessage import TxCommitMessage
-from pyorient.Commons.OrientTypes import *
+from OrientTypes import *
 
 
 class RawMessages_5_TestCase(unittest.TestCase):
@@ -45,7 +45,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.begin()
             tx.attach([1, 2, 3])
             assert False  # should not happens
-        except AssertionError, e:
+        except AssertionErroras as e:
             assert 'A subclass of BaseMessage was expected' == e.message
             assert True
 
@@ -56,16 +56,16 @@ class RawMessages_5_TestCase(unittest.TestCase):
                 .prepare(
                     ("GratefulDeadConcerts", "admin", "admin", DB_TYPE_DOCUMENT, "")
                 ).send().fetch_response()
-    
+
             tx = TxCommitMessage(connection)
             tx.begin()
             tx.prepare()
             assert False
-        except AttributeError, e:
+        except AttributeErroras as e:
             print e.message
             assert True
-    
-    
+
+
     def test_private_send(self):
         try:
             connection = OrientSocket( "localhost", 2424 )
@@ -77,10 +77,10 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.begin()
             tx.send()
             assert False
-        except AttributeError, e:
+        except AttributeErroras as e:
             print e.message
             assert True
-    
+
     def test_private_fetch(self):
         try:
             connection = OrientSocket( "localhost", 2424 )
@@ -92,7 +92,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.begin()
             tx.fetch_response()
             assert False
-        except AttributeError, e:
+        except AttributeErroras as e:
             print e.message
             assert True
 
@@ -111,7 +111,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             ( DbDropMessage( connection ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
-        except PyOrientCommandException, e:
+        except PyOrientCommandExceptionas as e:
             print e.message
         finally:
             ( DbCreateMessage( connection ) ).prepare(
@@ -127,7 +127,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             create_class = CommandMessage(connection)
             create_class.prepare((QUERY_CMD, "create class my_class extends V"))\
                 .send().fetch_response()
-        except PyOrientCommandException, e:
+        except PyOrientCommandExceptionas as e:
             # class my_class already exists
             # print e
             pass

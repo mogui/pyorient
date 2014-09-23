@@ -4,7 +4,7 @@ from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.Messages.Constants.OrientPrimitives import *
-from pyorient.Commons.utils import *
+from .utils import *
 
 
 class DataClusterAddMessage(BaseMessage):

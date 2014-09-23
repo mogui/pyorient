@@ -4,7 +4,7 @@ from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.BinaryTypes import *
-from pyorient.Commons.utils import *
+from .utils import *
 
 
 class CommandMessage(BaseMessage):
@@ -144,7 +144,7 @@ class CommandMessage(BaseMessage):
             # cache = cached_results['cached']
         else:
             msg = ""
-            import pyorient.Commons.hexdump
+            import hexdump
             import socket
             self._orientSocket._socket.settimeout(5)
             try:
@@ -152,10 +152,10 @@ class CommandMessage(BaseMessage):
                 while m != "":
                     msg += m
                     m = self._orientSocket.read(1)
-            except socket.timeout, e:
+            except socket.timeout as e:
                 print "************* " + str(e) + " *************"
                 pass
-            pyorient.Commons.hexdump.hexdump(msg)
+            hexdump.hexdump(msg)
             exit(1)
 
         return res

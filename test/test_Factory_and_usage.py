@@ -34,7 +34,7 @@ class CommandTestCase(unittest.TestCase):
             ( factory.get_message( pyorient.DB_DROP ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
-        except pyorient.PyOrientCommandException, e:
+        except pyorient.PyOrientCommandException as e:
             print e.message
         finally:
             ( factory.get_message( pyorient.DB_CREATE ) ).prepare(
@@ -116,7 +116,7 @@ class CommandTestCase(unittest.TestCase):
             ( factory.get_message( pyorient.DB_DROP ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
-        except pyorient.PyOrientCommandException, e:
+        except pyorient.PyOrientCommandException as e:
             print e.message
         finally:
             ( factory.get_message( pyorient.DB_CREATE ) ).prepare(
@@ -202,7 +202,7 @@ class CommandTestCase(unittest.TestCase):
             ( factory.get_message(pyorient.DB_DROP) ).prepare([db_name, pyorient.STORAGE_TYPE_MEMORY]) \
                 .send().fetch_response()
 
-        except pyorient.PyOrientCommandException, e:
+        except pyorient.PyOrientCommandException as e:
             print e.message
         finally:
             ( factory.get_message(pyorient.DB_CREATE) ).prepare(

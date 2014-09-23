@@ -3,21 +3,21 @@ __author__ = 'Ostico <ostico@gmail.com>'
 from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.BinaryTypes import *
-from pyorient.Commons.utils import *
+from .utils import *
 
 
-class DbCloseMessage(BaseMessage):
+class DbSizeMessage(BaseMessage):
 
     def __init__(self, _orient_socket ):
-        super( DbCloseMessage, self ).__init__(_orient_socket)
+        super( DbSizeMessage, self ).__init__(_orient_socket)
 
         # order matters
-        self._append( ( FIELD_BYTE, DB_CLOSE ) )
+        self._append( ( FIELD_BYTE, DB_SIZE ) )
 
-    @need_connected
+    @need_db_opened
     def prepare(self, params=None):
-        return super( DbCloseMessage, self ).prepare()
+        return super( DbSizeMessage, self ).prepare()
 
     def fetch_response(self):
-        super( DbCloseMessage, self ).close()
-        return 0
+        self._append( FIELD_LONG )
+        return super( DbSizeMessage, self ).fetch_response()[0]

@@ -29,7 +29,7 @@ class CommandTestCase(unittest.TestCase):
             result = client.query("select from followed_by", 10, '*:0')
             assert True
             assert result != []
-            from pyorient.Commons.OrientTypes import OrientRecord
+            from OrientTypes import OrientRecord
             assert isinstance( result[0], OrientRecord )
             assert len(result) == 10
             assert result[0].__getattribute__('in') != 0
@@ -38,7 +38,7 @@ class CommandTestCase(unittest.TestCase):
             def _callback(item):
                 assert True
                 assert item != []
-                from pyorient.Commons.OrientTypes import OrientRecord
+                from OrientTypes import OrientRecord
                 assert isinstance( item, OrientRecord )
 
             result = client.query_async("select from followed_by",
@@ -61,7 +61,7 @@ class CommandTestCase(unittest.TestCase):
             try:
                 client.db_drop(db_name)
                 assert True
-            except pyorient.PyOrientCommandException, e:
+            except pyorient.PyOrientCommandException as e:
                 print e.message
             finally:
                 client.db_create( db_name, pyorient.DB_TYPE_GRAPH,
@@ -146,7 +146,7 @@ class CommandTestCase(unittest.TestCase):
         try:
             client.db_drop(db_name)
             assert True
-        except pyorient.PyOrientCommandException, e:
+        except pyorient.PyOrientCommandException as e:
             print e.message
         finally:
             client.db_create( db_name, pyorient.DB_TYPE_GRAPH,

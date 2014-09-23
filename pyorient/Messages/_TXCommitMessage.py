@@ -6,8 +6,8 @@ from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.Messages.Database.RecordUpdateMessage import RecordUpdateMessage
 from pyorient.Messages.Database.RecordCreateMessage import RecordCreateMessage
 from pyorient.Messages.Database.RecordDeleteMessage import RecordDeleteMessage
-from pyorient.Commons.utils import *
-from pyorient.Commons.ORecordCoder import *
+from .utils import *
+from ORecordCoder import *
 
 
 class _TXCommitMessage(BaseMessage):

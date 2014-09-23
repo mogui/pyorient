@@ -4,16 +4,14 @@ from pyorient.Messages.BaseMessage import BaseMessage
 from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.BinaryTypes import *
-from pyorient.Commons.utils import *
+from .utils import *
 
+class DbExistsMessage(BaseMessage):
 
-class DbCreateMessage(BaseMessage):
-
-    def __init__(self, _orient_socket):
-        super( DbCreateMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket ):
+        super( DbExistsMessage, self ).__init__(_orient_socket)
 
         self._db_name = ''
-        self._db_type = ''
         self._storage_type = ''
 
         if self.get_protocol() > 16:  # 1.5-SNAPSHOT
@@ -22,42 +20,37 @@ class DbCreateMessage(BaseMessage):
             self._storage_type = STORAGE_TYPE_LOCAL
 
         # order matters
-        self._append( ( FIELD_BYTE, DB_CREATE ) )
+        self._append( ( FIELD_BYTE, DB_EXIST ) )
 
     @need_connected
-    def prepare(self, params=None ):
+    def prepare(self, params=None):
 
         if isinstance( params, tuple ) or isinstance( params, list ):
             try:
                 self._db_name = params[0]
-                self.set_db_type( params[1] )
-                self.set_storage_type( params[2] )
+                # user choice storage if present
+                self.set_storage_type( params[1] )
+
             except IndexError:
+                # Use default for non existent indexes
                 pass
 
-        self._append(
-            (FIELD_STRINGS, [self._db_name, self._db_type, self._storage_type])
-        )
-        return super( DbCreateMessage, self ).prepare()
+        if self.get_protocol() >= 6:
+            self._append( ( FIELD_STRING, self._db_name ) )  # db_name
+
+        if self.get_protocol() >= 16:
+            # > 16 1.5-snapshot
+            # custom choice server_storage_type
+            self._append( ( FIELD_STRING, self._storage_type ) )
+
+        return super( DbExistsMessage, self ).prepare()
 
     def fetch_response(self):
-        super( DbCreateMessage, self ).fetch_response()
-        # set database opened
-        self._orientSocket.db_opened = self._db_name
-        return
+        self._append( FIELD_BOOLEAN )
+        return super( DbExistsMessage, self ).fetch_response()[0]
 
     def set_db_name(self, db_name):
         self._db_name = db_name
-        return self
-
-    def set_db_type(self, db_type):
-        if db_type in DB_TYPES:
-            # user choice storage if present
-            self._db_type = db_type
-        else:
-            raise PyOrientBadMethodCallException(
-                db_type + ' is not a valid database type', []
-            )
         return self
 
     def set_storage_type(self, storage_type):

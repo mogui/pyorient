@@ -3,11 +3,11 @@ __author__ = 'Ostico <ostico@gmail.com>'
 
 import struct
 
-from pyorient.Commons.hexdump import hexdump
-from pyorient.Commons.utils import *
+from hexdump import hexdump
+from .utils import *
 from Constants.BinaryTypes import *
-from pyorient.Commons.ORecordCoder import *
-from pyorient.Commons.OrientException import *
+from ORecordCoder import *
+from OrientException import *
 from pyorient.Messages.OrientSocket import OrientSocket
 
 
@@ -159,7 +159,7 @@ class BaseMessage(object):
         return self
 
     def __str__(self):
-        from pyorient.Commons.hexdump import hexdump
+        from hexdump import hexdump
         return "\n_output_buffer: \n" + hexdump( self._output_buffer, 'return' ) \
                + "\n\n_input_buffer: \n" + hexdump( self._input_buffer, 'return' )
 
@@ -292,7 +292,7 @@ class BaseMessage(object):
                 raise PyOrientBadMethodCallException(
                     str(self._callback) + " is not a callable function", [])
 
-            except Exception, e:
+            except Exception as e:
                 print e.message
                 pass
             finally:

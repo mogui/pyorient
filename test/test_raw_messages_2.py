@@ -12,9 +12,9 @@ if os.path.realpath( '../' ) not in sys.path:
 if os.path.realpath( '.' ) not in sys.path:
     sys.path.insert( 0, os.path.realpath( '.' ) )
 
-from pyorient.Commons.utils import *
+from pyorient.utils import *
 from pyorient.Messages.Constants.OrientPrimitives import *
-from pyorient.Commons.OrientException import *
+from OrientException import *
 from pyorient.Messages.OrientSocket import OrientSocket
 from pyorient.Messages.Server.ConnectMessage import ConnectMessage
 from pyorient.Messages.Server.DbExistsMessage import DbExistsMessage
@@ -30,7 +30,7 @@ from pyorient.Messages.Database.RecordUpdateMessage import RecordUpdateMessage
 from pyorient.Messages.Database.RecordDeleteMessage import RecordDeleteMessage
 from pyorient.Messages.Database.DataClusterCountMessage import DataClusterCountMessage
 from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDataRangeMessage
-from pyorient.Commons.OrientTypes import *
+from OrientTypes import *
 
 
 class RawMessages_2_TestCase(unittest.TestCase):
@@ -158,7 +158,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             ( DbDropMessage( connection ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
-        except PyOrientCommandException, e:
+        except PyOrientCommandException as e:
             print e.message
         finally:
             ( DbCreateMessage( connection ) ).prepare(
@@ -245,7 +245,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             ( DbDropMessage( connection ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
-        except PyOrientCommandException, e:
+        except PyOrientCommandException as e:
             print e.message
         finally:
             ( DbCreateMessage( connection ) ).prepare(
@@ -396,7 +396,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         datarange = DataClusterDataRangeMessage(connection)
         try:
             value = datarange.prepare(32767).send().fetch_response()
-        except PyOrientCommandException, e:
+        except PyOrientCommandException as e:
             assert "java.lang.ArrayIndexOutOfBoundsException" in e.message
 
     def test_data_range(self):

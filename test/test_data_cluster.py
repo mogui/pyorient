@@ -11,7 +11,7 @@ if os.path.realpath('../') not in sys.path:
 if os.path.realpath('.') not in sys.path:
     sys.path.insert(0, os.path.realpath('.'))
 
-from pyorient.Commons.hexdump import *
+from hexdump import *
 
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.OrientSocket import OrientSocket
@@ -21,7 +21,7 @@ from pyorient.Messages.Server.DbReloadMessage import DbReloadMessage
 from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDataRangeMessage
 from pyorient.Messages.Database.DataClusterAddMessage import DataClusterAddMessage
 from pyorient.Messages.Database.DataClusterDropMessage import DataClusterDropMessage
-from pyorient.Commons.ORecordCoder import *
+from ORecordCoder import *
 
 
 class DataClusterTestCase(unittest.TestCase):

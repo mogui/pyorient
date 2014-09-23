@@ -5,7 +5,7 @@ from pyorient.Messages.Constants.OrientOperations import *
 from pyorient.Messages.Constants.BinaryTypes import *
 from pyorient.Messages.Constants.OrientPrimitives import *
 from pyorient.Messages.Constants.ClientConstants import *
-from pyorient.Commons.utils import *
+from .utils import *
 
 
 class ConnectMessage(BaseMessage):
