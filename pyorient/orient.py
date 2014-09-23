@@ -2,11 +2,13 @@ __author__ = 'Ostico <ostico@gmail.com>'
 
 import socket
 import struct
-from Constants.BinaryTypes import FIELD_SHORT
-from Constants.OrientPrimitives import SERIALIZATION_DOCUMENT2CSV
-from pyorient.Commons.OrientException import PyOrientBadMethodCallException, \
+
+from .exceptions import PyOrientBadMethodCallException, \
     PyOrientConnectionException, PyOrientWrongProtocolVersionException
-from pyorient.Commons.utils import dlog, is_debug_verbose
+
+from .constants import FIELD_SHORT, QUERY_ASYNC, QUERY_CMD, QUERY_SYNC, \
+    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL
+from .utils import dlog, is_debug_verbose
 
 try:
     from cStringIO import StringIO
@@ -110,28 +112,32 @@ class OrientDB():
 
     _Messages = dict(
         # Server
-        ConnectMessage="pyorient.Messages.Server.ConnectMessage",
-        DbOpenMessage="pyorient.Messages.Server.DbOpenMessage",
-        DbExistsMessage="pyorient.Messages.Server.DbExistsMessage",
-        DbCreateMessage="pyorient.Messages.Server.DbCreateMessage",
-        DbDropMessage="pyorient.Messages.Server.DbDropMessage",
-        DbCountRecordsMessage="pyorient.Messages.Server.DbCountRecordsMessage",
-        DbReloadMessage="pyorient.Messages.Server.DbReloadMessage",
-        ShutdownMessage="pyorient.Messages.Server.ShutdownMessage",
+        ConnectMessage="pyorient.messages.connection",
+        ShutdownMessage="pyorient.messages.connection",
+
+        DbOpenMessage="pyorient.Messages.DbOpenMessage",
+        DbCloseMessage="pyorient.Messages.DbCloseMessage",
+        DbExistsMessage="pyorient.Messages.DbExistsMessage",
+        DbCreateMessage="pyorient.Messages.DbCreateMessage",
+        DbDropMessage="pyorient.Messages.DbDropMessage",
+        DbCountRecordsMessage="pyorient.Messages.DbCountRecordsMessage",
+        DbReloadMessage="pyorient.Messages.DbReloadMessage",
+        DbSizeMessage="pyorient.Messages.DbSizeMessage",
 
         # Database
-        DataClusterAddMessage="pyorient.Messages.Database.DataClusterAddMessage",
-        DataClusterCountMessage="pyorient.Messages.Database.DataClusterCountMessage",
-        DataClusterDataRangeMessage="pyorient.Messages.Database.DataClusterDataRangeMessage",
-        DataClusterDropMessage="pyorient.Messages.Database.DataClusterDropMessage",
-        DbCloseMessage="pyorient.Messages.Database.DbCloseMessage",
-        DbSizeMessage="pyorient.Messages.Database.DbSizeMessage",
-        RecordCreateMessage="pyorient.Messages.Database.RecordCreateMessage",
-        RecordDeleteMessage="pyorient.Messages.Database.RecordDeleteMessage",
-        RecordLoadMessage="pyorient.Messages.Database.RecordLoadMessage",
-        RecordUpdateMessage="pyorient.Messages.Database.RecordUpdateMessage",
-        CommandMessage="pyorient.Messages.Database.CommandMessage",
-        TxCommitMessage="pyorient.Messages.Database.TxCommitMessage",
+        DataClusterAddMessage="pyorient.Messages.DataClusterAddMessage",
+        DataClusterCountMessage="pyorient.Messages.DataClusterCountMessage",
+        DataClusterDataRangeMessage="pyorient.Messages.DataClusterDataRangeMessage",
+        DataClusterDropMessage="pyorient.Messages.DataClusterDropMessage",
+
+        RecordCreateMessage="pyorient.Messages.RecordCreateMessage",
+        RecordDeleteMessage="pyorient.Messages.RecordDeleteMessage",
+        RecordLoadMessage="pyorient.Messages.RecordLoadMessage",
+        RecordUpdateMessage="pyorient.Messages.RecordUpdateMessage",
+
+        CommandMessage="pyorient.Messages.CommandMessage",
+
+        TxCommitMessage="pyorient.Messages.TxCommitMessage",
     )
 
     def __init__(self, host='localhost', port=2424):
@@ -190,15 +196,15 @@ class OrientDB():
 
     def command(self, *args):
         return self.get_message("CommandMessage") \
-            .prepare(( pyorient.QUERY_CMD, ) + args).send().fetch_response()
+            .prepare(( QUERY_CMD, ) + args).send().fetch_response()
 
     def query(self, *args):
         return self.get_message("CommandMessage") \
-            .prepare(( pyorient.QUERY_SYNC, ) + args).send().fetch_response()
+            .prepare(( QUERY_SYNC, ) + args).send().fetch_response()
 
     def query_async(self, *args):
         return self.get_message("CommandMessage") \
-            .prepare(( pyorient.QUERY_ASYNC, ) + args).send().fetch_response()
+            .prepare(( QUERY_ASYNC, ) + args).send().fetch_response()
 
     def data_cluster_add(self, *args):
         return self.get_message("DataClusterAddMessage") \
@@ -246,26 +252,26 @@ class OrientDB():
     def get_message(self, command=None):
         """
         Message Factory
-        :rtype : pyorient.Messages.Server.ConnectMessage,
-                 pyorient.Messages.Server.DbOpenMessage,
-                 pyorient.Messages.Server.DbExistsMessage,
-                 pyorient.Messages.Server.DbCreateMessage,
-                 pyorient.Messages.Server.DbDropMessage,
-                 pyorient.Messages.Server.DbCountRecordsMessage,
-                 pyorient.Messages.Server.DbReloadMessage,
-                 pyorient.Messages.Server.ShutdownMessage,
-                 pyorient.Messages.Database.DataClusterAddMessage,
-                 pyorient.Messages.Database.DataClusterCountMessage,
-                 pyorient.Messages.Database.DataClusterDataRangeMessage,
-                 pyorient.Messages.Database.DataClusterDropMessage,
-                 pyorient.Messages.Database.DbCloseMessage,
-                 pyorient.Messages.Database.DbSizeMessage,
-                 pyorient.Messages.Database.RecordCreateMessage,
-                 pyorient.Messages.Database.RecordDeleteMessage,
-                 pyorient.Messages.Database.RecordLoadMessage,
-                 pyorient.Messages.Database.RecordUpdateMessage,
-                 pyorient.Messages.Database.CommandMessage,
-                 pyorient.Messages.Database.TXCommitMessage,
+        :rtype : pyorient.Messages.ConnectMessage,
+                 pyorient.Messages.DbOpenMessage,
+                 pyorient.Messages.DbExistsMessage,
+                 pyorient.Messages.DbCreateMessage,
+                 pyorient.Messages.DbDropMessage,
+                 pyorient.Messages.DbCountRecordsMessage,
+                 pyorient.Messages.DbReloadMessage,
+                 pyorient.Messages.ShutdownMessage,
+                 pyorient.Messages.DataClusterAddMessage,
+                 pyorient.Messages.DataClusterCountMessage,
+                 pyorient.Messages.DataClusterDataRangeMessage,
+                 pyorient.Messages.DataClusterDropMessage,
+                 pyorient.Messages.DbCloseMessage,
+                 pyorient.Messages.DbSizeMessage,
+                 pyorient.Messages.RecordCreateMessage,
+                 pyorient.Messages.RecordDeleteMessage,
+                 pyorient.Messages.RecordLoadMessage,
+                 pyorient.Messages.RecordUpdateMessage,
+                 pyorient.Messages.CommandMessage,
+                 pyorient.Messages.TXCommitMessage,
         :param command: str
         """
         try:

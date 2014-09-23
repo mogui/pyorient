@@ -26,7 +26,6 @@ setup(name='pyorient',
     license='LICENSE',
     packages = [
         'pyorient',
-        'pyorient.Messages',
-        'pyorient.Constants',
+        'pyorient.messages',
     ]
 )

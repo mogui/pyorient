@@ -3,13 +3,17 @@ __author__ = 'Ostico <ostico@gmail.com>'
 
 import struct
 
-from hexdump import hexdump
-from .utils import *
-from Constants.BinaryTypes import *
-from ORecordCoder import *
-from OrientException import *
-from pyorient.Messages.OrientSocket import OrientSocket
+from ..exceptions import PyOrientBadMethodCallException, \
+    PyOrientCommandException
+from ..types import OrientRecord, OrientRecordLink
 
+from ..hexdump import hexdump
+from ..constants import BOOLEAN, BYTE, BYTES, CHAR, FIELD_BOOLEAN, FIELD_BYTE, \
+    FIELD_INT, FIELD_RECORD, FIELD_SHORT, FIELD_STRING, FIELD_TYPE_LINK, INT, \
+    LINK, LONG, RECORD, SHORT, STRING, STRINGS
+from ..serialization import ORecordDecoder
+from ..utils import is_debug_active
+from ..orient import OrientSocket
 
 class BaseMessage(object):
 
@@ -159,7 +163,7 @@ class BaseMessage(object):
         return self
 
     def __str__(self):
-        from hexdump import hexdump
+
         return "\n_output_buffer: \n" + hexdump( self._output_buffer, 'return' ) \
                + "\n\n_input_buffer: \n" + hexdump( self._input_buffer, 'return' )
 

@@ -2,7 +2,8 @@ __author__ = 'Ostico <ostico@gmail.com>'
 
 from .orient import OrientDB, OrientSocket
 from .exceptions import *
-from .OrientTypes import *
+from .types import *
+from .constants import *
 
 SHUTDOWN                 = "ShutdownMessage"
 CONNECT                  = "ConnectMessage"

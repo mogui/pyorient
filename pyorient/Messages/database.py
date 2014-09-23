@@ -1,11 +1,12 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
-from pyorient.Messages.Server.ConnectMessage import *
-from pyorient.Messages.Constants.OrientOperations import *
-from pyorient.Messages.Constants.BinaryTypes import *
-from pyorient.Messages.BaseMessage import BaseMessage
-from .utils import *
+from pyorient.exceptions import PyOrientBadMethodCallException
 
+from .messages.base import BaseMessage
+from .messages.connection import ConnectMessage
+from .constants import DB_OPEN, DB_TYPE_DOCUMENT, FIELD_BYTE, FIELD_INT, \
+    FIELD_SHORT, FIELD_STRING, FIELD_STRINGS, NAME, SUPPORTED_PROTOCOL, \
+    VERSION, DB_TYPES, SERIALIZATION_SERIAL_BIN, SERIALIZATION_TYPES
 
 class DbOpenMessage(BaseMessage):
 
