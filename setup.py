@@ -19,10 +19,17 @@
 from setuptools import setup
 
 setup(name='pyorient',
-    version='1.0.2',
+    version='1.0.3',
     author='Niko Usai <mogui83@gmail.com>, Domenico Lupinetti <ostico@gmail.com>',
     description='OrientDB native client library',
     long_description=open('README.md').read(),
     license='LICENSE',
-    packages = ['pyorient']
+    packages = [
+        'pyorient',
+        'pyorient.Commons',
+        'pyorient.Messages',
+        'pyorient.Messages.Constants',
+        'pyorient.Messages.Database',
+        'pyorient.Messages.Server',
+    ]
 )

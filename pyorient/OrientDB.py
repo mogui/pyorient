@@ -1,7 +1,6 @@
 __author__ = 'Ostico <ostico@gmail.com>'
-from pyorient.Commons.OrientException import *
-from pyorient.Messages.OrientSocket import OrientSocket
-import pyorient
+from .Commons.OrientException import *
+from .Messages.OrientSocket import OrientSocket
 
 
 #
