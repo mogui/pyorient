@@ -3,7 +3,16 @@ __author__ = 'Ostico <ostico@gmail.com>'
 import sys
 import os
 import unittest
-from pprint import PrettyPrinter
+
+
+from pyorient.exceptions import *
+from pyorient import OrientSocket
+from pyorient import OrientRecord
+from pyorient.messages.database import *
+from pyorient.messages.commands import *
+from pyorient.messages.cluster import *
+from pyorient.messages.records import *
+from pyorient.constants import *
 
 os.environ['DEBUG'] = "1"
 os.environ['DEBUG_VERBOSE'] = "0"
@@ -12,27 +21,6 @@ if os.path.realpath( '../' ) not in sys.path:
 
 if os.path.realpath( '.' ) not in sys.path:
     sys.path.insert( 0, os.path.realpath( '.' ) )
-
-from pyorient.utils import *
-from pyorient.Messages.Constants.OrientPrimitives import *
-from OrientException import *
-from pyorient.Messages.OrientSocket import OrientSocket
-from pyorient.Messages.Server.ConnectMessage import ConnectMessage
-from pyorient.Messages.Server.DbExistsMessage import DbExistsMessage
-from pyorient.Messages.Server.DbOpenMessage import DbOpenMessage
-from pyorient.Messages.Server.DbCreateMessage import DbCreateMessage
-from pyorient.Messages.Server.DbDropMessage import DbDropMessage
-from pyorient.Messages.Server.DbCountRecordsMessage import DbCountRecordsMessage
-
-from pyorient.Messages.Database.CommandMessage import CommandMessage
-from pyorient.Messages.Database.RecordLoadMessage import RecordLoadMessage
-from pyorient.Messages.Database.RecordCreateMessage import RecordCreateMessage
-from pyorient.Messages.Database.RecordUpdateMessage import RecordUpdateMessage
-from pyorient.Messages.Database.RecordDeleteMessage import RecordDeleteMessage
-from pyorient.Messages.Database.DataClusterCountMessage import DataClusterCountMessage
-from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDataRangeMessage
-from pyorient.Messages.Database.TxCommitMessage import TxCommitMessage
-from OrientTypes import *
 
 
 class RawMessages_5_TestCase(unittest.TestCase):
@@ -45,7 +33,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.begin()
             tx.attach([1, 2, 3])
             assert False  # should not happens
-        except AssertionErroras as e:
+        except AssertionError as e:
             assert 'A subclass of BaseMessage was expected' == e.message
             assert True
 
@@ -61,7 +49,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.begin()
             tx.prepare()
             assert False
-        except AttributeErroras as e:
+        except AttributeError as e:
             print e.message
             assert True
 
@@ -77,7 +65,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.begin()
             tx.send()
             assert False
-        except AttributeErroras as e:
+        except AttributeError as e:
             print e.message
             assert True
 
@@ -92,7 +80,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.begin()
             tx.fetch_response()
             assert False
-        except AttributeErroras as e:
+        except AttributeError as e:
             print e.message
             assert True
 
@@ -111,7 +99,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             ( DbDropMessage( connection ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
-        except PyOrientCommandExceptionas as e:
+        except PyOrientCommandException as e:
             print e.message
         finally:
             ( DbCreateMessage( connection ) ).prepare(
@@ -127,7 +115,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             create_class = CommandMessage(connection)
             create_class.prepare((QUERY_CMD, "create class my_class extends V"))\
                 .send().fetch_response()
-        except PyOrientCommandExceptionas as e:
+        except PyOrientCommandException as e:
             # class my_class already exists
             # print e
             pass

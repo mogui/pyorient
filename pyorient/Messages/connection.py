@@ -2,9 +2,9 @@ __author__ = 'Ostico <ostico@gmail.com>'
 
 from ..exceptions import PyOrientBadMethodCallException
 from .base import BaseMessage
-from ..constants import CONNECT, FIELD_BYTE, FIELD_INT, FIELD_SHORT, \
+from ..constants import CONNECT_OP, FIELD_BYTE, FIELD_INT, FIELD_SHORT, \
     FIELD_STRINGS, NAME, SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, \
-    VERSION, SERIALIZATION_SERIAL_BIN, SERIALIZATION_TYPES, SHUTDOWN
+    VERSION, SERIALIZATION_SERIAL_BIN, SERIALIZATION_TYPES, SHUTDOWN_OP
 from ..utils import need_connected
 
 
@@ -21,7 +21,7 @@ class ConnectMessage(BaseMessage):
         self._client_id = ''
         self._serialization_type = SERIALIZATION_DOCUMENT2CSV
 
-        self._append( ( FIELD_BYTE, CONNECT ) )
+        self._append( ( FIELD_BYTE, CONNECT_OP ) )
 
     def prepare(self, params=None ):
 
@@ -98,7 +98,7 @@ class ShutdownMessage(BaseMessage):
         self._pass = ''
 
         # order matters
-        self._append( ( FIELD_BYTE, SHUTDOWN ) )
+        self._append( ( FIELD_BYTE, SHUTDOWN_OP ) )
 
     @need_connected
     def prepare(self, params=None):

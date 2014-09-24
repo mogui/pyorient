@@ -1,7 +1,16 @@
 __author__ = 'Ostico <ostico@gmail.com>'
-import unittest
+
 import os
 import sys
+import unittest
+
+
+from pyorient.constants import CLUSTER_TYPE_PHYSICAL
+from pyorient.messages.database import DbOpenMessage, DbReloadMessage
+from pyorient.messages.cluster import DataClusterDataRangeMessage, \
+    DataClusterDropMessage, DataClusterAddMessage
+from pyorient import OrientSocket
+
 
 os.environ['DEBUG'] = "1"
 os.environ['DEBUG_VERBOSE'] = "0"
@@ -11,17 +20,17 @@ if os.path.realpath('../') not in sys.path:
 if os.path.realpath('.') not in sys.path:
     sys.path.insert(0, os.path.realpath('.'))
 
-from hexdump import *
 
-from pyorient.Messages.Constants.OrientPrimitives import *
-from pyorient.Messages.OrientSocket import OrientSocket
-from pyorient.Messages.Server.DbOpenMessage import DbOpenMessage
-from pyorient.Messages.Server.DbReloadMessage import DbReloadMessage
 
-from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDataRangeMessage
-from pyorient.Messages.Database.DataClusterAddMessage import DataClusterAddMessage
-from pyorient.Messages.Database.DataClusterDropMessage import DataClusterDropMessage
-from ORecordCoder import *
+# from pyorient.Messages.Constants.OrientPrimitives import *
+# from pyorient.Messages.OrientSocket import OrientSocket
+# from pyorient.Messages.Server.DbOpenMessage import DbOpenMessage
+# from pyorient.Messages.Server.DbReloadMessage import DbReloadMessage
+
+# from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDataRangeMessage
+# from pyorient.Messages.Database.DataClusterAddMessage import DataClusterAddMessage
+# from pyorient.Messages.Database.DataClusterDropMessage import DataClusterDropMessage
+# from ORecordCoder import *
 
 
 class DataClusterTestCase(unittest.TestCase):

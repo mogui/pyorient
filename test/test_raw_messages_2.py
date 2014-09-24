@@ -4,6 +4,16 @@ import sys
 import os
 import unittest
 
+from pyorient.exceptions import *
+from pyorient import OrientSocket
+from pyorient import OrientRecord
+from pyorient.messages.database import *
+from pyorient.messages.commands import *
+from pyorient.messages.cluster import *
+from pyorient.messages.records import *
+from pyorient.constants import DB_TYPE_DOCUMENT, QUERY_SYNC, \
+    STORAGE_TYPE_PLOCAL, DB_TYPE_GRAPH
+
 os.environ['DEBUG'] = "1"
 os.environ['DEBUG_VERBOSE'] = "0"
 if os.path.realpath( '../' ) not in sys.path:
@@ -12,25 +22,7 @@ if os.path.realpath( '../' ) not in sys.path:
 if os.path.realpath( '.' ) not in sys.path:
     sys.path.insert( 0, os.path.realpath( '.' ) )
 
-from pyorient.utils import *
-from pyorient.Messages.Constants.OrientPrimitives import *
-from OrientException import *
-from pyorient.Messages.OrientSocket import OrientSocket
-from pyorient.Messages.Server.ConnectMessage import ConnectMessage
-from pyorient.Messages.Server.DbExistsMessage import DbExistsMessage
-from pyorient.Messages.Server.DbOpenMessage import DbOpenMessage
-from pyorient.Messages.Server.DbCreateMessage import DbCreateMessage
-from pyorient.Messages.Server.DbDropMessage import DbDropMessage
-from pyorient.Messages.Server.DbCountRecordsMessage import DbCountRecordsMessage
 
-from pyorient.Messages.Database.CommandMessage import CommandMessage
-from pyorient.Messages.Database.RecordLoadMessage import RecordLoadMessage
-from pyorient.Messages.Database.RecordCreateMessage import RecordCreateMessage
-from pyorient.Messages.Database.RecordUpdateMessage import RecordUpdateMessage
-from pyorient.Messages.Database.RecordDeleteMessage import RecordDeleteMessage
-from pyorient.Messages.Database.DataClusterCountMessage import DataClusterCountMessage
-from pyorient.Messages.Database.DataClusterDataRangeMessage import DataClusterDataRangeMessage
-from OrientTypes import *
 
 
 class RawMessages_2_TestCase(unittest.TestCase):
@@ -421,16 +413,3 @@ class RawMessages_2_TestCase(unittest.TestCase):
                   % ( cluster['name'], cluster['id'], value )
             assert value is not []
             assert value is not None
-
-
-# test_record_load()
-# test_record_count_with_no_opened_db()
-# test_record_count()
-# test_record_create_update()
-# test_record_delete()
-# test_data_cluster_count()
-# test_query_async()
-# test_wrong_data_range()
-# test_data_range()
-
-# v = RawMessages_2_TestCase('test_record_create_update').run()

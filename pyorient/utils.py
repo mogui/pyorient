@@ -1,8 +1,8 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
 import os
-
-from OrientException import *
+from pyorient.exceptions import PyOrientConnectionException, \
+    PyOrientDatabaseException
 
 
 def is_debug_active():

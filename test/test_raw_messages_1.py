@@ -1,6 +1,16 @@
-import sys
 import os
+import sys
 import unittest
+
+from pyorient.exceptions import PyOrientCommandException, PyOrientConnectionException, PyOrientException
+from pyorient import OrientSocket
+from pyorient.messages.connection import ConnectMessage, ShutdownMessage
+from pyorient.messages.database import DbExistsMessage, DbOpenMessage, DbCreateMessage,\
+ DbDropMessage, DbReloadMessage, DbCloseMessage, DbSizeMessage
+from pyorient.messages.commands import CommandMessage
+from pyorient.constants import DB_TYPE_DOCUMENT, QUERY_SYNC, \
+    STORAGE_TYPE_PLOCAL
+
 
 os.environ['DEBUG'] = "1"
 if os.path.realpath( '../' ) not in sys.path:
@@ -9,21 +19,10 @@ if os.path.realpath( '../' ) not in sys.path:
 if os.path.realpath( '.' ) not in sys.path:
     sys.path.insert( 0, os.path.realpath( '.' ) )
 
-from pyorient.utils import *
-from pyorient.Messages.Constants.OrientPrimitives import *
-from OrientException import *
-from pyorient.Messages.OrientSocket import OrientSocket
-from pyorient.Messages.Server.ConnectMessage import ConnectMessage
-from pyorient.Messages.Server.DbExistsMessage import DbExistsMessage
-from pyorient.Messages.Server.DbOpenMessage import DbOpenMessage
-from pyorient.Messages.Server.DbCreateMessage import DbCreateMessage
-from pyorient.Messages.Server.DbDropMessage import DbDropMessage
-from pyorient.Messages.Server.DbReloadMessage import DbReloadMessage
-from pyorient.Messages.Server.ShutdownMessage import ShutdownMessage
+# from pyorient.utils import *
+# from pyorient.Messages.Constants.OrientPrimitives import *
+# from OrientException import *
 
-from pyorient.Messages.Database.DbCloseMessage import DbCloseMessage
-from pyorient.Messages.Database.DbSizeMessage import DbSizeMessage
-from pyorient.Messages.Database.CommandMessage import CommandMessage
 
 
 class RawMessages_1_TestCase(unittest.TestCase):
@@ -131,16 +130,10 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
         connection = OrientSocket( "localhost", 2424 )
 
-        try:
+        with self.assertRaises(PyOrientConnectionException):
             ( DbCreateMessage( connection ) ).prepare(
                 ("db_test", DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
             ).send().fetch_response()
-
-            assert True
-            # exit(1)  # this should not happen if you have database
-        except PyOrientConnectionExceptionas e:
-            assert True
-            print e.message
 
     def test_db_create_with_connect(self):
 
@@ -182,16 +175,9 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
     def test_db_drop_without_connect(self):
         connection = OrientSocket( "localhost", 2424 )
-        try:
+        with self.assertRaises(PyOrientException):
             ( DbDropMessage( connection ) ).prepare(["test"]) \
                 .send().fetch_response()
-
-            #expected Exception
-            assert False
-            # exit(1)  # this should not happen if you have database
-        except PyOrientConnectionExceptionas e:
-            assert True
-            print e.message
 
     def test_db_create_with_drop(self):
 
@@ -334,19 +320,3 @@ class RawMessages_1_TestCase(unittest.TestCase):
         print "%r" % res[0].rid
         print "%r" % res[0].o_class
         print "%r" % res[0].version
-
-
-# test_not_singleton_socket()
-# test_connection()
-# test_db_exists()
-# test_db_open_connected()
-# test_db_open_not_connected()
-# test_db_create_without_connect()
-# test_db_create_with_connect()
-# test_db_drop_without_connect()
-# test_db_create_with_drop()
-# test_db_close()
-# test_db_reload()
-# test_db_size()
-# test_shutdown()
-# test_command()

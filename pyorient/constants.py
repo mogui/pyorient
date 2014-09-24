@@ -48,33 +48,54 @@ FIELD_TYPE_LINK = {"type": LINK, "bytes": None, "struct": [
 ]}
 
 
+SHUTDOWN                 = "ShutdownMessage"
+CONNECT                  = "ConnectMessage"
+DB_OPEN                  = "DbOpenMessage"
+DB_CREATE                = "DbCreateMessage"
+DB_CLOSE                 = "DbCloseMessage"
+DB_EXIST                 = "DbExistsMessage"
+DB_DROP                  = "DbDropMessage"
+DB_SIZE                  = "DbSizeMessage"
+DB_COUNT_RECORDS         = "DbCountRecordsMessage"
+DATA_CLUSTER_ADD         = "DataClusterAddMessage"
+DATA_CLUSTER_DROP        = "DataClusterDropMessage"
+DATA_CLUSTER_COUNT       = "DataClusterCountMessage"
+DATA_CLUSTER_DATA_RANGE  = "DataClusterDataRangeMessage"
+RECORD_LOAD              = "RecordLoadMessage"
+RECORD_CREATE            = "RecordCreateMessage"
+RECORD_UPDATE            = "RecordUpdateMessage"
+RECORD_DELETE            = "RecordDeleteMessage"
+COMMAND                  = "CommandMessage"
+DB_RELOAD                = "DbReloadMessage"
+TX_COMMIT                = "TxCommitMessage"
+
 #
 # Orient Operations
 #
-SHUTDOWN                = chr(1)
-CONNECT                 = chr(2)
-DB_OPEN                 = chr(3)
-DB_CREATE               = chr(4)
-DB_CLOSE                = chr(5)
-DB_EXIST                = chr(6)
-DB_DROP                 = chr(7)
-DB_SIZE                 = chr(8)
-DB_COUNT_RECORDS        = chr(9)
-DATA_CLUSTER_ADD        = chr(10)
-DATA_CLUSTER_DROP       = chr(11)
-DATA_CLUSTER_COUNT      = chr(12)
-DATA_CLUSTER_DATA_RANGE = chr(13)
+SHUTDOWN_OP                = chr(1)
+CONNECT_OP                 = chr(2)
+DB_OPEN_OP                 = chr(3)
+DB_CREATE_OP               = chr(4)
+DB_CLOSE_OP                = chr(5)
+DB_EXIST_OP                = chr(6)
+DB_DROP_OP                 = chr(7)
+DB_SIZE_OP                 = chr(8)
+DB_COUNT_RECORDS_OP        = chr(9)
+DATA_CLUSTER_ADD_OP        = chr(10)
+DATA_CLUSTER_DROP_OP       = chr(11)
+DATA_CLUSTER_COUNT_OP      = chr(12)
+DATA_CLUSTER_DATA_RANGE_OP = chr(13)
 
-RECORD_LOAD             = chr(30)
-RECORD_CREATE           = chr(31)
-RECORD_UPDATE           = chr(32)
-RECORD_DELETE           = chr(33)
+RECORD_LOAD_OP             = chr(30)
+RECORD_CREATE_OP           = chr(31)
+RECORD_UPDATE_OP           = chr(32)
+RECORD_DELETE_OP           = chr(33)
 
-COMMAND                 = chr(41)
+COMMAND_OP                 = chr(41)
 
-TX_COMMIT               = chr(60)  # To be implemented
+TX_COMMIT_OP               = chr(60)
 
-DB_RELOAD               = chr(73)
+DB_RELOAD_OP               = chr(73)
 
 
 #
