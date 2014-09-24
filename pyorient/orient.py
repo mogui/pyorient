@@ -282,8 +282,7 @@ class OrientDB():
                     self._Messages[command],
                     globals(),
                     locals(),
-                    [command],
-                    -1
+                    [command]
                 )
 
                 # Get the right instance from Import List

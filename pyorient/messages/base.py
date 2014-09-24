@@ -46,7 +46,7 @@ class BaseMessage(object):
         self._command = chr(0)
         self._db_opened = self._orientSocket.db_opened
         self._serialization_type = self._orientSocket.serialization_type
-        self._output_buffer = ''
+        self._output_buffer = b''
         self._input_buffer = ''
 
         #callback function for async queries
@@ -66,7 +66,8 @@ class BaseMessage(object):
     def prepare(self, *args):
         # session_id
         self._fields_definition.insert( 1, ( FIELD_INT, self._session_id ) )
-        self._output_buffer = ''.join(
+        print(repr(self._fields_definition))
+        self._output_buffer = b''.join(
             self._encode_field( x ) for x in self._fields_definition
         )
         return self
@@ -180,7 +181,6 @@ class BaseMessage(object):
 
         # tuple with type
         t, v = field
-        _content = ''
 
         if t['type'] == INT:
             _content = struct.pack("!i", v)
@@ -189,21 +189,29 @@ class BaseMessage(object):
         elif t['type'] == LONG:
             _content = struct.pack("!q", v)
         elif t['type'] == BOOLEAN:
-            _content = chr(1) if v else chr(0)
+            if sys.version_info[0] < 3:
+                _content = chr(1) if v else chr(0)
+            else:
+                _content = bytes([1]) if v else bytes([0])
         elif t['type'] == BYTE:
-            _content = v
+            if sys.version_info[0] < 3:
+                _content = v
+            else:
+                _content = bytes([ord(v)])
         elif t['type'] == BYTES:
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRING:
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRINGS:
+            _content = b''
             for s in v:
-                _content += struct.pack("!i", len(s)) + s
+                a = struct.pack("!i", len(s))
+                _content += a + s.encode('utf-8')
 
         return _content
 
     def _decode_field(self, _type):
-
+        print("asd", repr(_type))
         _value = ""
         # read buffer length and decode value by field definition
         if _type['bytes'] is not None:
@@ -334,7 +342,7 @@ class BaseMessage(object):
             )
 
         self.dump_streams()  # debug log
-        self._output_buffer = ''
+        self._output_buffer = b''
         self._input_buffer = ''
 
         return res
