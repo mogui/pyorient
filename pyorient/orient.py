@@ -18,6 +18,7 @@ except ImportError:
     except ImportError:
         from io import StringIO
 
+
 class OrientSocket(object):
     """docstring for OrientSocket"""
 
@@ -114,31 +115,31 @@ class OrientDB():
 
     _Messages = dict(
         # Server
-        ConnectMessage  ="pyorient.messages.connection",
-        ShutdownMessage ="pyorient.messages.connection",
+        ConnectMessage="pyorient.messages.connection",
+        ShutdownMessage="pyorient.messages.connection",
 
-        DbOpenMessage   ="pyorient.messages.database",
-        DbCloseMessage  ="pyorient.messages.database",
-        DbExistsMessage ="pyorient.messages.database",
-        DbCreateMessage ="pyorient.messages.database",
-        DbDropMessage   ="pyorient.messages.database",
+        DbOpenMessage="pyorient.messages.database",
+        DbCloseMessage="pyorient.messages.database",
+        DbExistsMessage="pyorient.messages.database",
+        DbCreateMessage="pyorient.messages.database",
+        DbDropMessage="pyorient.messages.database",
         DbCountRecordsMessage="pyorient.messages.database",
-        DbReloadMessage ="pyorient.messages.database",
-        DbSizeMessage   ="pyorient.messages.database",
+        DbReloadMessage="pyorient.messages.database",
+        DbSizeMessage="pyorient.messages.database",
 
         # Cluster
-        DataClusterAddMessage   ="pyorient.messages.cluster",
-        DataClusterCountMessage ="pyorient.messages.cluster",
+        DataClusterAddMessage="pyorient.messages.cluster",
+        DataClusterCountMessage="pyorient.messages.cluster",
         DataClusterDataRangeMessage="pyorient.messages.cluster",
-        DataClusterDropMessage  ="pyorient.messages.cluster",
+        DataClusterDropMessage="pyorient.messages.cluster",
 
-        RecordCreateMessage ="pyorient.messages.records",
-        RecordDeleteMessage ="pyorient.messages.records",
-        RecordLoadMessage   ="pyorient.messages.records",
-        RecordUpdateMessage ="pyorient.messages.records",
+        RecordCreateMessage="pyorient.messages.records",
+        RecordDeleteMessage="pyorient.messages.records",
+        RecordLoadMessage="pyorient.messages.records",
+        RecordUpdateMessage="pyorient.messages.records",
 
-        CommandMessage  ="pyorient.messages.commands",
-        TxCommitMessage ="pyorient.messages.commands",
+        CommandMessage="pyorient.messages.commands",
+        TxCommitMessage="pyorient.messages.commands",
     )
 
     def __init__(self, host='localhost', port=2424):
