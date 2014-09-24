@@ -37,7 +37,6 @@ class RawMessages_2_TestCase(unittest.TestCase):
     def test_record_load(self):
         connection = OrientSocket( "localhost", 2424 )
 
-        # print "Sid, should be -1 : %s" % connection.session_id
         assert connection.session_id == -1
 
         # ##################
@@ -64,26 +63,18 @@ class RawMessages_2_TestCase(unittest.TestCase):
         assert res.__getattribute__('in') != 0
         assert res.out != 0
 
-        # print res
-        # print "%r" % res.rid
-        # print "%r" % res.o_class
-        # print "%s" % res.__getattribute__('in')
-        # print "%s" % res.out
-
-
     def test_record_count_with_no_opened_db(self):
         connection = OrientSocket( "localhost", 2424 )
 
-        # print "Sid, should be -1 : %s" % connection.session_id
+
         assert connection.session_id == -1
 
         # ##################
         conn_msg = ConnectMessage( connection )
-        # print "Protocol: %r" % conn_msg.get_protocol()
+
         session_id = conn_msg.prepare( ("admin", "admin") )\
             .send().fetch_response()
 
-        # print "Sid: %s" % session_id
         assert session_id == connection.session_id
         assert session_id != -1
 
@@ -98,7 +89,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
     def test_record_count(self):
         connection = OrientSocket( "localhost", 2424 )
 
-        # print "Sid, should be -1 : %s" % connection.session_id
+
         assert connection.session_id == -1
 
         # ##################
@@ -113,13 +104,10 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         session_id = connection.session_id
         assert session_id != -1
-        # print "Sid: %s" % session_id
-        assert session_id != -1
 
         count_msg = DbCountRecordsMessage( connection )
         res = count_msg.prepare().send().fetch_response()
 
-        # print res
         assert res is not 0
         assert res > 0
 
@@ -128,13 +116,12 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         connection = OrientSocket( "localhost", 2424 )
         conn_msg = ConnectMessage( connection )
-        # print "Protocol: %r" % conn_msg.get_protocol()
+
         assert connection.protocol != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") ) \
             .send().fetch_response()
 
-        # print "Sid: %s" % session_id
         assert session_id == connection.session_id
         assert session_id != -1
 
@@ -145,13 +132,13 @@ class RawMessages_2_TestCase(unittest.TestCase):
         msg = DbExistsMessage( connection )
         exists = msg.prepare( [db_name] ).send().fetch_response()
 
-        print "Before %r" % exists
+        print("Before %r" % exists)
         try:
             ( DbDropMessage( connection ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
         except PyOrientCommandException as e:
-            print e.message
+            print(e.message)
         finally:
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
@@ -161,7 +148,6 @@ class RawMessages_2_TestCase(unittest.TestCase):
         cluster_info = msg.prepare(
             (db_name, "admin", "admin", DB_TYPE_GRAPH, "")
         ).send().fetch_response()
-        # print cluster_info
         assert len(cluster_info) != 0
 
         try:
@@ -178,7 +164,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( ( 1, rec ) )\
             .send().fetch_response()
 
-        print "New Rec Position: %s" % rec_position.rid
+        print("New Rec Position: %s" % rec_position.rid)
         assert rec_position.rid is not None
 
         rec = { '@my_class': { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' } }
@@ -186,20 +172,18 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( ( 1, rec_position.rid, rec ) )\
             .send().fetch_response()
 
-        # print update_success
         assert update_success[0] != 0
 
         res = ( CommandMessage( connection ) )\
             .prepare( [ QUERY_SYNC, "select from " + rec_position.rid ] )\
             .send().fetch_response()
 
-        # print res
-        print "%r" % res[0].rid
-        print "%r" % res[0].o_class
-        print "%r" % res[0].version
-        print "%r" % res[0].alloggio
-        print "%r" % res[0].lavoro
-        print "%r" % res[0].vacanza
+        print("%r" % res[0].rid)
+        print("%r" % res[0].o_class)
+        print("%r" % res[0].version)
+        print("%r" % res[0].alloggio)
+        print("%r" % res[0].lavoro)
+        print("%r" % res[0].vacanza)
 
         assert res[0].rid == '#1:2'
         assert res[0].o_class is None
@@ -223,7 +207,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         session_id = conn_msg.prepare( ("admin", "admin") ) \
             .send().fetch_response()
 
-        print "Sid: %s" % session_id
+        print("Sid: %s" % session_id)
         assert session_id == connection.session_id
         assert session_id != -1
 
@@ -232,13 +216,13 @@ class RawMessages_2_TestCase(unittest.TestCase):
         msg = DbExistsMessage( connection )
         exists = msg.prepare( [db_name] ).send().fetch_response()
 
-        print "Before %r" % exists
+        print("Before %r" % exists)
         try:
             ( DbDropMessage( connection ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
         except PyOrientCommandException as e:
-            print e.message
+            print(e.message)
         finally:
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
@@ -256,20 +240,13 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( ( 1, rec ) )\
             .send().fetch_response()
 
-        print "New Rec Position: %s" % rec_position.rid
+        print("New Rec Position: %s" % rec_position.rid)
         assert rec_position.rid is not None
 
         ######################## Check Success
         res = ( CommandMessage( connection ) )\
             .prepare( [ QUERY_SYNC, "select from " + str(rec_position.rid) ] )\
             .send().fetch_response()
-
-        # print "%r" % res[0].rid
-        # print "%r" % res[0].o_class
-        # print "%r" % res[0].version
-        # print "%r" % res[0].alloggio
-        # print "%r" % res[0].lavoro
-        # print "%r" % res[0].vacanza
 
         assert res[0].rid == '#1:2'
         assert res[0].o_class is None
@@ -312,7 +289,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send().fetch_response()
 
-        print cluster_info
+        print(cluster_info)
         assert len(cluster_info) != 0
         assert connection.session_id != -1
 
@@ -320,7 +297,6 @@ class RawMessages_2_TestCase(unittest.TestCase):
         res1 = count_msg.set_count_tombstones(1)\
             .prepare( [ range(0, 11) ] ).send().fetch_response()
 
-        print res1
         assert res1 is not 0
         assert res1 > 0
 
@@ -328,7 +304,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         res2 = count_msg.set_count_tombstones(1)\
             .prepare( [ range(0, 11), 1 ] ).send().fetch_response()
 
-        print res2
+
         assert res2 is not 0
         assert res2 > 0
 
@@ -336,7 +312,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         res3 = count_msg.set_count_tombstones(1).set_cluster_ids( range(0, 11) )\
             .prepare().send().fetch_response()
 
-        print res3
+
         assert res3 is not 0
         assert res3 > 0
 
@@ -355,11 +331,6 @@ class RawMessages_2_TestCase(unittest.TestCase):
         def _test_callback(record):
             assert record is not []
             assert record.rid is not None  # assert no exception
-            # print record
-            # print record.rid
-            # print record.o_class
-            # print record.__getattribute__('in')
-            # print record.out
 
         try_select_async = CommandMessage(connection)
 
@@ -401,15 +372,13 @@ class RawMessages_2_TestCase(unittest.TestCase):
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send().fetch_response()
 
-        # print cluster_info
-
         cluster_info.sort(key=lambda cluster: cluster['id'])
 
         for cluster in cluster_info:
             # os.environ['DEBUG'] = '0'  # silence debug
             datarange = DataClusterDataRangeMessage(connection)
             value = datarange.prepare(cluster['id']).send().fetch_response()
-            print "Cluster Name: %s, ID: %u: %s " \
-                  % ( cluster['name'], cluster['id'], value )
+            print("Cluster Name: %s, ID: %u: %s " \
+                  % ( cluster['name'], cluster['id'], value ))
             assert value is not []
             assert value is not None

@@ -29,13 +29,13 @@ class CommandTestCase(unittest.TestCase):
             .prepare( [db_name, pyorient.STORAGE_TYPE_MEMORY] )\
             .send().fetch_response()
 
-        print "Before %r" % exists
+        print("Before %r" % exists)
         try:
             ( factory.get_message( pyorient.DB_DROP ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
         except pyorient.PyOrientCommandException as e:
-            print e.message
+            print(e.message)
         finally:
             ( factory.get_message( pyorient.DB_CREATE ) ).prepare(
                 (db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
@@ -84,10 +84,10 @@ class CommandTestCase(unittest.TestCase):
             .prepare(['demo_db', pyorient.STORAGE_TYPE_MEMORY])\
             .send().fetch_response()
 
-        # print clusters
-        # print sql_insert_result
-        # print load.rid
-        # print drop_db_result
+        # print(clusters
+        # print(sql_insert_result
+        # print(load.rid
+        # print(drop_db_result
 
         assert isinstance( clusters, list )
         assert len( clusters ) != 0
@@ -111,13 +111,13 @@ class CommandTestCase(unittest.TestCase):
             .prepare( [db_name, pyorient.STORAGE_TYPE_MEMORY] )\
             .send().fetch_response()
 
-        print "Before %r" % exists
+        print("Before %r" % exists)
         try:
             ( factory.get_message( pyorient.DB_DROP ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
         except pyorient.PyOrientCommandException as e:
-            print e.message
+            print(e.message)
         finally:
             ( factory.get_message( pyorient.DB_CREATE ) ).prepare(
                 (db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
@@ -171,7 +171,7 @@ class CommandTestCase(unittest.TestCase):
         res = tx.commit()
 
         for k, v in res.iteritems():
-            print k + " -> " + v.vacanza
+            print(k + " -> " + v.vacanza)
 
         assert len(res) == 4
         assert res["#3:0"].vacanza == 'montagna'
@@ -196,14 +196,12 @@ class CommandTestCase(unittest.TestCase):
         db_name = "tmp_test1"
 
         try:
-
-            print ""
             # at the end drop the test database
             ( factory.get_message(pyorient.DB_DROP) ).prepare([db_name, pyorient.STORAGE_TYPE_MEMORY]) \
                 .send().fetch_response()
 
         except pyorient.PyOrientCommandException as e:
-            print e.message
+            print(e.message)
         finally:
             ( factory.get_message(pyorient.DB_CREATE) ).prepare(
                 (db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
@@ -259,12 +257,12 @@ class CommandTestCase(unittest.TestCase):
         assert res[3].Song == 'High Voltage'
 
         # for x in res:
-        #     print "############"
-        #     print "%r" % x.rid
-        #     print "%r" % x.o_class
-        #     print "%r" % x.version
-        #     print "%r" % x.Band
-        #     print "%r" % x.Song
+        #     print("############"
+        #     print("%r" % x.rid
+        #     print("%r" % x.o_class
+        #     print("%r" % x.version
+        #     print("%r" % x.Band
+        #     print("%r" % x.Song
 
 
         # classes are allowed in record create/update/load
@@ -273,7 +271,7 @@ class CommandTestCase(unittest.TestCase):
             .prepare( ( cluster[0], rec ) )\
             .send().fetch_response()
 
-        print "New Rec Position: %s" % rec_position.rid
+        print("New Rec Position: %s" % rec_position.rid)
         assert rec_position.rid is not None
 
         rec = { '@c_test': { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' } }
@@ -286,13 +284,13 @@ class CommandTestCase(unittest.TestCase):
         res = req_msg.prepare( [ rec_position.rid, "*:-1" ] ) \
             .send().fetch_response()
 
-        # print res
-        # print res.rid
-        # print res.o_class
-        # print res.version
-        # print res.alloggio
-        # print res.lavoro
-        # print res.vacanza
+        # print(res
+        # print(res.rid
+        # print(res.o_class
+        # print(res.version
+        # print(res.alloggio
+        # print(res.lavoro
+        # print(res.vacanza
 
         assert res.rid == "#11:4"
         assert res.o_class == "c_test"
@@ -300,7 +298,7 @@ class CommandTestCase(unittest.TestCase):
         assert not hasattr( res, 'Band')
         assert not hasattr( res, 'Song')
 
-        # print ""
+        # print(""
         # # at the end drop the test database
         # ( DbDropMessage( connection ) ).prepare([db_name, STORAGE_TYPE_MEMORY]) \
         #     .send().fetch_response()

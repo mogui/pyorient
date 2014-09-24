@@ -112,7 +112,7 @@ class RecordCreateMessage(BaseMessage):
                 result.append(chng[0])
             except socket.timeout as e:
                 # socket timeout ignore
-                # print e TODO: ???
+                # TODO: ???
                 pass
             finally:
                 self._orientSocket._socket.settimeout(None)  # reset timeout
@@ -502,7 +502,7 @@ class RecordUpdateMessage(BaseMessage):
                 result.append(chng[0])
             except socket.timeout as e:
                 # socket timeout ignore
-                # print e
+                # TODO: ???
                 pass
             finally:
                 self._orientSocket._socket.settimeout(None)  # reset timeout

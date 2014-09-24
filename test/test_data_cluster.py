@@ -46,7 +46,6 @@ class DataClusterTestCase(unittest.TestCase):
         clusters = db_open.prepare( ( db_name, 'admin', 'admin' ) ) \
             .send().fetch_response()
 
-        # print clusters
         _created_clusters = []
         for _rng in range(0, 5):
             data_cadd = DataClusterAddMessage( connection )
@@ -57,7 +56,7 @@ class DataClusterTestCase(unittest.TestCase):
                 ]
             ).send().fetch_response()
             _created_clusters.append( new_cluster_id )
-            print "New cluster ID: %u" % new_cluster_id
+            print("New cluster ID: %u" % new_cluster_id)
 
         os.environ['DEBUG'] = '0'  # silence debug
 
@@ -70,8 +69,8 @@ class DataClusterTestCase(unittest.TestCase):
         for cluster in new_cluster_list:
             datarange = DataClusterDataRangeMessage(connection)
             value = datarange.prepare(cluster['id']).send().fetch_response()
-            print "Cluster Name: %s, ID: %u: %s " \
-                  % ( cluster['name'], cluster['id'], value )
+            print("Cluster Name: %s, ID: %u: %s " \
+                  % ( cluster['name'], cluster['id'], value ))
             _list.append( cluster['id'] )
             assert value is not []
             assert value is not None
@@ -80,7 +79,7 @@ class DataClusterTestCase(unittest.TestCase):
         try:
             for _cl in _created_clusters:
                 _list.index( _cl )
-                print "New cluster found in reload."
+                print("New cluster found in reload.")
                 assert True
         except ValueError:
             assert False
@@ -88,10 +87,10 @@ class DataClusterTestCase(unittest.TestCase):
         # now drop all and repeat check
         for _cid in _created_clusters:
             drop_c = DataClusterDropMessage( connection )
-            print "Drop cluster %u" % _cid
+            print("Drop cluster %u" % _cid)
             res = drop_c.prepare( _cid ).send().fetch_response()
             if res is True:
-                print "Done"
+                print("Done")
             else:
                 raise Exception( "Cluster " + str(_cid) + " failed")
 
@@ -103,8 +102,8 @@ class DataClusterTestCase(unittest.TestCase):
         for cluster in new_cluster_list:
             datarange = DataClusterDataRangeMessage(connection)
             value = datarange.prepare(cluster['id']).send().fetch_response()
-            print "Cluster Name: %s, ID: %u: %s " \
-                  % ( cluster['name'], cluster['id'], value )
+            print("Cluster Name: %s, ID: %u: %s " \
+                  % ( cluster['name'], cluster['id'], value ))
             _list.append( cluster['id'] )
             assert value is not []
             assert value is not None
@@ -117,4 +116,4 @@ class DataClusterTestCase(unittest.TestCase):
                 assert False
             except ValueError:
                 assert True
-                print "Cluster %u deleted." % _cl
+                print("Cluster %u deleted." % _cl)

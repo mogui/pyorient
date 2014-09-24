@@ -25,7 +25,7 @@ def dlog( msg ):
     # and if no DEBUG key is set, the driver crash with no reason when
     # connection starts
     if is_debug_active():
-        print "[DEBUG]:: %s" % msg
+        print("[DEBUG]:: %s" % msg)
 
 
 class Singleton(type):

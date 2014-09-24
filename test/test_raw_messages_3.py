@@ -50,7 +50,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.prepare()
             assert False
         except AttributeError as e:
-            print e.message
+            print(e.message)
             assert True
 
 
@@ -66,7 +66,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.send()
             assert False
         except AttributeError as e:
-            print e.message
+            print(e.message)
             assert True
 
     def test_private_fetch(self):
@@ -81,7 +81,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.fetch_response()
             assert False
         except AttributeError as e:
-            print e.message
+            print( e.message)
             assert True
 
     def test_transaction(self):
@@ -94,13 +94,13 @@ class RawMessages_5_TestCase(unittest.TestCase):
         msg = DbExistsMessage( connection )
         exists = msg.prepare( [db_name] ).send().fetch_response()
 
-        print "Before %r" % exists
+        print("Before %r" % exists)
         try:
             ( DbDropMessage( connection ) ).prepare([db_name]) \
                 .send().fetch_response()
             assert True
         except PyOrientCommandException as e:
-            print e.message
+            print(e.message)
         finally:
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_GRAPH, STORAGE_TYPE_PLOCAL)
@@ -117,7 +117,6 @@ class RawMessages_5_TestCase(unittest.TestCase):
                 .send().fetch_response()
         except PyOrientCommandException as e:
             # class my_class already exists
-            # print e
             pass
 
         # ##################
@@ -164,7 +163,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
         res = tx.commit()
 
         for k, v in res.iteritems():
-            print k + " -> " + v.vacanza
+            print(k + " -> " + v.vacanza)
 
         assert len(res) == 4
         assert res["#3:0"].vacanza == 'montagna'
@@ -172,12 +171,6 @@ class RawMessages_5_TestCase(unittest.TestCase):
         assert res["#3:3"].vacanza == 'mare'
         assert res["#3:4"].vacanza == 'lago'
 
-        # print ""
         # # at the end drop the test database
         ( DbDropMessage( connection ) ).prepare([db_name, STORAGE_TYPE_MEMORY]) \
             .send().fetch_response()
-
-# test_private_prepare()
-# test_private_send()
-# test_private_fetch()
-# test_transaction()

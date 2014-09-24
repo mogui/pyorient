@@ -1,4 +1,3 @@
-
 __author__ = 'Ostico <ostico@gmail.com>'
 
 import struct
@@ -103,7 +102,6 @@ class BaseMessage(object):
                 # useful only for java clients
                 serialized_exception = self._decode_field( FIELD_STRING )
                 # trash
-                # print "%r" % serialized_exception
                 del serialized_exception
 
             raise PyOrientCommandException(
@@ -148,11 +146,11 @@ class BaseMessage(object):
 
     def dump_streams(self):
         if is_debug_active():
-            print "\nRequest :"
+            print("\nRequest :")
             hexdump( self._output_buffer )
-            print "\nResponse:"
+            print("\nResponse:")
             hexdump( self._input_buffer )
-            print "\n"
+            print("\n")
 
     def _append(self, field):
         """
@@ -182,7 +180,7 @@ class BaseMessage(object):
 
         # tuple with type
         t, v = field
-        _content = ''
+
 
         if t['type'] == INT:
             _content = struct.pack("!i", v)
@@ -295,10 +293,6 @@ class BaseMessage(object):
                 # no attribute '_command_type'
                 raise PyOrientBadMethodCallException(
                     str(self._callback) + " is not a callable function", [])
-
-            except Exception as e:
-                print e.message
-                pass
             finally:
                 # read new status and flush the debug buffer
                 _status = self._decode_field( FIELD_BYTE )  # status

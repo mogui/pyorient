@@ -36,7 +36,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
     def test_connection(self):
         connection = OrientSocket( "localhost", 2424 )
         msg = ConnectMessage( connection )
-        print "%r" % msg.get_protocol()
+        print("%r" % msg.get_protocol())
         assert msg.get_protocol() != -1
 
         session_id = msg.prepare( ("admin", "admin") )\
@@ -51,20 +51,20 @@ class RawMessages_1_TestCase(unittest.TestCase):
         assert session_id != -1
 
         msg.close()
-        print "%r" % msg._header
-        print "%r" % session_id
+        print("%r" % msg._header)
+        print("%r" % session_id)
 
     def test_db_exists(self):
 
         connection = OrientSocket( "localhost", 2424 )
         msg = ConnectMessage( connection )
-        print "%r" % msg.get_protocol()
+        print("%r" % msg.get_protocol())
         assert msg.get_protocol() != -1
 
         session_id = msg.prepare( ("admin", "admin") )\
             .send().fetch_response()
 
-        print "Sid: %s" % session_id
+        print("Sid: %s" % session_id)
         assert session_id == connection.session_id
         assert session_id != -1
 
@@ -78,20 +78,20 @@ class RawMessages_1_TestCase(unittest.TestCase):
         assert exists is True
 
         msg.close()
-        print "%r" % exists
+        print("%r" % exists)
 
     def test_db_open_connected(self):
 
         connection = OrientSocket( "localhost", 2424 )
         conn_msg = ConnectMessage( connection )
 
-        print "%r" % conn_msg.get_protocol()
+        print("%r" % conn_msg.get_protocol())
         assert conn_msg.get_protocol() != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") )\
             .send().fetch_response()
 
-        print "Sid: %s" % session_id
+        print("Sid: %s" % session_id)
         assert session_id == connection.session_id
         assert session_id != -1
         # ##################
@@ -103,14 +103,14 @@ class RawMessages_1_TestCase(unittest.TestCase):
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send().fetch_response()
 
-        print "Cluster: %s" % cluster_info
+        print("Cluster: %s" % cluster_info)
         assert len(cluster_info) != 0
 
     def test_db_open_not_connected(self):
 
         connection = OrientSocket( "localhost", 2424 )
 
-        print "Sid, should be -1 : %s" % connection.session_id
+        print("Sid, should be -1 : %s" % connection.session_id)
         assert connection.session_id == -1
 
         # ##################
@@ -122,7 +122,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send().fetch_response()
 
-        print "Cluster: %s" % cluster_info
+        print("Cluster: %s" % cluster_info)
         assert len(cluster_info) != 0
         return ( connection, cluster_info )
 
@@ -139,12 +139,12 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
         connection = OrientSocket( "localhost", 2424 )
         conn_msg = ConnectMessage( connection )
-        print "Protocol: %r" % conn_msg.get_protocol()
+        print("Protocol: %r" % conn_msg.get_protocol())
 
         session_id = conn_msg.prepare( ("admin", "admin") )\
             .send().fetch_response()
 
-        print "Sid: %s" % session_id
+        print("Sid: %s" % session_id)
         assert session_id == connection.session_id
         assert session_id != -1
 
@@ -158,9 +158,9 @@ class RawMessages_1_TestCase(unittest.TestCase):
             ).send().fetch_response()
         except PyOrientCommandException as e:
             assert True
-            print e.message
+            print(e.message)
 
-        print "Creation: %r" % response
+        print("Creation: %r" % response)
         assert len(response) is 0
 
         msg = DbExistsMessage( connection )
@@ -171,7 +171,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         assert exists is True
 
         msg.close()
-        print "%r" % exists
+        print("%r" % exists)
 
     def test_db_drop_without_connect(self):
         connection = OrientSocket( "localhost", 2424 )
@@ -183,13 +183,13 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
         connection = OrientSocket( "localhost", 2424 )
         conn_msg = ConnectMessage( connection )
-        print "Protocol: %r" % conn_msg.get_protocol()
+        print("Protocol: %r" % conn_msg.get_protocol())
         assert connection.protocol != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") ) \
             .send().fetch_response()
 
-        print "Sid: %s" % session_id
+        print("Sid: %s" % session_id)
         assert session_id == connection.session_id
         assert session_id != -1
 
@@ -200,21 +200,21 @@ class RawMessages_1_TestCase(unittest.TestCase):
         msg = DbExistsMessage( connection )
         exists = msg.prepare( [db_name] ).send().fetch_response()
 
-        print "Before %r" % exists
+        print("Before %r" % exists)
 
         assert exists is True  # should happen every time because of latest test
         if exists is True:
             ( DbDropMessage( connection ) ).prepare([db_name]) \
                 .send().fetch_response()
 
-        print "Creation again"
+        print("Creation again")
         try:
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
             ).send().fetch_response()
             assert True
         except PyOrientCommandException as e:
-            print e.message
+            print(e.message)
             assert False  # No expected Exception
 
         msg = DbExistsMessage( connection )
@@ -226,18 +226,18 @@ class RawMessages_1_TestCase(unittest.TestCase):
             .send().fetch_response()
 
         msg.close()
-        print "After %r" % exists
+        print("After %r" % exists)
 
     def test_db_close(self):
         connection = OrientSocket( "localhost", 2424 )
         conn_msg = ConnectMessage( connection )
-        print "Protocol: %r" % conn_msg.get_protocol()
+        print("Protocol: %r" % conn_msg.get_protocol())
         assert connection.protocol != -1
 
         session_id = conn_msg.prepare( ("admin", "admin") ) \
             .send().fetch_response()
 
-        print "Sid: %s" % session_id
+        print("Sid: %s" % session_id)
         assert session_id == connection.session_id
         assert session_id != -1
 
@@ -254,7 +254,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         reload_msg = DbReloadMessage( connection )
         cluster_reload = reload_msg.prepare().send().fetch_response()
 
-        print "Cluster: %s" % cluster_info
+        print("Cluster: %s" % cluster_info)
         assert cluster_info == cluster_reload
 
     def test_db_size(self):
@@ -264,20 +264,20 @@ class RawMessages_1_TestCase(unittest.TestCase):
         reload_msg = DbSizeMessage( connection )
         size = reload_msg.prepare().send().fetch_response()
 
-        print "Size: %s" % size
+        print("Size: %s" % size)
         assert size != 0
 
     def test_shutdown(self):
 
         import inspect
-        print "# WARNING comment return below this line " \
+        print("# WARNING comment return below this line " \
               "to test this message. Line %u" % \
-              inspect.currentframe().f_back.f_lineno
+              inspect.currentframe().f_back.f_lineno)
         return
 
         connection = OrientSocket( "localhost", 2424 )
         msg = ConnectMessage( connection )
-        print "%r" % msg.get_protocol()
+        print("%r" % msg.get_protocol())
         assert msg.get_protocol() != -1
 
         sid = msg.prepare( ("admin", "admin") )\
@@ -287,7 +287,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
             session_id = msg.set_user("admin").set_pass("admin").prepare()\
             .send().fetch_response()
         """
-        print "%r" % sid
+        print("%r" % sid)
         assert sid != -1
 
         shut_msg = ShutdownMessage(connection)
@@ -299,7 +299,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
     def test_command(self):
         connection = OrientSocket( "localhost", 2424 )
 
-        print "Sid, should be -1 : %s" % connection.session_id
+        print("Sid, should be -1 : %s" % connection.session_id)
         assert connection.session_id == -1
 
         # ##################
@@ -317,6 +317,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         res = req_msg.prepare( [ QUERY_SYNC, "select * from followed_by limit 1" ] ) \
             .send().fetch_response()
 
-        print "%r" % res[0].rid
-        print "%r" % res[0].o_class
-        print "%r" % res[0].version
+        print("%r" % res[0].rid)
+        print("%r" % res[0].o_class)
+        print("%r" % res[0].version)
+

@@ -6,7 +6,7 @@ from ..constants import COMMAND_OP, FIELD_BOOLEAN, FIELD_BYTE, FIELD_CHAR, \
     FIELD_INT, FIELD_LONG, FIELD_SHORT, FIELD_STRING, QUERY_SYNC, TX_COMMIT_OP, \
     QUERY_GREMLIN, QUERY_ASYNC, QUERY_CMD, QUERY_TYPES
 from ..serialization import ORecordEncoder
-from ..utils import need_connected, need_db_opened
+from ..utils import need_connected, need_db_opened, dlog
 
 
 __author__ = 'Ostico <ostico@gmail.com>'
@@ -196,7 +196,6 @@ class CommandMessage(BaseMessage):
             # cache = cached_results['cached']
         else:
             msg = ""
-            import hexdump
             import socket
             self._orientSocket._socket.settimeout(5)
             try:
@@ -205,9 +204,9 @@ class CommandMessage(BaseMessage):
                     msg += m
                     m = self._orientSocket.read(1)
             except socket.timeout as e:
-                print "************* " + str(e) + " *************"
+                dlog("************* " + str(e) + " *************")
+                # TODO: ???
                 pass
-            hexdump.hexdump(msg)
             exit(1)
 
         return res
@@ -455,7 +454,7 @@ class _TXCommitMessage(BaseMessage):
         if self._tx_id < 0:
             from datetime import datetime
 
-            my_epoch = datetime(2014, 07, 01)
+            my_epoch = datetime(2014, 7, 1)
             now = datetime.now()
             delta = now - my_epoch
 
