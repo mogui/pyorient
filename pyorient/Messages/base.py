@@ -180,7 +180,7 @@ class BaseMessage(object):
 
         # tuple with type
         t, v = field
-
+        _content = ''
 
         if t['type'] == INT:
             _content = struct.pack("!i", v)
