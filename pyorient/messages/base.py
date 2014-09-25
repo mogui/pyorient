@@ -1,6 +1,7 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
 import struct
+import sys
 
 from ..exceptions import PyOrientBadMethodCallException, \
     PyOrientCommandException
@@ -47,7 +48,7 @@ class BaseMessage(object):
         self._db_opened = self._orientSocket.db_opened
         self._serialization_type = self._orientSocket.serialization_type
         self._output_buffer = b''
-        self._input_buffer = ''
+        self._input_buffer = b''
 
         #callback function for async queries
         self._callback = None
@@ -66,7 +67,6 @@ class BaseMessage(object):
     def prepare(self, *args):
         # session_id
         self._fields_definition.insert( 1, ( FIELD_INT, self._session_id ) )
-        print(repr(self._fields_definition))
         self._output_buffer = b''.join(
             self._encode_field( x ) for x in self._fields_definition
         )
@@ -211,7 +211,6 @@ class BaseMessage(object):
         return _content
 
     def _decode_field(self, _type):
-        print("asd", repr(_type))
         _value = ""
         # read buffer length and decode value by field definition
         if _type['bytes'] is not None:

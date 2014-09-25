@@ -10,13 +10,7 @@ from .constants import FIELD_SHORT, QUERY_ASYNC, QUERY_CMD, QUERY_SYNC, \
     SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL
 from .utils import dlog, is_debug_verbose
 
-try:
-    from cStringIO import StringIO
-except ImportError:
-    try:
-        from StringIO import StringIO
-    except ImportError:
-        from io import StringIO
+from io import BytesIO
 
 
 class OrientSocket(object):
@@ -78,7 +72,7 @@ class OrientSocket(object):
     #   you have read enough.
     def read(self, _len_to_read):
 
-        buf = StringIO()
+        buf = BytesIO()
         try:
 
             while buf.tell() < _len_to_read:
