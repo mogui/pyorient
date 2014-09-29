@@ -80,7 +80,7 @@ class ORecordEncoder(object):
             value = getattr(record, key)
             raw += self.parseValue(value)
 
-            if idx < len(fields) - 1:
+            if idx < len(list(fields)) - 1:
                 # not last element
                 raw += ','
 
@@ -157,6 +157,9 @@ class ORecordDecoder(object):
 
     def __decode(self):
         """docstring for decode"""
+
+        if not isinstance(self.content, str):
+           self.content = self.content.decode()
 
         while self._i < len(self.content) and self._continue:
             char = self.content[self._i:self._i + 1]
@@ -452,7 +455,7 @@ class ORecordDecoder(object):
             if char == 'b' or char == 's':
                 tokenValue = int(self._buffer)
             elif char == 'l':
-                tokenValue = long(self._buffer)
+                tokenValue = int(self._buffer)
             elif char == 'f' or char == 'd':
                 tokenValue = float(self._buffer)
             elif char == 't':

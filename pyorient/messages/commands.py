@@ -406,7 +406,7 @@ class _TXCommitMessage(BaseMessage):
             self._operation_stack.append((
                 ( FIELD_BYTE, chr(1) ),
                 ( FIELD_SHORT, int(getattr(operation, "_cluster_id")) ),
-                ( FIELD_LONG, long(getattr(operation, "_cluster_position")) ),
+                ( FIELD_LONG, int(getattr(operation, "_cluster_position")) ),
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
                 ( FIELD_INT, int(getattr(operation, "_record_version")) ),
                 ( FIELD_STRING, o_record_enc.getRaw() ),
@@ -425,7 +425,7 @@ class _TXCommitMessage(BaseMessage):
             self._operation_stack.append((
                 ( FIELD_BYTE, chr(2) ),
                 ( FIELD_SHORT, int(getattr(operation, "_cluster_id")) ),
-                ( FIELD_LONG, long(getattr(operation, "_cluster_position")) ),
+                ( FIELD_LONG, int(getattr(operation, "_cluster_position")) ),
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
                 ( FIELD_INT, int(getattr(operation, "_record_version")) ),
             ))
@@ -434,7 +434,7 @@ class _TXCommitMessage(BaseMessage):
             self._operation_stack.append((
                 ( FIELD_BYTE, chr(3) ),
                 ( FIELD_SHORT, int(-1) ),
-                ( FIELD_LONG, long(self._temp_cluster_position_seq) ),
+                ( FIELD_LONG, int(self._temp_cluster_position_seq) ),
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
                 ( FIELD_STRING, o_record_enc.getRaw() ),
             ))

@@ -142,15 +142,17 @@ class BaseMessage(object):
             # let the debug display the output if enabled,
             # there are only a message composition error in driver development
             pass
-
+        print(repr(self._body))
         return self._body
 
     def dump_streams(self):
         if is_debug_active():
             print("\nRequest :")
-            hexdump( self._output_buffer )
+            # hexdump( self._output_buffer.decode() )
+            print(repr(self._output_buffer))
             print("\nResponse:")
-            hexdump( self._input_buffer )
+            # hexdump( self._input_buffer.decode() )
+            print(repr(self._input_buffer))
             print("\n")
 
     def _append(self, field):

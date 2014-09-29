@@ -316,7 +316,7 @@ class RecordLoadMessage(BaseMessage):
             _cluster = _cluster[1:]
 
         self._append( ( FIELD_SHORT, int(_cluster) ) )
-        self._append( ( FIELD_LONG, long(_position) ) )
+        self._append( ( FIELD_LONG, int(_position) ) )
         self._append( ( FIELD_STRING, self._fetch_plan ) )
         self._append( ( FIELD_BYTE, "0" ) )
         self._append( ( FIELD_BYTE, "0" ) )
@@ -463,7 +463,7 @@ class RecordUpdateMessage(BaseMessage):
         o_record_enc = ORecordEncoder( record )
 
         self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self._append( ( FIELD_LONG, long(self._cluster_position) ) )
+        self._append( ( FIELD_LONG, int(self._cluster_position) ) )
 
         if self.get_protocol() >= 23:
             self._append( ( FIELD_BOOLEAN, self._update_content ) )
