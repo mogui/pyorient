@@ -1,3 +1,5 @@
+from __future__ import print_function
+
 __author__ = 'Ostico <ostico@gmail.com>'
 
 import socket
@@ -71,24 +73,14 @@ class OrientSocket(object):
     #   in a loop and concatenate the returned packets until
     #   you have read enough.
     def read(self, _len_to_read):
-
-        buf = BytesIO()
         try:
-
-            while buf.tell() < _len_to_read:
-
-                tmp = self._socket.recv( _len_to_read - buf.tell() )
-                buf.write( tmp )
-
-                if is_debug_verbose():
-                    import hexdump
-                    print( "\n          -------------------\n" )
-                    print( "    To read was: " + str( _len_to_read ) )
-                    print( hexdump.hexdump(tmp, 'return') )
-                    print( "    left: " + str( _len_to_read - buf.tell() ) )
-
-            buf.seek(0)
-            return buf.read( _len_to_read )
+            buf = bytearray(_len_to_read)
+            view = memoryview(buf)
+            while _len_to_read:
+                nbytes = self._socket.recv_into(view, _len_to_read)
+                view = view[nbytes:] # slicing views is cheap
+                _len_to_read -= nbytes
+            return bytes(buf)
         except socket.timeout as e:
             # we don't set false because of
             # RecordUpdateMessage/RecordCreateMessage trick
@@ -97,10 +89,22 @@ class OrientSocket(object):
         except Exception as e:
             self._connected = False
             raise e
-        finally:
-            buf.close()
 
+def ByteToHex( byteStr ):
+    """
+    Convert a byte string to it's hex string representation e.g. for output.
+    """
 
+    # Uses list comprehension which is a fractionally faster implementation than
+    # the alternative, more readable, implementation below
+    #
+    #    hex = []
+    #    for aChar in byteStr:
+    #        hex.append( "%02X " % ord( aChar ) )
+    #
+    #    return ''.join( hex ).strip()
+
+    return ''.join( [ "%02X " % ord( x ) for x in byteStr ] ).strip()
 #
 # OrientDB Message Factory
 #
@@ -284,5 +288,5 @@ class OrientDB():
                 return _Message(self._connection)
         except KeyError as e:
             raise PyOrientBadMethodCallException(
-                "Unable to find command " + e.message, []
+                "Unable to find command " + str(e), []
             )

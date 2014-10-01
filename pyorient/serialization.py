@@ -72,8 +72,8 @@ class ORecordEncoder(object):
         if o_class:
             raw = o_class + '@'
 
-        fields = filter(lambda item: not item.startswith('_OrientRecord_'),
-                        record.__dict__)
+        fields = list(filter(lambda item: not item.startswith('_OrientRecord_'),
+                        record.__dict__))
 
         for idx, key in enumerate(fields):
             raw += key + ':'

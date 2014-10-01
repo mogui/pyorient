@@ -87,8 +87,8 @@ class BaseMessage(object):
         if self._header[0]:
 
             # Parse the error
-            exception_class = ''
-            exception_message = ''
+            exception_class = b''
+            exception_message = b''
 
             more = self._decode_field( FIELD_BOOLEAN )
 
@@ -104,9 +104,9 @@ class BaseMessage(object):
                 serialized_exception = self._decode_field( FIELD_STRING )
                 # trash
                 del serialized_exception
-
-            raise PyOrientCommandException(
-                exception_message + " - " + exception_class, [] )
+                cmd_exc = exception_message + b' - ' + exception_class
+            raise PyOrientCommandException(cmd_exc
+                , [] )
 
     def _decode_body(self):
         # read body
@@ -128,20 +128,14 @@ class BaseMessage(object):
         :param _continue:
         :return:
         """
-        try:
-            if len(_continue) is not 0:
-                self._body = []
-                self._decode_body()
-                self.dump_streams()
-            # already fetched, get last results as cache info
-            elif len(self._body) is 0:
-                self._decode_all()
-                self.dump_streams()
-
-        except (IndexError, TypeError):
-            # let the debug display the output if enabled,
-            # there are only a message composition error in driver development
-            pass
+        if len(_continue) is not 0:
+            self._body = []
+            self._decode_body()
+            self.dump_streams()
+        # already fetched, get last results as cache info
+        elif len(self._body) is 0:
+            self._decode_all()
+            self.dump_streams()
         print(repr(self._body))
         return self._body
 
@@ -184,6 +178,7 @@ class BaseMessage(object):
         # tuple with type
         t, v = field
 
+
         if t['type'] == INT:
             _content = struct.pack("!i", v)
         elif t['type'] == SHORT:
@@ -203,6 +198,8 @@ class BaseMessage(object):
         elif t['type'] == BYTES:
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRING:
+            if isinstance(v, str):
+                v = v.encode()
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRINGS:
             _content = b''
@@ -253,7 +250,6 @@ class BaseMessage(object):
             return rid
 
         else:
-
             self._input_buffer += _value
 
             if _type['type'] == BOOLEAN:
@@ -344,6 +340,6 @@ class BaseMessage(object):
 
         self.dump_streams()  # debug log
         self._output_buffer = b''
-        self._input_buffer = ''
+        self._input_buffer = b''
 
         return res
