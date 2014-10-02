@@ -188,7 +188,7 @@ class CommandTestCase(unittest.TestCase):
         tx.attach( delete_msg )
         res = tx.commit()
 
-        for k, v in res.iteritems():
+        for k, v in res.items():
             print(k + " -> " + v.vacanza)
 
         assert len(res) == 3

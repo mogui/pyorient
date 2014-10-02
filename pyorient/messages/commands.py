@@ -282,7 +282,8 @@ class _TXCommitMessage(BaseMessage):
 
         for k, v in enumerate(self._operation_stack):
             self._append(( FIELD_BYTE, chr(1) ))  # start of records
-            map(self._append, v)
+            for field in v:
+                self._append(field)
 
         self._append(( FIELD_BYTE, chr(0) ))
         self._append(( FIELD_STRING, "" ))

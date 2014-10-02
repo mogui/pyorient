@@ -204,7 +204,7 @@ class BaseMessage(object):
         elif t['type'] == STRINGS:
             _content = b''
             for s in v:
-                a = struct.pack("!i", len(s))
+                a = struct.pack("!i", len(s.encode('utf-8')))
                 _content += a + s.encode('utf-8')
 
         return _content

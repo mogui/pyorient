@@ -64,7 +64,7 @@ def need_db_opened(wrap):
 
 def parse_cluster_id(cluster_id):
     try:
-        _cluster_id, _position = cluster_id.split( ':' )
+        _cluster_id, _position = cluster_id.split( b':' )
         if _cluster_id[0] is '#':
             _cluster_id = _cluster_id[1:]
     except (AttributeError, ValueError):
