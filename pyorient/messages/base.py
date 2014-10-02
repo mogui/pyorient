@@ -136,7 +136,6 @@ class BaseMessage(object):
         elif len(self._body) is 0:
             self._decode_all()
             self.dump_streams()
-        print(repr(self._body))
         return self._body
 
     def dump_streams(self):

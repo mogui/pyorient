@@ -77,7 +77,6 @@ class CommandMessage(BaseMessage):
 
         if isinstance( params, tuple ) or isinstance( params, list ):
             try:
-                print(params)
                 self.set_command_type( params[0] )
 
                 self._query = params[1]
