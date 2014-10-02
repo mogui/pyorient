@@ -77,7 +77,6 @@ class CommandMessage(BaseMessage):
 
         if isinstance( params, tuple ) or isinstance( params, list ):
             try:
-
                 self.set_command_type( params[0] )
 
                 self._query = params[1]
@@ -116,7 +115,7 @@ class CommandMessage(BaseMessage):
 
         _payload_definition.append( ( FIELD_INT, 0 ) )
 
-        payload = ''.join(
+        payload = b''.join(
             self._encode_field( x ) for x in _payload_definition
         )
 
@@ -166,7 +165,8 @@ class CommandMessage(BaseMessage):
         # type of response
         # decode body char with flag continue ( Header already read )
         response_type = self._decode_field( FIELD_CHAR )
-
+        if not isinstance(response_type, str):
+            response_type = response_type.decode()
         res = []
         if response_type == 'n':
             return None
@@ -195,19 +195,15 @@ class CommandMessage(BaseMessage):
             cached_results = self._read_async_records()
             # cache = cached_results['cached']
         else:
-            msg = ""
+            msg = b''
             import socket
             self._orientSocket._socket.settimeout(5)
-            try:
+
+            m = self._orientSocket.read(1)
+            while m != "":
+                msg += m
                 m = self._orientSocket.read(1)
-                while m != "":
-                    msg += m
-                    m = self._orientSocket.read(1)
-            except socket.timeout as e:
-                dlog("************* " + str(e) + " *************")
-                # TODO: ???
-                pass
-            exit(1)
+
 
         return res
 
@@ -285,7 +281,8 @@ class _TXCommitMessage(BaseMessage):
 
         for k, v in enumerate(self._operation_stack):
             self._append(( FIELD_BYTE, chr(1) ))  # start of records
-            map(self._append, v)
+            for field in v:
+                self._append(field)
 
         self._append(( FIELD_BYTE, chr(0) ))
         self._append(( FIELD_STRING, "" ))
@@ -406,7 +403,7 @@ class _TXCommitMessage(BaseMessage):
             self._operation_stack.append((
                 ( FIELD_BYTE, chr(1) ),
                 ( FIELD_SHORT, int(getattr(operation, "_cluster_id")) ),
-                ( FIELD_LONG, long(getattr(operation, "_cluster_position")) ),
+                ( FIELD_LONG, int(getattr(operation, "_cluster_position")) ),
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
                 ( FIELD_INT, int(getattr(operation, "_record_version")) ),
                 ( FIELD_STRING, o_record_enc.getRaw() ),
@@ -425,7 +422,7 @@ class _TXCommitMessage(BaseMessage):
             self._operation_stack.append((
                 ( FIELD_BYTE, chr(2) ),
                 ( FIELD_SHORT, int(getattr(operation, "_cluster_id")) ),
-                ( FIELD_LONG, long(getattr(operation, "_cluster_position")) ),
+                ( FIELD_LONG, int(getattr(operation, "_cluster_position")) ),
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
                 ( FIELD_INT, int(getattr(operation, "_record_version")) ),
             ))
@@ -434,7 +431,7 @@ class _TXCommitMessage(BaseMessage):
             self._operation_stack.append((
                 ( FIELD_BYTE, chr(3) ),
                 ( FIELD_SHORT, int(-1) ),
-                ( FIELD_LONG, long(self._temp_cluster_position_seq) ),
+                ( FIELD_LONG, int(self._temp_cluster_position_seq) ),
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
                 ( FIELD_STRING, o_record_enc.getRaw() ),
             ))

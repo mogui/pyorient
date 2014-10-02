@@ -64,6 +64,8 @@ def need_db_opened(wrap):
 
 def parse_cluster_id(cluster_id):
     try:
+        if not isinstance(cluster_id, str):
+            cluster_id = cluster_id.encode()
         _cluster_id, _position = cluster_id.split( ':' )
         if _cluster_id[0] is '#':
             _cluster_id = _cluster_id[1:]

@@ -158,7 +158,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
             ).send().fetch_response()
         except PyOrientCommandException as e:
             assert True
-            print(e.message)
+            print(str(e))
 
         print("Creation: %r" % response)
         assert len(response) is 0
@@ -214,7 +214,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
             ).send().fetch_response()
             assert True
         except PyOrientCommandException as e:
-            print(e.message)
+            print(str(e))
             assert False  # No expected Exception
 
         msg = DbExistsMessage( connection )

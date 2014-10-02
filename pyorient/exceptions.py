@@ -8,7 +8,7 @@ class PyOrientException(Exception):
 
     def __str__(self):
         if self.errors:
-            return "%s - %s" % (self.message, self.errors[0][1])
+            return "%s - %s" % (Exception.__str__(self), self.errors[0][1])
         else:
             return Exception.__str__(self)
 

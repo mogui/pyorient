@@ -1,6 +1,7 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
 import struct
+import sys
 
 from ..exceptions import PyOrientBadMethodCallException, \
     PyOrientCommandException
@@ -46,8 +47,8 @@ class BaseMessage(object):
         self._command = chr(0)
         self._db_opened = self._orientSocket.db_opened
         self._serialization_type = self._orientSocket.serialization_type
-        self._output_buffer = ''
-        self._input_buffer = ''
+        self._output_buffer = b''
+        self._input_buffer = b''
 
         #callback function for async queries
         self._callback = None
@@ -66,7 +67,7 @@ class BaseMessage(object):
     def prepare(self, *args):
         # session_id
         self._fields_definition.insert( 1, ( FIELD_INT, self._session_id ) )
-        self._output_buffer = ''.join(
+        self._output_buffer = b''.join(
             self._encode_field( x ) for x in self._fields_definition
         )
         return self
@@ -86,8 +87,8 @@ class BaseMessage(object):
         if self._header[0]:
 
             # Parse the error
-            exception_class = ''
-            exception_message = ''
+            exception_class = b''
+            exception_message = b''
 
             more = self._decode_field( FIELD_BOOLEAN )
 
@@ -103,9 +104,9 @@ class BaseMessage(object):
                 serialized_exception = self._decode_field( FIELD_STRING )
                 # trash
                 del serialized_exception
-
-            raise PyOrientCommandException(
-                exception_message + " - " + exception_class, [] )
+                cmd_exc = exception_message + b' - ' + exception_class
+            raise PyOrientCommandException(cmd_exc
+                , [] )
 
     def _decode_body(self):
         # read body
@@ -127,29 +128,24 @@ class BaseMessage(object):
         :param _continue:
         :return:
         """
-        try:
-            if len(_continue) is not 0:
-                self._body = []
-                self._decode_body()
-                self.dump_streams()
-            # already fetched, get last results as cache info
-            elif len(self._body) is 0:
-                self._decode_all()
-                self.dump_streams()
-
-        except (IndexError, TypeError):
-            # let the debug display the output if enabled,
-            # there are only a message composition error in driver development
-            pass
-
+        if len(_continue) is not 0:
+            self._body = []
+            self._decode_body()
+            self.dump_streams()
+        # already fetched, get last results as cache info
+        elif len(self._body) is 0:
+            self._decode_all()
+            self.dump_streams()
         return self._body
 
     def dump_streams(self):
         if is_debug_active():
             print("\nRequest :")
-            hexdump( self._output_buffer )
+            # hexdump( self._output_buffer.decode() )
+            print(repr(self._output_buffer))
             print("\nResponse:")
-            hexdump( self._input_buffer )
+            # hexdump( self._input_buffer.decode() )
+            print(repr(self._input_buffer))
             print("\n")
 
     def _append(self, field):
@@ -180,7 +176,7 @@ class BaseMessage(object):
 
         # tuple with type
         t, v = field
-        _content = ''
+
 
         if t['type'] == INT:
             _content = struct.pack("!i", v)
@@ -189,21 +185,30 @@ class BaseMessage(object):
         elif t['type'] == LONG:
             _content = struct.pack("!q", v)
         elif t['type'] == BOOLEAN:
-            _content = chr(1) if v else chr(0)
+            if sys.version_info[0] < 3:
+                _content = chr(1) if v else chr(0)
+            else:
+                _content = bytes([1]) if v else bytes([0])
         elif t['type'] == BYTE:
-            _content = v
+            if sys.version_info[0] < 3:
+                _content = v
+            else:
+                _content = bytes([ord(v)])
         elif t['type'] == BYTES:
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRING:
+            if isinstance(v, str):
+                v = v.encode()
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRINGS:
+            _content = b''
             for s in v:
-                _content += struct.pack("!i", len(s)) + s
+                a = struct.pack("!i", len(s.encode('utf-8')))
+                _content += a + s.encode('utf-8')
 
         return _content
 
     def _decode_field(self, _type):
-
         _value = ""
         # read buffer length and decode value by field definition
         if _type['bytes'] is not None:
@@ -244,7 +249,6 @@ class BaseMessage(object):
             return rid
 
         else:
-
             self._input_buffer += _value
 
             if _type['type'] == BOOLEAN:
@@ -334,7 +338,7 @@ class BaseMessage(object):
             )
 
         self.dump_streams()  # debug log
-        self._output_buffer = ''
-        self._input_buffer = ''
+        self._output_buffer = b''
+        self._input_buffer = b''
 
         return res

@@ -34,7 +34,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.attach([1, 2, 3])
             assert False  # should not happens
         except AssertionError as e:
-            assert 'A subclass of BaseMessage was expected' == e.message
+            assert 'A subclass of BaseMessage was expected' == str(e)
             assert True
 
     def test_private_prepare(self):
@@ -50,7 +50,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.prepare()
             assert False
         except AttributeError as e:
-            print(e.message)
+            print(str(e))
             assert True
 
 
@@ -66,7 +66,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.send()
             assert False
         except AttributeError as e:
-            print(e.message)
+            print(str(e))
             assert True
 
     def test_private_fetch(self):
@@ -81,7 +81,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
             tx.fetch_response()
             assert False
         except AttributeError as e:
-            print( e.message)
+            print( str(e))
             assert True
 
     def test_transaction(self):
@@ -100,7 +100,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
                 .send().fetch_response()
             assert True
         except PyOrientCommandException as e:
-            print(e.message)
+            print(str(e))
         finally:
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_GRAPH, STORAGE_TYPE_PLOCAL)
@@ -162,7 +162,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
         tx.attach( delete_msg )
         res = tx.commit()
 
-        for k, v in res.iteritems():
+        for k, v in res.items():
             print(k + " -> " + v.vacanza)
 
         assert len(res) == 4

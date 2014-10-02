@@ -135,9 +135,15 @@ class RecordCreateMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
+        if isinstance(self._cluster_id, int):
+            cid = str(self._cluster_id)
+        else:
+            cid = self._cluster_id.decode()
+        rid = "#" + cid + ":" + str(result[0])
+
         self._record_content.update(
             version=result[1],
-            rid="#" + str(self._cluster_id) + ":" + str(result[0])
+            rid=rid
         )
 
         return self._record_content  # [ self._record_content, _changes ]
@@ -311,12 +317,15 @@ class RecordLoadMessage(BaseMessage):
             # Use default for non existent indexes
             pass
 
+
+
         _cluster, _position = self._record_id.split( ':' )
-        if _cluster[0] is '#':
+        print("aa", repr(self._record_id), repr(_cluster), repr(_position))
+        if _cluster[0] == '#':
             _cluster = _cluster[1:]
 
         self._append( ( FIELD_SHORT, int(_cluster) ) )
-        self._append( ( FIELD_LONG, long(_position) ) )
+        self._append( ( FIELD_LONG, int(_position) ) )
         self._append( ( FIELD_STRING, self._fetch_plan ) )
         self._append( ( FIELD_BYTE, "0" ) )
         self._append( ( FIELD_BYTE, "0" ) )
@@ -463,7 +472,7 @@ class RecordUpdateMessage(BaseMessage):
         o_record_enc = ORecordEncoder( record )
 
         self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self._append( ( FIELD_LONG, long(self._cluster_position) ) )
+        self._append( ( FIELD_LONG, int(self._cluster_position) ) )
 
         if self.get_protocol() >= 23:
             self._append( ( FIELD_BOOLEAN, self._update_content ) )

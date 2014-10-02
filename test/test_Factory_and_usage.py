@@ -35,7 +35,7 @@ class CommandTestCase(unittest.TestCase):
                 .send().fetch_response()
             assert True
         except pyorient.PyOrientCommandException as e:
-            print(e.message)
+            print(str(e))
         finally:
             ( factory.get_message( pyorient.DB_CREATE ) ).prepare(
                 (db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
@@ -117,7 +117,7 @@ class CommandTestCase(unittest.TestCase):
                 .send().fetch_response()
             assert True
         except pyorient.PyOrientCommandException as e:
-            print(e.message)
+            print(str(e))
         finally:
             ( factory.get_message( pyorient.DB_CREATE ) ).prepare(
                 (db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
@@ -170,7 +170,7 @@ class CommandTestCase(unittest.TestCase):
         tx.attach( delete_msg )
         res = tx.commit()
 
-        for k, v in res.iteritems():
+        for k, v in res.items():
             print(k + " -> " + v.vacanza)
 
         assert len(res) == 4
@@ -201,7 +201,7 @@ class CommandTestCase(unittest.TestCase):
                 .send().fetch_response()
 
         except pyorient.PyOrientCommandException as e:
-            print(e.message)
+            print(str(e))
         finally:
             ( factory.get_message(pyorient.DB_CREATE) ).prepare(
                 (db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)

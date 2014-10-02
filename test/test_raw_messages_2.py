@@ -138,7 +138,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
                 .send().fetch_response()
             assert True
         except PyOrientCommandException as e:
-            print(e.message)
+            print(str(e))
         finally:
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
@@ -222,7 +222,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
                 .send().fetch_response()
             assert True
         except PyOrientCommandException as e:
-            print(e.message)
+            print(str(e))
         finally:
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
@@ -295,21 +295,21 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         count_msg = DataClusterCountMessage( connection )
         res1 = count_msg.set_count_tombstones(1)\
-            .prepare( [ range(0, 11) ] ).send().fetch_response()
+            .prepare( [ (0,1,2,3,4,5) ] ).send().fetch_response()
 
         assert res1 is not 0
         assert res1 > 0
 
         count_msg = DataClusterCountMessage( connection )
         res2 = count_msg.set_count_tombstones(1)\
-            .prepare( [ range(0, 11), 1 ] ).send().fetch_response()
+            .prepare( [ (0,1,2,3,4,5), 1 ] ).send().fetch_response()
 
 
         assert res2 is not 0
         assert res2 > 0
 
         count_msg = DataClusterCountMessage( connection )
-        res3 = count_msg.set_count_tombstones(1).set_cluster_ids( range(0, 11) )\
+        res3 = count_msg.set_count_tombstones(1).set_cluster_ids( (0,1,2,3,4,5) )\
             .prepare().send().fetch_response()
 
 
@@ -360,7 +360,8 @@ class RawMessages_2_TestCase(unittest.TestCase):
         try:
             value = datarange.prepare(32767).send().fetch_response()
         except PyOrientCommandException as e:
-            assert "java.lang.ArrayIndexOutOfBoundsException" in e.message
+            print(repr(str(e)))
+            assert "java.lang.ArrayIndexOutOfBoundsException" in str(e)
 
     def test_data_range(self):
         connection = OrientSocket( 'localhost', 2424 )

@@ -61,7 +61,7 @@ class CommandTestCase(unittest.TestCase):
                 client.db_drop(db_name)
                 assert True
             except pyorient.PyOrientCommandException as e:
-                print(e.message)
+                print(str(e))
             finally:
                 client.db_create( db_name, pyorient.DB_TYPE_GRAPH,
                                   pyorient.STORAGE_TYPE_MEMORY )
@@ -146,7 +146,7 @@ class CommandTestCase(unittest.TestCase):
             client.db_drop(db_name)
             assert True
         except pyorient.PyOrientCommandException as e:
-            print(e.message)
+            print(str(e))
         finally:
             client.db_create( db_name, pyorient.DB_TYPE_GRAPH,
                               pyorient.STORAGE_TYPE_MEMORY )
@@ -188,7 +188,7 @@ class CommandTestCase(unittest.TestCase):
         tx.attach( delete_msg )
         res = tx.commit()
 
-        for k, v in res.iteritems():
+        for k, v in res.items():
             print(k + " -> " + v.vacanza)
 
         assert len(res) == 3
