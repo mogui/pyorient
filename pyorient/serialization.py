@@ -114,7 +114,7 @@ class ORecordEncoder(object):
         elif isinstance(value, OrientRecord):
             ret = "(" + self.__encode(value) + ")"
         elif isinstance(value, OrientRecordLink):
-            ret = value.getHash()
+            ret = value.get_hash()
         elif isinstance(value, OrientBinaryObject):
             ret = value.getRaw()
         else:

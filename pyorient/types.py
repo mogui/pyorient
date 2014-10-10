@@ -14,12 +14,17 @@ class OrientRecord(object):
     def __init__(self, content={}, **kwargs):
         """docstring for __init__"""
 
+        self.__rid = kwargs.get('rid', None)
+        self.__version = kwargs.get('version', None)
         self._set_keys(content)
-        self.update(**kwargs)
 
     def _set_keys(self, content=dict):
         for key in content.keys():
-            if key[0] != '@':
+            if key == 'rid':  # Ex: select @rid, field from v_class
+                self.__rid = content[key]
+            elif key == 'version':  # Ex: select @rid, @version from v_class
+                self.__version = content[key]
+            elif key[0] != '@':
                 setattr( self, key, content[key] )
             else:
                 self.__o_class = key[1:]
@@ -44,12 +49,12 @@ class OrientRecordLink(object):
         self.recordPosition = rpos
 
     def __str__(self):
-        return self.getHash()
+        return self.get_hash()
 
     def get(self):
         return self.__link
 
-    def getHash(self):
+    def get_hash(self):
         return "#%s" % self.__link
 
 
