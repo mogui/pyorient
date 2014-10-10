@@ -123,11 +123,13 @@ QUERY_SYNC    = "com.orientechnologies.orient.core.sql.query.OSQLSynchQuery"
 QUERY_ASYNC   = "com.orientechnologies.orient.core.sql.query.OSQLAsynchQuery"
 QUERY_CMD     = "com.orientechnologies.orient.core.sql.OCommandSQL"
 QUERY_GREMLIN = "com.orientechnologies.orient.graph.gremlin.OCommandGremlin"
+QUERY_SCRIPT  = "com.orientechnologies.orient.core.command.script.OCommandScript"
 QUERY_TYPES   = (
     QUERY_SYNC,
     QUERY_ASYNC,
     QUERY_CMD,
     QUERY_GREMLIN,
+    QUERY_SCRIPT,
 )
 
 SERIALIZATION_DOCUMENT2CSV = "ORecordDocument2csv"

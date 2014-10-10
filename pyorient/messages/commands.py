@@ -3,13 +3,15 @@ from .base import BaseMessage
 from .records import RecordUpdateMessage, RecordDeleteMessage, RecordCreateMessage
 from ..exceptions import PyOrientBadMethodCallException
 from ..constants import COMMAND_OP, FIELD_BOOLEAN, FIELD_BYTE, FIELD_CHAR, \
-    FIELD_INT, FIELD_LONG, FIELD_SHORT, FIELD_STRING, QUERY_SYNC, TX_COMMIT_OP, \
-    QUERY_GREMLIN, QUERY_ASYNC, QUERY_CMD, QUERY_TYPES
+    FIELD_INT, FIELD_LONG, FIELD_SHORT, FIELD_STRING, QUERY_SYNC, FIELD_BYTES, \
+    TX_COMMIT_OP, QUERY_GREMLIN, QUERY_ASYNC, QUERY_CMD, QUERY_TYPES, \
+    QUERY_SCRIPT
 from ..serialization import ORecordEncoder
 from ..utils import need_connected, need_db_opened, dlog
 
 
 __author__ = 'Ostico <ostico@gmail.com>'
+
 
 #
 # COMMAND_OP
@@ -93,6 +95,7 @@ class CommandMessage(BaseMessage):
 
         if self._command_type == QUERY_CMD \
                 or self._command_type == QUERY_SYNC \
+                or self._command_type == QUERY_SCRIPT \
                 or self._command_type == QUERY_GREMLIN:
             self._mod_byte = 's'
         else:
@@ -113,6 +116,9 @@ class CommandMessage(BaseMessage):
             _payload_definition.append( ( FIELD_INT, self._limit ) )
             _payload_definition.append( ( FIELD_STRING, self._fetch_plan ) )
 
+        if self._command_type == QUERY_SCRIPT:
+            _payload_definition.insert( 1, ( FIELD_STRING, 'sql' ) )
+
         _payload_definition.append( ( FIELD_INT, 0 ) )
 
         payload = b''.join(
@@ -120,7 +126,7 @@ class CommandMessage(BaseMessage):
         )
 
         self._append( ( FIELD_BYTE, self._mod_byte ) )
-        self._append( ( FIELD_STRING, payload ) )
+        self._append( ( FIELD_BYTES, payload ) )
 
         return super( CommandMessage, self ).prepare()
 

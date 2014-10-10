@@ -8,7 +8,8 @@ import struct
 from .exceptions import PyOrientBadMethodCallException, \
     PyOrientConnectionException, PyOrientWrongProtocolVersionException
 
-from .constants import FIELD_SHORT, QUERY_ASYNC, QUERY_CMD, QUERY_SYNC, \
+from .constants import FIELD_SHORT, \
+    QUERY_ASYNC, QUERY_CMD, QUERY_SYNC, QUERY_SCRIPT, \
     SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL
 from .utils import dlog, is_debug_verbose
 
@@ -78,7 +79,7 @@ class OrientSocket(object):
             view = memoryview(buf)
             while _len_to_read:
                 nbytes = self._socket.recv_into(view, _len_to_read)
-                view = view[nbytes:] # slicing views is cheap
+                view = view[nbytes:]  # slicing views is cheap
                 _len_to_read -= nbytes
             return bytes(buf)
         except socket.timeout as e:
@@ -90,7 +91,8 @@ class OrientSocket(object):
             self._connected = False
             raise e
 
-def ByteToHex( byteStr ):
+
+def ByteToHex( byte_str ):
     """
     Convert a byte string to it's hex string representation e.g. for output.
     """
@@ -104,7 +106,9 @@ def ByteToHex( byteStr ):
     #
     #    return ''.join( hex ).strip()
 
-    return ''.join( [ "%02X " % ord( x ) for x in byteStr ] ).strip()
+    return ''.join( [ "%02X " % ord( x ) for x in byte_str ] ).strip()
+
+
 #
 # OrientDB Message Factory
 #
@@ -198,6 +202,10 @@ class OrientDB():
         return self.get_message("CommandMessage") \
             .prepare(( QUERY_CMD, ) + args).send().fetch_response()
 
+    def batch(self, *args):
+        return self.get_message("CommandMessage") \
+            .prepare(( QUERY_SCRIPT, ) + args).send().fetch_response()
+
     def query(self, *args):
         return self.get_message("CommandMessage") \
             .prepare(( QUERY_SYNC, ) + args).send().fetch_response()
@@ -252,26 +260,26 @@ class OrientDB():
     def get_message(self, command=None):
         """
         Message Factory
-        :rtype : pyorient.Messages.ConnectMessage,
-                 pyorient.Messages.DbOpenMessage,
-                 pyorient.Messages.DbExistsMessage,
-                 pyorient.Messages.DbCreateMessage,
-                 pyorient.Messages.DbDropMessage,
-                 pyorient.Messages.DbCountRecordsMessage,
-                 pyorient.Messages.DbReloadMessage,
-                 pyorient.Messages.ShutdownMessage,
-                 pyorient.Messages.DataClusterAddMessage,
-                 pyorient.Messages.DataClusterCountMessage,
-                 pyorient.Messages.DataClusterDataRangeMessage,
-                 pyorient.Messages.DataClusterDropMessage,
-                 pyorient.Messages.DbCloseMessage,
-                 pyorient.Messages.DbSizeMessage,
-                 pyorient.Messages.RecordCreateMessage,
-                 pyorient.Messages.RecordDeleteMessage,
-                 pyorient.Messages.RecordLoadMessage,
-                 pyorient.Messages.RecordUpdateMessage,
-                 pyorient.Messages.CommandMessage,
-                 pyorient.Messages.TXCommitMessage,
+        :rtype : pyorient.messages.ConnectMessage,
+                 pyorient.messages.DbOpenMessage,
+                 pyorient.messages.DbExistsMessage,
+                 pyorient.messages.DbCreateMessage,
+                 pyorient.messages.DbDropMessage,
+                 pyorient.messages.DbCountRecordsMessage,
+                 pyorient.messages.DbReloadMessage,
+                 pyorient.messages.ShutdownMessage,
+                 pyorient.messages.DataClusterAddMessage,
+                 pyorient.messages.DataClusterCountMessage,
+                 pyorient.messages.DataClusterDataRangeMessage,
+                 pyorient.messages.DataClusterDropMessage,
+                 pyorient.messages.DbCloseMessage,
+                 pyorient.messages.DbSizeMessage,
+                 pyorient.messages.RecordCreateMessage,
+                 pyorient.messages.RecordDeleteMessage,
+                 pyorient.messages.RecordLoadMessage,
+                 pyorient.messages.RecordUpdateMessage,
+                 pyorient.messages.CommandMessage,
+                 pyorient.messages.TXCommitMessage,
         :param command: str
         """
         try:

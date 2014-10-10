@@ -15,6 +15,7 @@ from ..serialization import ORecordDecoder
 from ..utils import is_debug_active
 from ..orient import OrientSocket
 
+
 class BaseMessage(object):
 
     def get_orient_socket_instance(self):
@@ -105,8 +106,7 @@ class BaseMessage(object):
                 # trash
                 del serialized_exception
                 cmd_exc = exception_message + b' - ' + exception_class
-            raise PyOrientCommandException(cmd_exc
-                , [] )
+            raise PyOrientCommandException(cmd_exc, [])
 
     def _decode_body(self):
         # read body
@@ -176,7 +176,6 @@ class BaseMessage(object):
 
         # tuple with type
         t, v = field
-
 
         if t['type'] == INT:
             _content = struct.pack("!i", v)
@@ -300,7 +299,6 @@ class BaseMessage(object):
             finally:
                 # read new status and flush the debug buffer
                 _status = self._decode_field( FIELD_BYTE )  # status
-
 
     def _read_record(self):
         """

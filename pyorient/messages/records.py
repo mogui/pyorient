@@ -12,6 +12,7 @@ from ..serialization import ORecordDecoder, ORecordEncoder
 from ..utils import need_db_opened, parse_cluster_id, \
     parse_cluster_position
 
+
 #
 # RECORD CREATE
 #
@@ -20,7 +21,8 @@ from ..utils import need_db_opened, parse_cluster_id, \
 #   in case the RID has been recycled.
 #
 # Request: (cluster-id:short)(record-content:bytes)(record-type:byte)(mode:byte)
-# Response: (cluster-position:long)(record-version:int)(count-of-collection-changes)
+# Response:
+#   (cluster-position:long)(record-version:int)(count-of-collection-changes)
 #   [(uuid-most-sig-bits:long)(uuid-least-sig-bits:long)(updated-file-id:long)
 #   (updated-page-index:long)(updated-page-offset:int)]*
 #
@@ -317,8 +319,6 @@ class RecordLoadMessage(BaseMessage):
             # Use default for non existent indexes
             pass
 
-
-
         _cluster, _position = self._record_id.split( ':' )
         print("aa", repr(self._record_id), repr(_cluster), repr(_position))
         if _cluster[0] == '#':
@@ -373,6 +373,7 @@ class RecordLoadMessage(BaseMessage):
                                                          "function", [])
         return self
 
+
 #
 # RECORD UPDATE
 #
@@ -421,7 +422,8 @@ class RecordUpdateMessage(BaseMessage):
 
         # True:  content of record has been changed
         #        and content should be updated in storage
-        # False: the record was modified but its own content has not been changed.
+        # False: the record was modified but its own
+        #        content has not been changed.
         #        So related collections (e.g. rid-bags) have to be updated, but
         #        record version and content should not be.
         # NOT USED before protocol 23
