@@ -34,6 +34,7 @@ class CommandTestCase(unittest.TestCase):
             assert len(result) == 10
             assert result[0].__getattribute__('in') != 0
             assert result[0].out != 0
+            assert result[0].weight == 1
 
             def _callback(item):
                 assert True
@@ -197,6 +198,35 @@ class CommandTestCase(unittest.TestCase):
         assert res["#3:3"].vacanza == 'lago'
 
         client.db_drop( db_name, pyorient.STORAGE_TYPE_MEMORY )
+
+    def test_reserved_words_and_batch_scripts(self):
+
+        client = pyorient.OrientDB("localhost", 2424)
+        client.connect("admin", "admin")
+
+        db_name = "test_tr"
+        try:
+            client.db_drop(db_name)
+        except pyorient.PyOrientCommandException as e:
+            print(e.message)
+        finally:
+            db = client.db_create( db_name, pyorient.DB_TYPE_GRAPH,
+                                   pyorient.STORAGE_TYPE_MEMORY )
+
+        cluster_info = client.db_open(
+            db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
+        )
+
+        class_id1 = client.command( "create class my_v_class extends V" )[0]
+        class_id2 = client.command( "create class my_e_class extends E" )[0]
+        rec1 = { '@my_v_class': { 'accommodation': 'house', 'work': 'office', 'holiday': 'sea' } }
+        rec2 = { '@my_v_class': { 'accommodation': 'house', 'work2': 'office', 'holiday': 'sea3' } }
+        rec_position1 = client.record_create(class_id1, rec1)
+        rec_position2 = client.record_create(class_id1, rec2)
+        sql_edge = "create edge from " + rec_position1.rid + " to " + rec_position2.rid
+        res = client.command( sql_edge )
+
+
 
 # x = CommandTestCase('test_command').run()
 

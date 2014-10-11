@@ -284,13 +284,13 @@ class CommandTestCase(unittest.TestCase):
         res = req_msg.prepare( [ rec_position.rid, "*:-1" ] ) \
             .send().fetch_response()
 
-        # print(res
-        # print(res.rid
-        # print(res.o_class
-        # print(res.version
-        # print(res.alloggio
-        # print(res.lavoro
-        # print(res.vacanza
+        # print(res)
+        # print(res.rid)
+        # print(res.o_class)
+        # print(res.version)
+        # print(res.alloggio)
+        # print(res.lavoro)
+        # print(res.vacanza)
 
         assert res.rid == "#11:4"
         assert res.o_class == "c_test"

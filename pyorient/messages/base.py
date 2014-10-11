@@ -176,6 +176,7 @@ class BaseMessage(object):
 
         # tuple with type
         t, v = field
+        _content = None
 
         if t['type'] == INT:
             _content = struct.pack("!i", v)
@@ -196,14 +197,13 @@ class BaseMessage(object):
         elif t['type'] == BYTES:
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRING:
-            if isinstance(v, str):
-                v = v.encode()
-            _content = struct.pack("!i", len(v)) + v
+            buf = v.encode('utf-8')
+            _content = struct.pack("!i", len(buf)) + buf
         elif t['type'] == STRINGS:
             _content = b''
             for s in v:
-                a = struct.pack("!i", len(s.encode('utf-8')))
-                _content += a + s.encode('utf-8')
+                buf = s.encode('utf-8')
+                _content += struct.pack("!i", len(buf)) + buf
 
         return _content
 

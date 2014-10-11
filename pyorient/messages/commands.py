@@ -126,7 +126,7 @@ class CommandMessage(BaseMessage):
         )
 
         self._append( ( FIELD_BYTE, self._mod_byte ) )
-        self._append( ( FIELD_BYTES, payload ) )
+        self._append( ( FIELD_STRING, payload ) )
 
         return super( CommandMessage, self ).prepare()
 
@@ -412,7 +412,7 @@ class _TXCommitMessage(BaseMessage):
                 ( FIELD_LONG, int(getattr(operation, "_cluster_position")) ),
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
                 ( FIELD_INT, int(getattr(operation, "_record_version")) ),
-                ( FIELD_STRING, o_record_enc.getRaw() ),
+                ( FIELD_STRING, o_record_enc.get_raw() ),
             ))
 
             if self.get_protocol() >= 23:
@@ -439,7 +439,7 @@ class _TXCommitMessage(BaseMessage):
                 ( FIELD_SHORT, int(-1) ),
                 ( FIELD_LONG, int(self._temp_cluster_position_seq) ),
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
-                ( FIELD_STRING, o_record_enc.getRaw() ),
+                ( FIELD_STRING, o_record_enc.get_raw() ),
             ))
             self._pre_operation_records[
                 str(self._temp_cluster_position_seq)

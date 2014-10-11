@@ -15,6 +15,7 @@ class OrientRecord(object):
         """docstring for __init__"""
 
         self.__rid = kwargs.get('rid', None)
+        self.__o_class = kwargs.get('o_class', None)
         self.__version = kwargs.get('version', None)
         self._set_keys(content)
 

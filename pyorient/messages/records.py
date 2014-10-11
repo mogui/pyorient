@@ -80,7 +80,7 @@ class RecordCreateMessage(BaseMessage):
             self._append( ( FIELD_INT, int(self._data_segment_id) ) )
 
         self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self._append( ( FIELD_STRING, o_record_enc.getRaw() ) )
+        self._append( ( FIELD_STRING, o_record_enc.get_raw() ) )
         self._append( ( FIELD_BYTE, self._record_type ) )
         self._append( ( FIELD_BOOLEAN, self._mode_async ) )
 
@@ -479,7 +479,7 @@ class RecordUpdateMessage(BaseMessage):
         if self.get_protocol() >= 23:
             self._append( ( FIELD_BOOLEAN, self._update_content ) )
 
-        self._append( ( FIELD_STRING, o_record_enc.getRaw() ) )
+        self._append( ( FIELD_STRING, o_record_enc.get_raw() ) )
         self._append( ( FIELD_INT, int(self._record_version_policy) ) )
         self._append( ( FIELD_BYTE, self._record_type ) )
         self._append( ( FIELD_BOOLEAN, self._mode_async ) )
