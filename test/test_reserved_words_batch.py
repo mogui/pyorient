@@ -111,20 +111,20 @@ class CommandTestCase(unittest.TestCase):
               "let e = create edge from $a to $b;" + \
               "commit retry 100;"
 
-        cluster_id = self.client.batch(cmd)
+        edge_result = self.client.batch(cmd)
 
         # print( cluster_id[0] )
         # print (cluster_id[0].__getattribute__('in'))
-        assert isinstance(cluster_id[0].__getattribute__('in'),
+        assert isinstance(edge_result[0].__getattribute__('in'),
                           pyorient.OrientRecordLink)
-        assert cluster_id[0].__getattribute__('in').get_hash() == "#9:0", \
-            "in is not equal to '#9:0': %r" % cluster_id[0].__getattribute__(
+        assert edge_result[0].__getattribute__('in').get_hash() == "#9:0", \
+            "in is not equal to '#9:0': %r" % edge_result[0].__getattribute__(
                 'in').get_hash()
 
         # print (cluster_id[0].out)
-        assert isinstance(cluster_id[0].out, pyorient.OrientRecordLink)
-        assert cluster_id[0].out.get_hash() == "#9:100", \
-            "out is not equal to '#9:101': %r" % cluster_id[0].out.get_hash()
+        assert isinstance(edge_result[0].out, pyorient.OrientRecordLink)
+        assert edge_result[0].out.get_hash() == "#9:100", \
+            "out is not equal to '#9:101': %r" % edge_result[0].out.get_hash()
 
 
 # x = CommandTestCase('test_reserved_words').run()
