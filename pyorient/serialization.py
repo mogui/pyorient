@@ -21,6 +21,7 @@ import re
 import time
 from datetime import date, datetime
 from .types import OrientRecordLink, OrientRecord, OrientBinaryObject
+from .utils import is_debug_active
 
 
 # what we are going to collect
@@ -154,6 +155,19 @@ class ORecordDecoder(object):
         # start decoding
         self.__decode()
 
+        if self.__stack_get_last_type():
+            # Bug if the number is the last value of string
+            self._stateCase[self._state](",", None )
+            try:
+                tt, t_value = self.__stack_pop()
+                tt, t_name = self.__stack_pop()
+                self.data[t_name] = t_value
+            except Exception, e:
+                if is_debug_active():
+                    # hexdump( self._output_buffer.decode() )
+                    print("\nException Raised:")
+                    print(repr(e.message))
+
     def __decode(self):
         """docstring for decode"""
 
@@ -256,7 +270,7 @@ class ORecordDecoder(object):
         self._i += 1
 
     def __state_value(self, char, c_class):
-        """docstring for __stateValue"""
+        """docstring for __state_value"""
         if char == ',':
             # No value - switch state to comma
             self._state = STATE_COMMA
@@ -423,16 +437,7 @@ class ORecordDecoder(object):
     def __state_link(self, char, c_class):
         """docstring for __state_link"""
         result = re.search('\d+:\d+', self.content[self._i:], re.I)
-        end_line_reached = re.search('[\d+:\d+]+$',
-                                     self.content[self._i:], re.I)
-
-        # Bug if the number is the last value of string
-        if end_line_reached:
-            token_value = end_line_reached.group()
-            self._i += len(token_value)
-            self._state = STATE_COMMA
-            self.__stack_push(TTYPE_LINK, OrientRecordLink(token_value))
-        elif result and result.start() == 0:
+        if result and result.start() == 0:
             self._buffer = result.group()
             self._i += len(result.group())
         else:
@@ -446,17 +451,7 @@ class ORecordDecoder(object):
     def __state_number(self, char, c_class):
         """docstring for __state_number"""
         result = re.search('[\d\.e-]+', self.content[self._i:], re.I)
-        end_line_reached = re.search('[\d\.e-]+$',
-                                     self.content[self._i:], re.I)
-
-        # Bug if the number is the last value of string
-        if end_line_reached:
-            token_value = self._buffer + end_line_reached.group()
-            #token type is a number
-            self._i += len(token_value)
-            self.__stack_push(TTYPE_NUMBER, int(token_value))
-
-        elif result and result.start() == 0:
+        if result and result.start() == 0:
             self._buffer += result.group()
             self._i += len(result.group())
         else:
@@ -519,7 +514,7 @@ class ORecordDecoder(object):
         self.__stack_push(TTYPE_BOOLEAN, token_value)
 
     def __stack_push(self, token_type, token_value=None):
-        """docstring for __stackPush"""
+        """docstring for __stack_push"""
         self._stackTokenTypes.append(token_type)
         if token_value is None:
             token_value = self._buffer
@@ -532,14 +527,14 @@ class ORecordDecoder(object):
         return self._stackTokenTypes.pop(), self._stackTokenValues.pop()
 
     def __stack_get_last_type(self):
-        """docstring for __stackGetLastType"""
+        """docstring for __stack_get_last_type"""
         if len(self._stackTokenTypes) > 0:
             return self._stackTokenTypes[-1]
         else:
             return None
 
     def __stack_get_last_key(self):
-        """ returns las tinserted value"""
+        """ returns last inserted value"""
         depth = False
 
         for i in range(len(self._stackTokenTypes) - 1, -1, -1):
