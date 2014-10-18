@@ -46,7 +46,7 @@ class RecordCreateMessage(BaseMessage):
         super( RecordCreateMessage, self ).__init__(_orient_socket)
 
         self._data_segment_id = -1  # default
-        self._cluster_id = 0
+        self._cluster_id = b'0'
         self._record_content = OrientRecord
         self._record_type = RECORD_TYPE_DOCUMENT
         self._mode_async = 0  # means synchronous mode
@@ -137,11 +137,7 @@ class RecordCreateMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
-        if isinstance(self._cluster_id, int):
-            cid = str(self._cluster_id)
-        else:
-            cid = self._cluster_id.decode()
-        rid = "#" + cid + ":" + str(result[0])
+        rid = "#" + self._cluster_id + ":" + str(result[0])
 
         self._record_content.update(
             version=result[1],
@@ -199,8 +195,8 @@ class RecordDeleteMessage(BaseMessage):
     def __init__(self, _orient_socket ):
         super( RecordDeleteMessage, self ).__init__(_orient_socket)
 
-        self._cluster_id = 0
-        self._cluster_position = 0
+        self._cluster_id = b'0'
+        self._cluster_position = b'0'
         self._record_version = -1
         self._mode_async = 0  # means synchronous mode
 
@@ -416,7 +412,7 @@ class RecordUpdateMessage(BaseMessage):
         super( RecordUpdateMessage, self ).__init__(_orient_socket)
 
         self._data_segment_id = -1  # default
-        self._cluster_id = 0
+        self._cluster_id = b'0'
         self._cluster_position = 0
         self._record_content = ''
 

@@ -1,4 +1,6 @@
+#!/bin/env python3.4
 __author__ = 'Ostico <ostico@gmail.com>'
+# -*- coding: utf-8 -*-
 import unittest
 import os
 
@@ -32,22 +34,6 @@ class CommandTestCase(unittest.TestCase):
         )
 
     def test_reserved_words(self):
-
-        self.client = pyorient.OrientDB("localhost", 2424)
-        self.client.connect("admin", "admin")
-
-        db_name = "test_tr"
-        try:
-            self.client.db_drop(db_name)
-        except pyorient.PyOrientCommandException as e:
-            print(e.message)
-        finally:
-            db = self.client.db_create(db_name, pyorient.DB_TYPE_GRAPH,
-                                       pyorient.STORAGE_TYPE_MEMORY)
-
-        cluster_info = self.client.db_open(
-            db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
-        )
 
         class_id1 = self.client.command("create class my_v_class extends V")[0]
         class_id2 = self.client.command("create class str extends E")[0]

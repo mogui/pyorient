@@ -162,7 +162,7 @@ class ORecordDecoder(object):
                 tt, t_value = self.__stack_pop()
                 tt, t_name = self.__stack_pop()
                 self.data[t_name] = t_value
-            except Exception, e:
+            except Exception as e:
                 if is_debug_active():
                     # hexdump( self._output_buffer.decode() )
                     print("\nException Raised:")

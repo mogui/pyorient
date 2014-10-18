@@ -383,3 +383,6 @@ class RawMessages_2_TestCase(unittest.TestCase):
                   % ( cluster['name'], cluster['id'], value ))
             assert value is not []
             assert value is not None
+
+
+x = RawMessages_2_TestCase('test_wrong_data_range').run()

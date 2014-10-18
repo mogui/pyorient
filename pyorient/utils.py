@@ -64,14 +64,19 @@ def need_db_opened(wrap):
 
 def parse_cluster_id(cluster_id):
     try:
-        if not isinstance(cluster_id, str):
-            cluster_id = cluster_id.encode()
+
+        if isinstance(cluster_id, str):
+            pass
+        elif isinstance(cluster_id, int):
+            cluster_id = str(cluster_id)
+        elif isinstance( cluster_id, bytes ):
+            cluster_id = cluster_id.decode("utf-8")
+
         _cluster_id, _position = cluster_id.split( ':' )
         if _cluster_id[0] is '#':
             _cluster_id = _cluster_id[1:]
     except (AttributeError, ValueError):
-        # Rid position INT provided
-        # or string but with no ":"
+        # String but with no ":"
         # so treat it as one param
         _cluster_id = cluster_id
     return _cluster_id
@@ -79,10 +84,17 @@ def parse_cluster_id(cluster_id):
 
 def parse_cluster_position(_cluster_position):
     try:
+
+        if isinstance(_cluster_position, str):
+            pass
+        elif isinstance(_cluster_position, int):
+            _cluster_position = str(_cluster_position)
+        elif isinstance( _cluster_position, bytes ):
+            _cluster_position = _cluster_position.decode("utf-8")
+
         _cluster, _position = _cluster_position.split( ':' )
     except (AttributeError, ValueError):
-        # Rid position INT provided
-        # or string but with no ":"
+        # String but with no ":"
         # so treat it as one param
         _position = _cluster_position
     return _position

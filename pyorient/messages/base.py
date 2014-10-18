@@ -197,18 +197,22 @@ class BaseMessage(object):
         elif t['type'] == BYTES:
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRING:
-            buf = v.encode('utf-8')
-            _content = struct.pack("!i", len(buf)) + buf
+            if sys.version_info.major >= 3:
+                if isinstance( v, str ):
+                    v = v.encode('utf-8')
+            _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRINGS:
             _content = b''
             for s in v:
-                buf = s.encode('utf-8')
-                _content += struct.pack("!i", len(buf)) + buf
+                if sys.version_info.major >= 3:
+                    if isinstance( s, str ):
+                        s = s.encode('utf-8')
+                _content += struct.pack("!i", len(s)) + s
 
         return _content
 
     def _decode_field(self, _type):
-        _value = ""
+        _value = b""
         # read buffer length and decode value by field definition
         if _type['bytes'] is not None:
             _value = self._orientSocket.read( _type['bytes'] )
@@ -219,7 +223,7 @@ class BaseMessage(object):
 
             _len = struct.unpack('!i', _value)[0]
             if _len == -1:
-                _decoded_string = ''
+                _decoded_string = b''
             else:
                 _decoded_string = self._orientSocket.read( _len )
 
