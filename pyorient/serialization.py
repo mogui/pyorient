@@ -471,7 +471,7 @@ class ORecordDecoder(object):
             elif char == 'f' or char == 'd':
                 token_value = float(self._buffer)
             elif char == 't':
-                token_value = datetime.fromtimestamp(float(self._buffer))
+                token_value = datetime.fromtimestamp(float(self._buffer)/1e3)
             elif char == 'a':
                 token_value = date.fromtimestamp(float(self._buffer) / 1000)
             else:
