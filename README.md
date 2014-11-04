@@ -131,11 +131,11 @@ A full range of commands will be available soon, for now you have to read the te
 
 ## Execute OrientDB SQL Batch
 
-    cmd = "begin;" + \
-          "let a = create vertex set script = true;" + \
-          "let b = select from v limit 1;" + \
-          "let e = create edge from $a to $b;" + \
-          "commit retry 100;"
+    cmd = ("begin;"
+           "let a = create vertex set script = true;"
+           "let b = select from v limit 1;"
+           "let e = create edge from $a to $b;"
+           "commit retry 100;")
 
     edge_result = self.client.batch(cmd)
 
