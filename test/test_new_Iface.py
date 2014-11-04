@@ -226,6 +226,10 @@ class CommandTestCase(unittest.TestCase):
         sql_edge = "create edge from " + rec_position1.rid + " to " + rec_position2.rid
         res = client.command( sql_edge )
 
+    def test_use_of_dir(self):
+        client = pyorient.OrientDB("localhost", 2424)
+        client.connect("admin", "admin")
+        dir(client)
 
 
 # x = CommandTestCase('test_command').run()

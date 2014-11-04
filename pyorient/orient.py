@@ -113,7 +113,7 @@ def ByteToHex( byte_str ):
 #
 # OrientDB Message Factory
 #
-class OrientDB():
+class OrientDB(object):
     _connection = None
 
     _Messages = dict(
