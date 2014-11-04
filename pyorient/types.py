@@ -41,6 +41,14 @@ class OrientRecord(object):
         if self.__o_class is None:
             self.__o_class = kwargs.get('o_class', None)
 
+    @property
+    def _in(self):
+        return getattr(self, 'in')
+
+    @property
+    def _out(self):
+        return getattr(self, 'out')
+
 
 class OrientRecordLink(object):
     def __init__(self, recordlink):

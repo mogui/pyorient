@@ -33,7 +33,7 @@ class CommandTestCase(unittest.TestCase):
             assert isinstance( result[0], OrientRecord )
             assert len(result) == 10
             assert result[0].__getattribute__('in') != 0
-            assert result[0].out != 0
+            assert result[0]._out != 0
             assert result[0].weight == 1
 
             def _callback(item):
@@ -49,8 +49,8 @@ class CommandTestCase(unittest.TestCase):
             res = client.record_load( "#11:0", "*:-1", _callback )
             assert res.rid == "#11:0"
             assert res.o_class == 'followed_by'
-            assert res.__getattribute__('in') != 0
-            assert res.out != 0
+            assert res._in != 0
+            assert res._out != 0
 
             # TEST COMMANDS
             db_name = 'test_commands'
