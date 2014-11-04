@@ -53,9 +53,9 @@ class CommandTestCase(unittest.TestCase):
                           pyorient.OrientRecordLink)
         assert res[0].__getattribute__('in').get_hash() == rec_position2.rid
 
-        # print (res[0].out)
-        assert isinstance(res[0].out, pyorient.OrientRecordLink)
-        assert res[0].out.get_hash() == rec_position1.rid
+        # print (res[0]._out)
+        assert isinstance(res[0]._out, pyorient.OrientRecordLink)
+        assert res[0]._out.get_hash() == rec_position1.rid
 
         result = self.client.query(
             "select @rid, @version, holiday from my_v_class")
@@ -107,10 +107,10 @@ class CommandTestCase(unittest.TestCase):
             "in is not equal to '#9:0': %r" % edge_result[0].__getattribute__(
                 'in').get_hash()
 
-        # print (cluster_id[0].out)
-        assert isinstance(edge_result[0].out, pyorient.OrientRecordLink)
-        assert edge_result[0].out.get_hash() == "#9:100", \
-            "out is not equal to '#9:101': %r" % edge_result[0].out.get_hash()
+        # print (cluster_id[0]._out)
+        assert isinstance(edge_result[0]._out, pyorient.OrientRecordLink)
+        assert edge_result[0]._out.get_hash() == "#9:100", \
+            "out is not equal to '#9:101': %r" % edge_result[0]._out.get_hash()
 
 
 # x = CommandTestCase('test_reserved_words').run()
