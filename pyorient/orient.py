@@ -86,7 +86,7 @@ class OrientSocket(object):
         except socket.timeout as e:
             # we don't set false because of
             # RecordUpdateMessage/RecordCreateMessage trick
-            """:see RecordUpdateMessage.py """
+            """@see pyorient.messages.records.RecordUpdateMessage"""
             raise e
         except Exception as e:
             self._connected = False

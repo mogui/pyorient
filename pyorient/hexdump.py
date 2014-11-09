@@ -1,5 +1,7 @@
 #!/usr/bin/env python
 # -*- coding: latin-1 -*-
+
+# <-- removing this magic comment breaks Python 3.4 on Windows
 """
 1. Dump binary data to the following text format:
 
@@ -21,13 +23,27 @@ Far Manager
 
 """
 
-__version__ = '2.0'
+__version__ = '3.1'
 __author__ = 'anatoly techtonik <techtonik@gmail.com>'
 __license__ = 'Public Domain'
 
 __history__ = \
     """
-    2.0 (2014-01-30)
+    3.1 (2014-10-20)
+     * implemented workaround against mysterious coding
+       issue with Python 3 (see revision 51302cf)
+     * fix Python 3 installs for systems where UTF-8 is
+       not default (Windows), thanks to George Schizas
+       (the problem was caused by reading of README.txt)
+
+    3.0 (2014-09-07)
+     * remove unused int2byte() helper
+     * add dehex(text) helper to convert hex string
+       to binary data
+     * add 'size' argument to dump() helper to specify
+       length of chunks
+
+    2.0 (2014-02-02)
      * add --restore option to command line mode to get
        binary data back from hex dump
      * support saving test output with `--test logfile`
@@ -75,16 +91,6 @@ import sys
 # --- constants
 PY3K = sys.version_info >= (3, 0)
 
-
-# --- helpers
-def int2byte(i):
-    """convert int [0..255] to binary byte"""
-    if PY3K:
-        return i.to_bytes(1, 'little')
-    else:
-        return chr(i)
-
-
 # --- - chunking helpers
 def chunks(seq, size):
     """Generator that cuts sequence (bytes, memoryview, etc.)
@@ -113,7 +119,7 @@ def chunkread(f, size):
 
 def genchunks(mixed, size):
     """Generator to chunk binary sequences or file like objects.
-       The size of the last chunk retur'''ned may be less than
+       The size of the last chunk returned may be less than
        requested."""
     if hasattr(mixed, 'read'):
         return chunkread(mixed, size)
@@ -123,18 +129,29 @@ def genchunks(mixed, size):
 
 # --- - /chunking helpers
 
-# --- hex stuff
-def dump(binary):
-    """
-    Convert `binary` bytes (Python 3) or str (Python 2) to
-    hex string:
 
-    00 00 00 00 00 00 00 00 00 00 00 ...
+def dehex(hextext):
+    """
+    Convert from hex string to binary data stripping
+    whitespaces from `hextext` if necessary.
+    """
+    if PY3K:
+        return bytes.fromhex(hextext)
+    else:
+        hextext = "".join(hextext.split())
+        return hextext.decode('hex')
+
+
+def dump(binary, size=2):
+    """
+    Convert binary data (bytes in Python 3 and str in
+    Python 2) to hex string like '00 DE AD BE EF'.
+    `size` argument specifies length of text chunks.
     """
     hexstr = binascii.hexlify(binary)
     if PY3K:
-        hexstr = hexstr._decode_body('ascii')
-    return ' '.join(chunks(hexstr.upper(), 2))
+        hexstr = hexstr.decode('ascii')
+    return ' '.join(chunks(hexstr.upper(), size))
 
 
 def dumpgen(data):
@@ -237,15 +254,8 @@ def restore(dump):
                 hexdata = line[:sepstart] + line[sepstart + 3:bytehexwidth + 2]
             else:  # ...00 00 00 00... - Scapy, no separator
                 hexdata = line[:bytehexwidth]
-
-            line = hexdata.replace(' ', '')
-
-        # remove spaces and convert
-        if PY3K:
-            result += bytes.fromhex(line)
-        else:
-            result += line._decode_body('hex')
-
+            line = hexdata
+        result += dehex(line)
     return result
 
 
@@ -280,6 +290,7 @@ def runtest(logfile=None):
         savedstd = sys.stderr, sys.stdout
         sys.stderr = TeeOutput(sys.stderr, openlog)
         sys.stdout = TeeOutput(sys.stdout, openlog)
+
 
     def echo(msg, linefeed=True):
         sys.stdout.write(msg)
@@ -367,7 +378,7 @@ if __name__ == '__main__':
   %prog -r hexfile
   %prog --test [logfile]""", version=__version__)
     parser.add_option('-r', '--restore', action='store_true',
-                      help='restore binary')
+                      help='restore binary from hex dump')
     parser.add_option('--test', action='store_true',
                       help='run hexdump sanity checks')
 

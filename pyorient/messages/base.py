@@ -140,13 +140,14 @@ class BaseMessage(object):
 
     def dump_streams(self):
         if is_debug_active():
-            print("\nRequest :")
-            # hexdump( self._output_buffer.decode() )
-            print(repr(self._output_buffer))
-            print("\nResponse:")
-            # hexdump( self._input_buffer.decode() )
-            print(repr(self._input_buffer))
-            print("\n")
+            if len( self._output_buffer ):
+                print("\nRequest :")
+                hexdump( self._output_buffer )
+                # print(repr(self._output_buffer))
+            if len( self._input_buffer ):
+                print("\nResponse:")
+                hexdump( self._input_buffer )
+                # print(repr(self._input_buffer))
 
     def _append(self, field):
         """
@@ -165,6 +166,10 @@ class BaseMessage(object):
         if self._orientSocket.in_transaction is False:
             self._orientSocket.write( self._output_buffer )
             self._reset_fields_definition()
+        if is_debug_active():
+            self.dump_streams()
+            #reset output buffer
+            self._output_buffer = b""
 
         return self
 
