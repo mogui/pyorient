@@ -46,6 +46,17 @@ class CommandTestCase(unittest.TestCase):
         assert res[0].model == 'kfjgkfgòàòT:導字社; S:导字社', \
             "model is not equal to 'kfjgkfgòàòT:導字社; S:导字社': '%s'" % res[0].model
 
+        self.client.command( "insert into my_v_class ( 'model') values ('kfj جوزيف المعركة، بعد تم. تلك لإنعدام المعركة،')")
+
+        res = self.client.command("select from my_v_class")
+        assert res[0].model
+        assert res[0].model == 'kfjgkfgòàòT:導字社; S:导字社', \
+            "model is not equal to 'kfjgkfgòàòT:導字社; S:导字社': '%s'" % res[0].model
+
+        assert res[1].model
+        assert res[1].model == 'kfj جوزيف المعركة، بعد تم. تلك لإنعدام المعركة،', \
+            "model is not equal to 'kfj جوزيف المعركة، بعد تم. تلك لإنعدام المعركة،': '%s'" % res[1].model
+
     def test_long_utf8_command_string(self):
 
         #Loren ipsum

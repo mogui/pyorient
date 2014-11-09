@@ -74,7 +74,7 @@ class ORecordEncoder(object):
             raw = o_class + '@'
 
         fields = list(filter(lambda item: not item.startswith('_OrientRecord_'),
-                        record.__dict__))
+                             record.__dict__))
 
         for idx, key in enumerate(fields):
             raw += key + ':'
@@ -222,8 +222,8 @@ class ORecordDecoder(object):
                 values = []
                 while True:
                     search_token, value = self.__stack_pop()
-                    if search_token != TTYPE_COLLECTION_START and \
-                                    search_token != TTYPE_COLLECTION_END:
+                    if search_token != TTYPE_COLLECTION_START \
+                            and search_token != TTYPE_COLLECTION_END:
                         values.append(value)
                     if search_token == TTYPE_COLLECTION_START:
                         break
@@ -237,8 +237,8 @@ class ORecordDecoder(object):
                     search_token, value = self.__stack_pop()
                     if search_token == TTYPE_NULL:
                         value = None
-                    if search_token != TTYPE_MAP_START and \
-                                    search_token != TTYPE_MAP_END:
+                    if search_token != TTYPE_MAP_START \
+                            and search_token != TTYPE_MAP_END:
                         tt, key = self.__stack_pop()
                         values[key] = value
                     if search_token == TTYPE_MAP_START:
@@ -490,7 +490,7 @@ class ORecordDecoder(object):
             else:
                 pos = False
 
-            if pos != False and pos > self._i:
+            if pos is not False and pos > self._i:
                 # Before " symbol
                 self._buffer = self.content[self._i + 1:pos]
                 self._i = pos
