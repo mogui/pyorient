@@ -22,6 +22,7 @@ import time
 from datetime import date, datetime
 from .types import OrientRecordLink, OrientRecord, OrientBinaryObject
 from .utils import is_debug_active
+from .exceptions import PyOrientSerializationException
 
 
 # what we are going to collect
@@ -499,15 +500,19 @@ class ORecordDecoder(object):
     def __state_boolean(self, char, c_class):
         """docstring for __state_boolean"""
         token_value = False
-        if self.content[self._i:].find('rue') == self._i:
+
+        # self._i is the position in the result string of the first letter of
+        # the boolean ( [f]alse/[t]true )
+        # 'V@abcdef:false' -> self._i == 10
+        if self.content[self._i:self._i + 3] == 'rue':
             token_value = True
             self._i += 3
-        elif self.content[self._i:].find('alse') == self._i:
+        elif self.content[self._i:self._i + 4] == 'alse':
             token_value = False
             self._i += 4
         else:
-            # @TODO raise an exception
-            pass
+            raise PyOrientSerializationException( 'Invalid boolean read', [] )
+
         self._state = STATE_COMMA
         self.__stack_push(TTYPE_BOOLEAN, token_value)
 
