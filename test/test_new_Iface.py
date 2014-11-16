@@ -32,7 +32,7 @@ class CommandTestCase(unittest.TestCase):
 
             assert isinstance( result[0], OrientRecord )
             assert len(result) == 10
-            assert result[0].__getattribute__('in') != 0
+            assert result[0]._in != 0
             assert result[0]._out != 0
             assert result[0].weight == 1
 
