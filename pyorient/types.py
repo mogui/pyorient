@@ -11,7 +11,7 @@ class OrientRecord(object):
     rid = property(lambda self: self.__rid)
     version = property(lambda self: self.__version)
     o_class = property(lambda self: self.__o_class)
-    OrientRecord = property(lambda self: self.__o_storage)
+    oRecordData = property(lambda self: self.__o_storage)
 
     def __init__(self, content={}, **kwargs):
         """docstring for __init__"""

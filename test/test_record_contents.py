@@ -79,3 +79,5 @@ class CommandTestCase( unittest.TestCase ):
             ("Failed to assert that received " + str(
                 rec_position ) + " match to: "
                                  "{'a': 1, 'b': 2, 'c': 3}" )
+
+        print( res[0].oRecordData['a'] )

@@ -75,11 +75,11 @@ class ORecordEncoder(object):
             raw = o_class + '@'
 
         fields = list(filter(lambda item: not item.startswith('_OrientRecord_'),
-                             record.OrientRecord))
+                             record.oRecordData))
 
         for idx, key in enumerate(fields):
             raw += key + ':'
-            value = record.OrientRecord[key]
+            value = record.oRecordData[key]
             raw += self.parse_value(value)
 
             if idx < len(list(fields)) - 1:
