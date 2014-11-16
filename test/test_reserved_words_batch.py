@@ -48,10 +48,10 @@ class CommandTestCase(unittest.TestCase):
                    rec_position2.rid
         res = self.client.command(sql_edge)
 
-        # print (res[0].__getattribute__('in'))
-        assert isinstance(res[0].__getattribute__('in'),
+        # print (res[0]._in)
+        assert isinstance(res[0]._in,
                           pyorient.OrientRecordLink)
-        assert res[0].__getattribute__('in').get_hash() == rec_position2.rid
+        assert res[0]._in.get_hash() == rec_position2.rid
 
         # print (res[0]._out)
         assert isinstance(res[0]._out, pyorient.OrientRecordLink)
@@ -79,14 +79,20 @@ class CommandTestCase(unittest.TestCase):
             "insert into V ( 'rid', 'version', 'model', 'ciao')" +
             " values ('test_rid', 'V1', '1123', 1234)")
 
-        # print (x[0].rid)
-        # print (x[0].model)
         assert x[0].ciao == 1234
 
         x = self.client.command("select rid, @rid, model, ciao from V")
-        # print (x[0].rid)
-        # print (x[0].rid2)
-        # print (x[0].model)
+
+        assert x[0].rid == 'test_rid'
+        try:
+            x[0].rid.get_hash()
+            assert False
+        except AttributeError:
+            assert True
+
+        assert x[0].rid2.get_hash() == '#9:0', ("Failed to assert that "
+                                                "'#9:0' equals received "
+                                                "value: '%s'" % x[0].rid2)
         assert x[0].model == '1123'
         assert x[0].ciao == 1234
 
@@ -100,12 +106,11 @@ class CommandTestCase(unittest.TestCase):
         edge_result = self.client.batch(cmd)
 
         # print( cluster_id[0] )
-        # print (cluster_id[0].__getattribute__('in'))
-        assert isinstance(edge_result[0].__getattribute__('in'),
+        # print (cluster_id[0]._in)
+        assert isinstance(edge_result[0]._in,
                           pyorient.OrientRecordLink)
-        assert edge_result[0].__getattribute__('in').get_hash() == "#9:0", \
-            "in is not equal to '#9:0': %r" % edge_result[0].__getattribute__(
-                'in').get_hash()
+        assert edge_result[0]._in.get_hash() == "#9:0", \
+            "in is not equal to '#9:0': %r" % edge_result[0]._in.get_hash()
 
         # print (cluster_id[0]._out)
         assert isinstance(edge_result[0]._out, pyorient.OrientRecordLink)

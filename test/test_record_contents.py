@@ -18,7 +18,7 @@ class CommandTestCase( unittest.TestCase ):
 
     def setUp( self ):
 
-        self.client = pyorient.OrientDB( "10.10.0.10", 2424 )
+        self.client = pyorient.OrientDB( "localhost", 2424 )
         self.client.connect( "admin", "admin" )
 
         db_name = "test_tr"
@@ -51,3 +51,33 @@ class CommandTestCase( unittest.TestCase ):
                                                 rec_value[0].abcdef
         assert rec_value[0].qwerty is True, "qwerty expected True: '%s'" % \
                                             rec_value[0].qwerty
+
+    def test_new_orient_dict( self ):
+        import re
+
+        rec = self.client.command( 'create vertex v content {"a":false,'
+                                   '"q":TRUE}' )
+
+        p = re.compile(
+            "\{'@V':\{'[a|q]': (True|False), '[a|q]': (True|False)\}\}" )
+        assert p.match( str( rec[0] ) ), \
+            ( "Failed to assert that received " + str( rec[0] ) +
+              " match to: {'@V':{'a': False, 'q': True}}" )
+
+        rec = {'a': 1, 'b': 2, 'c': 3}
+        rec_position = self.client.record_create( 3, rec )
+
+        p = re.compile(
+            "\{'[abc]': [123], '[abc]': [123], '[abc]': [123]\}" )
+        assert p.match( str( rec_position ) ), \
+            ("Failed to assert that received " + str(
+                rec_position ) + " match to: "
+                                 "{'a': 1, 'b': 2, 'c': 3}" )
+
+        res = self.client.query( "select from " + rec_position.rid )
+        assert p.match( str( res[0] ) ), \
+            ("Failed to assert that received " + str(
+                rec_position ) + " match to: "
+                                 "{'a': 1, 'b': 2, 'c': 3}" )
+
+        print( res[0].oRecordData['a'] )

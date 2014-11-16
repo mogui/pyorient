@@ -162,7 +162,7 @@ client.db_open("animals", "admin", "admin")
 client.command("create class Animal extends V")
 
 # Insert a new value
-client.command("insert into Animal ('name', 'specie') values ('rat', 'rodent')")
+client.command("insert into Animal set name = 'rat', specie = 'rodent'")
 
 # query the values 
 client.query("select * from Animal")
@@ -171,7 +171,7 @@ client.query("select * from Animal")
 # Create the vertex and insert the food values
 
 client.command('create class Food extends V')
-client.command("insert into Food (name, color) values ('pea', 'green')")
+client.command("insert into Food set name = 'pea', color = 'green'")
 
 # Create the edge for the Eat action
 client.command('create class Eat extends E')
@@ -193,7 +193,9 @@ for animal in pea_eaters:
 # What each animal eats?
 animal_foods = client.command("select expand( out( Eat )) from Animal")
 for food in animal_foods:
-    animal = client.record_load(food.in_Eat.get()).name
+    animal = self.client.query(
+                "select name from ( select expand( in('Eat') ) from Food where name = 'pea' )"
+            )[0]
     print food.name, food.color, animal.name
 'pea green rat'
 ```
