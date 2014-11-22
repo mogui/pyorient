@@ -168,7 +168,7 @@ class BaseMessage(object):
             self._reset_fields_definition()
         if is_debug_active():
             self.dump_streams()
-            #reset output buffer
+            # reset output buffer
             self._output_buffer = b""
 
         return self

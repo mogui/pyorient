@@ -3,7 +3,7 @@ __author__ = 'Ostico <ostico@gmail.com>'
 import unittest
 import os
 
-os.environ['DEBUG'] = "0"
+os.environ['DEBUG'] = "1"
 os.environ['DEBUG_VERBOSE'] = "0"
 
 import pyorient
@@ -81,3 +81,43 @@ class CommandTestCase( unittest.TestCase ):
                                  "{'a': 1, 'b': 2, 'c': 3}" )
 
         print( res[0].oRecordData['a'] )
+
+    def test_embedded_map(self):
+
+        res = self.client.command(
+            'create vertex v content {"a":1,"b":{"d":"e"},"c":3}'
+        )
+
+        # print(res[0])
+
+        res = self.client.command(
+            'create vertex v content {"a":1,"b":{},"c":3}'
+        )
+
+        # print(res[0])
+        # print(res[0].oRecordData['b'])
+        assert res[0].oRecordData['b'] == {}, "Failed to asert that received " + \
+                                         res[0].oRecordData['b'] + " equals '{}"
+
+        res = self.client.command('create vertex v content {"a":1,"b":{}}')
+        # print(res[0])
+        assert res[0].oRecordData['b'] == {}, "Failed to asert that received " \
+                                              "" + res[0].oRecordData['b'] + \
+                                              " equals '{}"
+
+        res = self.client.command(
+            'create vertex v content {"b":{},"a":1,"d":{}}'
+        )
+        # print(res[0])
+
+        assert res[0].oRecordData['b'] == {}, "Failed to asert that received " \
+                                              "" + res[0].oRecordData['b'] + \
+                                              " equals '{}"
+        assert res[0].oRecordData['d'] == {}, "Failed to asert that received " \
+                                              "" + res[0].oRecordData['d'] + \
+                                              " equals '{}"
+
+        res = self.client.command(
+            'create vertex v content {"b":[[1]],"a":{},"d":[12],"c":["x"]}'
+        )
+        print(res[0])

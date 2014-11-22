@@ -241,7 +241,8 @@ class ORecordDecoder(object):
                     if search_token != TTYPE_MAP_START \
                             and search_token != TTYPE_MAP_END:
                         tt, key = self.__stack_pop()
-                        values[key] = value
+                        if key != '':
+                            values[key] = value
                     if search_token == TTYPE_MAP_START:
                         break
 
@@ -317,7 +318,7 @@ class ORecordDecoder(object):
             self._i += 1
         elif char == '}':
             # } found
-            # check if null value in the end of the map
+            # check for null value in the end of the map
             if self.__stack_get_last_type() == TTYPE_KEY:
                 # token type is map end
                 self.__stack_push(TTYPE_NULL)
@@ -476,7 +477,7 @@ class ORecordDecoder(object):
             else:
                 token_value = int(self._buffer)
 
-            #token type is a number
+            # token type is a number
             self.__stack_push(TTYPE_NUMBER, token_value)
 
     def __state_key(self, char, c_class):
@@ -484,6 +485,12 @@ class ORecordDecoder(object):
         if char == ":":
             self._state = STATE_VALUE
             self.__stack_push(TTYPE_KEY)
+        elif char == '}' or char == ']':
+            # here a key is expected, but
+            # try to check if this is an empty dict '{}'
+            self._state = STATE_VALUE
+            self.__stack_push(TTYPE_KEY)
+            self._i -= 1  # decrement so the next increment has no effect
         else:
             # Fast-forwarding to " symbol
             if self._i < len(self.content):
@@ -495,6 +502,7 @@ class ORecordDecoder(object):
                 # Before " symbol
                 self._buffer = self.content[self._i + 1:pos]
                 self._i = pos
+
         self._i += 1
 
     def __state_boolean(self, char, c_class):
