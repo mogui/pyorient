@@ -78,7 +78,7 @@ client.record_load( rec_position.rid )
 ### Load a record with cache
 ```python
 def _my_callback(for_every_record):
-    print for_every_record
+    print(for_every_record)
 
 client.record_load( rec_position.rid, "*:-1", _my_callback )
 ```
@@ -91,7 +91,7 @@ result = client.query("select from my_class", 10, '*:0')
 ### Make an Async query
 ```python
 def _my_callback(for_every_record):
-    print for_every_record
+    print(for_every_record)
 
 result = client.query_async("select from my_class", 10, '*:0', _my_callback)
 ```
@@ -225,7 +225,7 @@ eat_edges = client.command("""
 # Who eats the peas?
 pea_eaters = client.command("select expand( in( Eat )) from Food where name = 'pea'")
 for animal in pea_eaters:
-    print animal.name, animal.specie
+    print(animal.name, animal.specie)
 'rat rodent'
 ...
 
@@ -235,7 +235,7 @@ for food in animal_foods:
     animal = self.client.query(
                 "select name from ( select expand( in('Eat') ) from Food where name = 'pea' )"
             )[0]
-    print food.name, food.color, animal.name
+    print(food.name, food.color, animal.name)
 'pea green rat'
 ```
 
