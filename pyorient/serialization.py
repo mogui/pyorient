@@ -143,6 +143,7 @@ class ORecordDecoder(object):
         self._i = 0
         self._stackTokenValues = []
         self._stackTokenTypes = []
+        self._previousStackTokenType = -1
         self._isCollection = False
         self._isMap = False
         self.escape = False
@@ -210,7 +211,7 @@ class ORecordDecoder(object):
                 if not self._isCollection and not self._isMap:
                     tt, t_value = self.__stack_pop()
                     tt, t_name = self.__stack_pop()
-                    #print("%s -> %s" % (tname, tvalue))
+                    # print("%s -> %s" % (tname, tvalue))
                     self.data[t_name] = t_value
 
             elif token_type == TTYPE_NULL:
@@ -219,38 +220,106 @@ class ORecordDecoder(object):
                     tt, t_name = self.__stack_pop()
                     self.data[t_name] = None
 
-            elif token_type == TTYPE_COLLECTION_END:
-                values = []
-                while True:
-                    search_token, value = self.__stack_pop()
-                    if search_token != TTYPE_COLLECTION_START \
-                            and search_token != TTYPE_COLLECTION_END:
-                        values.append(value)
-                    if search_token == TTYPE_COLLECTION_START:
-                        break
-                tt, t_name = self.__stack_pop()
-                values.reverse()
-                self.data[t_name] = values
+            elif token_type == TTYPE_COLLECTION_END \
+                    or token_type == TTYPE_MAP_END:
+                if self._isCollection or self._isMap:
+                    # we are in a nested collection/map, next cycle
+                    continue
 
-            elif token_type == TTYPE_MAP_END:
-                values = {}
-                while True:
-                    search_token, value = self.__stack_pop()
-                    if search_token == TTYPE_NULL:
-                        value = None
-                    if search_token != TTYPE_MAP_START \
-                            and search_token != TTYPE_MAP_END:
-                        tt, key = self.__stack_pop()
-                        if key != '':
-                            values[key] = value
-                    if search_token == TTYPE_MAP_START:
-                        break
+                self._stackTokenTypes.reverse()
+                self._stackTokenValues.reverse()
+                self.data = self.__reduce_maps( self.data )
+                pass
 
-                tt, t_name = self.__stack_pop()
-                self.data[t_name] = values
             else:
                 #print("orly?")
                 pass
+
+    def __reduce_maps(self, container):
+
+        while len(self._stackTokenTypes):
+
+            previous_token = self._previousStackTokenType
+            actual_token = self.__stack_get_last_type()
+
+            # we are in this situation:
+            # [1,{"dx":[1,2]},"abc"]
+            # container = {"dx":[1,2]}
+            # and next_token is a string "abc",
+            # it must be added to the parent object
+            if actual_token == TTYPE_NULL and previous_token in [
+                TTYPE_MAP_END,
+                TTYPE_COLLECTION_END
+            ]:
+                self.__stack_pop()
+
+            # now pop from stack and take new values
+            # actual_token will be equals to incoming_token
+            actual_token, actual_value = self.__stack_pop()
+
+            # look to the next, we need to know if
+            # the next element is not a scalar.
+            # it can never be None
+            next_token = self.__stack_get_last_type()
+
+            # this is an empty collection/dict
+            if (
+                    actual_token == TTYPE_MAP_START and next_token == TTYPE_MAP_END) \
+                    or ( actual_token == TTYPE_COLLECTION_START
+                         and next_token == TTYPE_COLLECTION_END ):
+                return []
+
+            if actual_token == TTYPE_NULL:
+                # field separator "," inside a list
+                continue
+
+            # ok this is an element
+            if actual_token not in [
+                TTYPE_COLLECTION_START,
+                TTYPE_COLLECTION_END,
+                TTYPE_MAP_START,
+                TTYPE_MAP_END
+            ]:
+                # after this element there are a list/dict
+                if next_token in [TTYPE_COLLECTION_START, TTYPE_MAP_START]:
+
+                    # choose the right container
+                    next_container = {} if next_token == TTYPE_MAP_START else []
+
+                    # we need to know if we are in a collection or in a map
+                    if actual_token == TTYPE_KEY:
+                        self.__stack_pop()
+                        container[actual_value] = \
+                            self.__reduce_maps( next_container )
+                    else:
+                        container.append(actual_value)
+
+                else:
+                    # this element is a dict key type?
+                    # try to add to the result container
+                    if actual_token == TTYPE_KEY:
+                        tt, value = self.__stack_pop()
+                        if actual_value != '':
+                            container[actual_value] = value
+                    else:
+                        container.append(actual_value)
+
+            elif actual_token == TTYPE_COLLECTION_START:
+                if isinstance(container, dict):
+                    container[actual_value] = self.__reduce_maps([])
+                else:
+                    container.append(self.__reduce_maps([]))
+
+            elif actual_token == TTYPE_MAP_START:
+                if isinstance(container, dict):
+                    container[actual_value] = self.__reduce_maps({})
+                else:
+                    container.append(self.__reduce_maps({}))
+
+            elif actual_token in [TTYPE_COLLECTION_END, TTYPE_MAP_END]:
+                break
+
+        return container
 
     def __state_guess(self, char, c_class):
         """docstring for guess"""
@@ -302,11 +371,15 @@ class ORecordDecoder(object):
             self._i += 1
         elif char == ']':
             # ] found,
-            self._state = STATE_COMMA
+            # before to stop we have to know if there are
+            # other nested collections
             # token type is collection end
             self.__stack_push(TTYPE_COLLECTION_END)
-            # stopped collection
-            self._isCollection = False
+            self._state = STATE_COMMA
+            if self._stackTokenTypes.count(TTYPE_COLLECTION_START) == \
+                    self._stackTokenTypes.count(TTYPE_COLLECTION_END):
+                # stopped collection
+                self._isCollection = False
             self._i += 1
         elif char == '{':
             # found { switch state to name
@@ -320,15 +393,20 @@ class ORecordDecoder(object):
             # } found
             # check for null value in the end of the map
             if self.__stack_get_last_type() == TTYPE_KEY:
-                # token type is map end
+                # token type is NULL
                 self.__stack_push(TTYPE_NULL)
                 return
 
-            self._state = STATE_COMMA
+            # before to stop we have to know if there are
+            # other nested maps
             # token type is map end
             self.__stack_push(TTYPE_MAP_END)
-            # stopped map
-            self._isMap = False
+            self._state = STATE_COMMA
+            if self._stackTokenTypes.count(TTYPE_MAP_START) == \
+                    self._stackTokenTypes.count(TTYPE_MAP_END):
+                # stopped collection
+                self._isMap = False
+
             self._i += 1
         elif char == '(':
             # ( found, state is COMMA
@@ -359,6 +437,9 @@ class ORecordDecoder(object):
         elif char == '%':
             self._state = STATE_BASE64
             self._i += 1
+        elif char == 'n' and self.content[self._i:self._i + 4] == 'null':
+            self._state = STATE_NUMBER
+            self._buffer = self.content[self._i:self._i + 4]
         else:
             if c_class == CCLASS_NUMBER or char == '-':
                 # number found - switch to number collecting
@@ -426,6 +507,7 @@ class ORecordDecoder(object):
         """docstring for __state_comma"""
         if char == ',':
             if self._isCollection:
+                self.__stack_push(TTYPE_NULL)
                 self._state = STATE_VALUE
             elif self._isMap:
                 self._state = STATE_KEY
@@ -434,7 +516,6 @@ class ORecordDecoder(object):
             self._i += 1
         else:
             self._state = STATE_VALUE
-
 
     def __state_link(self, char, c_class):
         """docstring for __state_link"""
@@ -457,7 +538,7 @@ class ORecordDecoder(object):
             self._buffer += result.group()
             self._i += len(result.group())
         else:
-            #switch state to
+            # switch state to
             if char == ',':
                 self._state = STATE_COMMA
             elif c_class == CCLASS_WORD:
@@ -474,6 +555,9 @@ class ORecordDecoder(object):
                 token_value = float(self._buffer)
             elif char == 't' or char == 'a':
                 token_value = date.fromtimestamp(float(self._buffer) / 1000)
+            elif char == 'n':
+                token_value = None
+                self._i += 3
             else:
                 token_value = int(self._buffer)
 
@@ -485,12 +569,12 @@ class ORecordDecoder(object):
         if char == ":":
             self._state = STATE_VALUE
             self.__stack_push(TTYPE_KEY)
-        elif char == '}' or char == ']':
+        elif char == '}':
             # here a key is expected, but
             # try to check if this is an empty dict '{}'
-            self._state = STATE_VALUE
-            self.__stack_push(TTYPE_KEY)
-            self._i -= 1  # decrement so the next increment has no effect
+            self._state = STATE_COMMA
+            self.__stack_push(TTYPE_MAP_END)
+            self._isMap = False
         else:
             # Fast-forwarding to " symbol
             if self._i < len(self.content):
@@ -535,7 +619,9 @@ class ORecordDecoder(object):
 
     def __stack_pop(self):
         """ pop value from stack """
-        return self._stackTokenTypes.pop(), self._stackTokenValues.pop()
+        t_type = self._stackTokenTypes.pop()
+        self._previousStackTokenType = t_type
+        return t_type, self._stackTokenValues.pop()
 
     def __stack_get_last_type(self):
         """docstring for __stack_get_last_type"""

@@ -117,7 +117,159 @@ class CommandTestCase( unittest.TestCase ):
                                               "" + res[0].oRecordData['d'] + \
                                               " equals '{}"
 
+    def test_nested_objects_1(self):
+
         res = self.client.command(
             'create vertex v content {"b":[[1]],"a":{},"d":[12],"c":["x"]}'
         )
+        print(res[0])
+
+    def test_nested_objects_2(self):
+
+        res = self.client.command(
+            'create vertex v content {"b":[[1,"abc"]]}'
+        )
+        print(res[0])
+        assert res[0].oRecordData['b'][0][0] == 1
+        assert res[0].oRecordData['b'][0][1] == "abc"
+
+    def test_nested_objects_3(self):
+
+        res = self.client.command(
+            'create vertex v content {"b":[[1,{"abc":2}]]}'
+        )
+        print(res[0])
+        assert res[0].oRecordData['b'][0][0] == 1
+        assert res[0].oRecordData['b'][0][1]['abc'] == 2
+
+    def test_nested_objects_4(self):
+
+        res = self.client.command(
+            'create vertex v content {"b":[[1,{"abc":2}],[3,{"cde":4}]]}'
+        )
+        print(res[0])
+        assert res[0].oRecordData['b'][0][0] == 1
+        assert res[0].oRecordData['b'][0][1]['abc'] == 2
+        assert res[0].oRecordData['b'][1][0] == 3
+        assert res[0].oRecordData['b'][1][1]['cde'] == 4
+
+    def test_nested_objects_5(self):
+        res = self.client.command(
+            'create vertex v content '
+            '{"b":[[1,{"dx":[1,2]},"abc"]],"a":{},"d":[12],"c":["x"],"s":111}'
+        )
+        assert res[0].oRecordData['b'][0][0] == 1
+        assert res[0].oRecordData['b'][0][1]['dx'][0] == 1
+        assert res[0].oRecordData['b'][0][1]['dx'][1] == 2
+        assert res[0].oRecordData['b'][0][2] == "abc"
+        assert res[0].oRecordData['a'] == {}
+        assert res[0].oRecordData['d'][0] == 12
+        assert res[0].oRecordData['c'][0] == "x"
+        assert res[0].oRecordData['s'] == 111
+
+        print(res[0])
+
+    def test_nested_objects_6(self):
+        res = self.client.command(
+            'create vertex v content '
+            '{"b":[[1,2,"abc"]]}'
+        )
+        assert res[0].oRecordData['b'][0][0] == 1
+        assert res[0].oRecordData['b'][0][1] == 2
+        assert res[0].oRecordData['b'][0][2] == "abc"
+
+        print(res[0])
+
+    def test_nested_objects_7(self):
+        res = self.client.command(
+            'create vertex v content '
+            '{"b":[{"xx":{"xxx":[1,2,"abc"]}}]}'
+        )
+        assert isinstance(res[0].oRecordData['b'], list)
+        assert isinstance(res[0].oRecordData['b'][0], dict)
+        assert isinstance(res[0].oRecordData['b'][0]['xx'], dict)
+        assert isinstance(res[0].oRecordData['b'][0]['xx']['xxx'], list)
+
+        assert res[0].oRecordData['b'][0]['xx']['xxx'][0] == 1
+        assert res[0].oRecordData['b'][0]['xx']['xxx'][1] == 2
+        assert res[0].oRecordData['b'][0]['xx']['xxx'][2] == "abc"
+
+        print(res[0])
+
+    def test_nested_objects_8(self):
+        res = self.client.command(
+            'create vertex v content '
+            '{"b":[{"xx":{"xxx":[1,2,"abc"]}}],"c":[{"yy":{"yyy":[3,4,"cde"]}}]}'
+        )
+        assert isinstance(res[0].oRecordData['b'], list)
+        assert isinstance(res[0].oRecordData['b'][0], dict)
+        assert isinstance(res[0].oRecordData['b'][0]['xx'], dict)
+        assert isinstance(res[0].oRecordData['b'][0]['xx']['xxx'], list)
+
+        assert res[0].oRecordData['b'][0]['xx']['xxx'][0] == 1
+        assert res[0].oRecordData['b'][0]['xx']['xxx'][1] == 2
+        assert res[0].oRecordData['b'][0]['xx']['xxx'][2] == "abc"
+
+        assert isinstance(res[0].oRecordData['c'], list)
+        assert isinstance(res[0].oRecordData['c'][0], dict)
+        assert isinstance(res[0].oRecordData['c'][0]['yy'], dict)
+        assert isinstance(res[0].oRecordData['c'][0]['yy']['yyy'], list)
+
+        assert res[0].oRecordData['c'][0]['yy']['yyy'][0] == 3
+        assert res[0].oRecordData['c'][0]['yy']['yyy'][1] == 4
+        assert res[0].oRecordData['c'][0]['yy']['yyy'][2] == "cde"
+
+        print(res[0])
+
+    def test_nested_objects_9(self):
+        res = self.client.command(
+            'create vertex v content '
+            '{"a":[[1,2],[3,4],[5,6],null]}'
+        )
+        assert isinstance(res[0].oRecordData['a'], list)
+        assert isinstance(res[0].oRecordData['a'][0], list)
+        assert isinstance(res[0].oRecordData['a'][1], list)
+        assert isinstance(res[0].oRecordData['a'][2], list)
+
+        assert res[0].oRecordData['a'][0][0] == 1
+        assert res[0].oRecordData['a'][0][1] == 2
+
+        print(res[0])
+
+    def test_nested_objects_10(self):
+        res = self.client.command(
+            'create vertex v content '
+            '{"embedded_map":{"one":[1,2]}}'
+        )
+
+        assert isinstance(res[0].oRecordData['embedded_map'], dict)
+        assert isinstance(res[0].oRecordData['embedded_map']['one'], list)
+
+        assert res[0].oRecordData['embedded_map']['one'][0] == 1
+        assert res[0].oRecordData['embedded_map']['one'][1] == 2
+
+        print(res[0])
+
+    def test_nested_objects_11(self):
+        res = self.client.command(
+            'create vertex v content '
+            '{"embedded_map":{"one":{"three":4}}}'
+        )
+
+        assert isinstance(res[0].oRecordData['embedded_map'], dict)
+        assert isinstance(res[0].oRecordData['embedded_map']['one'], dict)
+
+        assert res[0].oRecordData['embedded_map']['one']["three"] == 4
+
+        print(res[0])
+
+    def test_nested_objects_12(self):
+        res = self.client.command(
+            'create vertex v content '
+            '{"embedded_map":{"one":2}}'
+        )
+
+        assert isinstance(res[0].oRecordData['embedded_map'], dict)
+        assert res[0].oRecordData['embedded_map']['one'] == 2
+
         print(res[0])
