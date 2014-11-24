@@ -273,3 +273,16 @@ class CommandTestCase( unittest.TestCase ):
         assert res[0].oRecordData['embedded_map']['one'] == 2
 
         print(res[0])
+
+    def test_nested_objects_13(self):
+        res = self.client.command(
+            'create vertex v content '
+            '{"a":1,"b":{},"c":3}'
+        )
+
+        assert res[0].oRecordData['a'] == 1
+        assert isinstance(res[0].oRecordData['b'], dict)
+        assert len(res[0].oRecordData['b']) == 0
+        assert res[0].oRecordData['c'] == 3
+
+        print(res[0])
