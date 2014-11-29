@@ -1,6 +1,6 @@
 #!/bin/env python3.4
-__author__ = 'Ostico <ostico@gmail.com>'
 # -*- coding: utf-8 -*-
+__author__ = 'Ostico <ostico@gmail.com>'
 import unittest
 import os
 
