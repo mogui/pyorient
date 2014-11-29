@@ -117,5 +117,36 @@ class CommandTestCase(unittest.TestCase):
         assert edge_result[0]._out.get_hash() == "#9:100", \
             "out is not equal to '#9:101': %r" % edge_result[0]._out.get_hash()
 
+    def test_sql_batch_2(self):
 
-# x = CommandTestCase('test_reserved_words').run()
+        cluster_id = self.client.command("create class fb extends V")
+        cluster_id = self.client.command("create class response extends V")
+        cluster_id = self.client.command("create class followed_by extends E")
+
+        cluster_id = self.client.batch( (
+            "begin;"
+            "let a = create vertex fb set name = 'd1';"
+            "let b = create vertex response set name = 'a1';"
+            "create edge followed_by from $a to $b;"
+            "commit;"
+        ) )
+
+    def test_sql_batch_3(self):
+
+        cluster_id = self.client.command("create class fb extends V")
+        cluster_id = self.client.command("create class response extends V")
+        cluster_id = self.client.command("create class followed_by extends E")
+
+        cmd = (
+            "begin;"
+            "let a = create vertex fb set name = 'd1';"
+            "let c = select from fb limit 1;"
+            "let d = select from response limit 1;"
+            "let e = create edge from $c to $d;"
+            "commit;"
+        )
+
+        cluster_id = self.client.batch(cmd)
+
+
+# x = CommandTestCase('test_sql_batch_2').run()
