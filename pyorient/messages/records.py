@@ -92,6 +92,9 @@ class RecordCreateMessage(BaseMessage):
         if self._orientSocket.in_transaction is True:
             return self
 
+        if self.get_protocol() > 25:
+            self._append( FIELD_SHORT )  # cluster-id
+
         self._append( FIELD_LONG )  # cluster-position
         self._append( FIELD_INT )  # record-version
         result = super( RecordCreateMessage, self ).fetch_response()
