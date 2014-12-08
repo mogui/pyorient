@@ -68,12 +68,12 @@ class CommandTestCase(unittest.TestCase):
         assert result[0].rid.get() == '11:0'
         assert result[0].rid.get_hash() == rec_position1.rid
         assert result[0].holiday == rec1['@my_v_class']['holiday']
-        assert result[0].version == 2
+        assert result[0].version != 0
 
         assert result[1].rid.get() == '11:1'
         assert result[1].rid.get_hash() == rec_position2.rid
         assert result[1].holiday == rec2['@my_v_class']['holiday']
-        assert result[1].version == 2
+        assert result[0].version != 0
 
         x = self.client.command(
             "insert into V ( 'rid', 'version', 'model', 'ciao')" +
