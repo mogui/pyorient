@@ -96,7 +96,7 @@ COMMAND_OP                 = chr(41)
 TX_COMMIT_OP               = chr(60)
 
 DB_RELOAD_OP               = chr(73)
-
+DB_LIST_OP                 = chr(74)
 
 #
 # Orient Primitives

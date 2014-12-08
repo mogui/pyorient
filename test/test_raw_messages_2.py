@@ -14,7 +14,7 @@ from pyorient.messages.records import *
 from pyorient.constants import DB_TYPE_DOCUMENT, QUERY_SYNC, \
     STORAGE_TYPE_PLOCAL, DB_TYPE_GRAPH
 
-os.environ['DEBUG'] = "1"
+os.environ['DEBUG'] = "0"
 os.environ['DEBUG_VERBOSE'] = "0"
 if os.path.realpath( '../' ) not in sys.path:
     sys.path.insert( 0, os.path.realpath( '../' ) )

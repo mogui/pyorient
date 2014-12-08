@@ -1,5 +1,8 @@
 # pyorient
 
+[![Build Status](https://travis-ci.org/Ostico/pyorient.svg?branch=master)](https://travis-ci.org/Ostico/pyorient)
+
+
 [Orientdb](http://www.orientechnologies.com/) driver for python that uses the binary protocol.
 
 Pyorient works with orientdb version 1.7 and later.
@@ -44,6 +47,11 @@ client.db_exists( db_name, pyorient.STORAGE_TYPE_MEMORY )
 ### Open a DB
 ```python
 client.db_open( db_name, "admin", "admin" )
+```
+
+### Get the the list of databases ( needs to be connected )
+```python
+client.db_list()
 ```
 
 ### Get the size of a database ( needs a DB opened )

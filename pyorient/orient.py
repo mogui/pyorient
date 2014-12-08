@@ -129,6 +129,7 @@ class OrientDB(object):
         DbCountRecordsMessage="pyorient.messages.database",
         DbReloadMessage="pyorient.messages.database",
         DbSizeMessage="pyorient.messages.database",
+        DbListMessage="pyorient.messages.database",
 
         # Cluster
         DataClusterAddMessage="pyorient.messages.cluster",
@@ -239,6 +240,10 @@ class OrientDB(object):
         return self.get_message("DbSizeMessage") \
             .prepare(args).send().fetch_response()
 
+    def db_list(self, *args):
+        return self.get_message("DbListMessage") \
+            .prepare(args).send().fetch_response()
+
     def record_create(self, *args):
         return self.get_message("RecordCreateMessage") \
             .prepare(args).send().fetch_response()
@@ -275,6 +280,7 @@ class OrientDB(object):
                  pyorient.messages.DataClusterDropMessage,
                  pyorient.messages.DbCloseMessage,
                  pyorient.messages.DbSizeMessage,
+                 pyorient.messages.DbListMessage,
                  pyorient.messages.RecordCreateMessage,
                  pyorient.messages.RecordDeleteMessage,
                  pyorient.messages.RecordLoadMessage,

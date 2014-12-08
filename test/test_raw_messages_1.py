@@ -6,7 +6,7 @@ from pyorient.exceptions import PyOrientCommandException, PyOrientConnectionExce
 from pyorient import OrientSocket
 from pyorient.messages.connection import ConnectMessage, ShutdownMessage
 from pyorient.messages.database import DbExistsMessage, DbOpenMessage, DbCreateMessage,\
- DbDropMessage, DbReloadMessage, DbCloseMessage, DbSizeMessage
+ DbDropMessage, DbReloadMessage, DbCloseMessage, DbSizeMessage, DbListMessage
 from pyorient.messages.commands import CommandMessage
 from pyorient.constants import DB_TYPE_DOCUMENT, QUERY_SYNC, \
     STORAGE_TYPE_PLOCAL
@@ -266,6 +266,16 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
         print("Size: %s" % size)
         assert size != 0
+
+    def test_db_list(self):
+
+        connection, cluster_info = self.test_db_open_not_connected()
+
+        reload_msg = DbListMessage( connection )
+        _list = reload_msg.prepare().send().fetch_response()
+
+        print("Database List: %s" % _list.oRecordData['databases'] )
+        assert len(_list.oRecordData['databases']) != 0
 
     def test_shutdown(self):
 

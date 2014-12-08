@@ -6,11 +6,12 @@ from pyorient.exceptions import PyOrientBadMethodCallException
 from .base import BaseMessage
 from .connection import ConnectMessage
 from ..constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP, FIELD_BYTE, FIELD_INT, \
-    FIELD_SHORT, FIELD_STRING, FIELD_STRINGS, FIELD_BOOLEAN, NAME, SUPPORTED_PROTOCOL, \
+    FIELD_SHORT, FIELD_STRING, FIELD_STRINGS, FIELD_BYTES, FIELD_BOOLEAN, NAME, SUPPORTED_PROTOCOL, \
     VERSION, DB_TYPES, SERIALIZATION_SERIAL_BIN, SERIALIZATION_TYPES, \
     DB_CLOSE_OP, DB_EXIST_OP, STORAGE_TYPE_PLOCAL, STORAGE_TYPE_LOCAL, DB_CREATE_OP, \
-    DB_DROP_OP, DB_RELOAD_OP, DB_SIZE_OP, STORAGE_TYPES, FIELD_LONG
+    DB_DROP_OP, DB_RELOAD_OP, DB_SIZE_OP, DB_LIST_OP, STORAGE_TYPES, FIELD_LONG
 from ..utils import need_connected, need_db_opened
+from ..serialization import OrientRecord, ORecordDecoder
 
 #
 # DB OPEN
@@ -529,3 +530,35 @@ class DbSizeMessage(BaseMessage):
     def fetch_response(self):
         self._append( FIELD_LONG )
         return super( DbSizeMessage, self ).fetch_response()[0]
+
+
+#
+# DB List
+#
+# Asks for the size of a database in the OrientDB Server instance.
+#
+# Request: empty
+# Response: (size:long)
+#
+class DbListMessage(BaseMessage):
+
+    def __init__(self, _orient_socket ):
+        super( DbListMessage, self ).__init__(_orient_socket)
+
+        # order matters
+        self._append( ( FIELD_BYTE, DB_LIST_OP ) )
+
+    @need_connected
+    def prepare(self, params=None):
+        return super( DbListMessage, self ).prepare()
+
+    def fetch_response(self):
+        self._append( FIELD_BYTES )
+        __record = super( DbListMessage, self ).fetch_response()[0]
+        # bug in orientdb csv serialization in snapshot 2.0,
+        # strip trailing spaces
+        _record = ORecordDecoder( __record.rstrip() )
+
+        return OrientRecord(
+            _record.data
+        )
