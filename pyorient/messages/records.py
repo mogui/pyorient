@@ -319,7 +319,7 @@ class RecordLoadMessage(BaseMessage):
             pass
 
         _cluster, _position = self._record_id.split( ':' )
-        print("aa", repr(self._record_id), repr(_cluster), repr(_position))
+        # print("aa", repr(self._record_id), repr(_cluster), repr(_position))
         if _cluster[0] == '#':
             _cluster = _cluster[1:]
 
