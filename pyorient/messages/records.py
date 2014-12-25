@@ -305,8 +305,12 @@ class RecordLoadMessage(BaseMessage):
             # Use default for non existent indexes
             pass
 
-        _cluster, _position = self._record_id.split( ':' )
-        # print("aa", repr(self._record_id), repr(_cluster), repr(_position))
+        try:
+            _cluster, _position = self._record_id.split( ':' )
+        except ValueError:
+            raise PyOrientBadMethodCallException( "Not valid Rid to load: "
+                                                  + self._record_id, [] )
+
         if _cluster[0] == '#':
             _cluster = _cluster[1:]
 
@@ -322,7 +326,6 @@ class RecordLoadMessage(BaseMessage):
         self._append( FIELD_BYTE )
         _status = super( RecordLoadMessage, self ).fetch_response()[0]
 
-        __record = []
         _record = OrientRecord()
         if _status != 0:
             self._append( FIELD_BYTES )
@@ -336,12 +339,14 @@ class RecordLoadMessage(BaseMessage):
 
             self._read_async_records()  # get cache
 
-        return OrientRecord(
-            _record.data,
-            o_class=_record.className,
-            rid=self._record_id,
-            version=__record[1]
-        )
+            _record = OrientRecord(
+                _record.data,
+                o_class=_record.className,
+                rid=self._record_id,
+                version=__record[1]
+            )
+
+        return _record
 
     def set_record_id(self, _record_id):
         self._record_id = _record_id
