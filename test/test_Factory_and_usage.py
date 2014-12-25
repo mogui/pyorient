@@ -20,7 +20,7 @@ class CommandTestCase(unittest.TestCase):
 
         factory = pyorient.OrientDB('localhost', 2424)
 
-        factory.get_message( pyorient.CONNECT ).prepare( ("admin", "admin") )\
+        factory.get_message( pyorient.CONNECT ).prepare( ("root", "root") )\
             .send().fetch_response()
 
         db_name = 'demo_db'
@@ -102,7 +102,7 @@ class CommandTestCase(unittest.TestCase):
 
         factory = pyorient.OrientDB('localhost', 2424)
 
-        factory.get_message( pyorient.CONNECT ).prepare( ("admin", "admin") )\
+        factory.get_message( pyorient.CONNECT ).prepare( ("root", "root") )\
             .send().fetch_response()
 
         db_name = 'test_transactions'
@@ -190,7 +190,7 @@ class CommandTestCase(unittest.TestCase):
         factory = pyorient.OrientDB(connection)
 
 
-        session_id = ( factory.get_message(pyorient.CONNECT) ).prepare( ("admin", "admin") )\
+        session_id = ( factory.get_message(pyorient.CONNECT) ).prepare( ("root", "root") )\
             .send().fetch_response()
 
         db_name = "tmp_test1"

@@ -86,7 +86,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
 
     def test_transaction(self):
         connection = OrientSocket( "localhost", 2424 )
-        session_id = ( ConnectMessage( connection ) ).prepare( ("admin", "admin") )\
+        session_id = ( ConnectMessage( connection ) ).prepare( ("root", "root") )\
             .send().fetch_response()
 
         db_name = "my_little_test"

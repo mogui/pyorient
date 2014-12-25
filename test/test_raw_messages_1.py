@@ -39,7 +39,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         print("%r" % msg.get_protocol())
         assert msg.get_protocol() != -1
 
-        session_id = msg.prepare( ("admin", "admin") )\
+        session_id = msg.prepare( ("root", "root") )\
             .send().fetch_response()
         """
         alternative use
@@ -61,7 +61,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         print("%r" % msg.get_protocol())
         assert msg.get_protocol() != -1
 
-        session_id = msg.prepare( ("admin", "admin") )\
+        session_id = msg.prepare( ("root", "root") )\
             .send().fetch_response()
 
         print("Sid: %s" % session_id)
@@ -88,7 +88,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         print("%r" % conn_msg.get_protocol())
         assert conn_msg.get_protocol() != -1
 
-        session_id = conn_msg.prepare( ("admin", "admin") )\
+        session_id = conn_msg.prepare( ("root", "root") )\
             .send().fetch_response()
 
         print("Sid: %s" % session_id)
@@ -105,6 +105,8 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
         print("Cluster: %s" % cluster_info)
         assert len(cluster_info) != 0
+
+        return connection, cluster_info
 
     def test_db_open_not_connected(self):
 
@@ -124,7 +126,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
         print("Cluster: %s" % cluster_info)
         assert len(cluster_info) != 0
-        return ( connection, cluster_info )
+        return connection, cluster_info
 
     def test_db_create_without_connect(self):
 
@@ -141,7 +143,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         conn_msg = ConnectMessage( connection )
         print("Protocol: %r" % conn_msg.get_protocol())
 
-        session_id = conn_msg.prepare( ("admin", "admin") )\
+        session_id = conn_msg.prepare( ("root", "root") )\
             .send().fetch_response()
 
         print("Sid: %s" % session_id)
@@ -186,7 +188,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         print("Protocol: %r" % conn_msg.get_protocol())
         assert connection.protocol != -1
 
-        session_id = conn_msg.prepare( ("admin", "admin") ) \
+        session_id = conn_msg.prepare( ("root", "root") ) \
             .send().fetch_response()
 
         print("Sid: %s" % session_id)
@@ -234,7 +236,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         print("Protocol: %r" % conn_msg.get_protocol())
         assert connection.protocol != -1
 
-        session_id = conn_msg.prepare( ("admin", "admin") ) \
+        session_id = conn_msg.prepare( ("root", "root") ) \
             .send().fetch_response()
 
         print("Sid: %s" % session_id)
@@ -269,7 +271,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
     def test_db_list(self):
 
-        connection, cluster_info = self.test_db_open_not_connected()
+        connection, cluster_info = self.test_db_open_connected()
 
         reload_msg = DbListMessage( connection )
         _list = reload_msg.prepare().send().fetch_response()
@@ -290,7 +292,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         print("%r" % msg.get_protocol())
         assert msg.get_protocol() != -1
 
-        sid = msg.prepare( ("admin", "admin") )\
+        sid = msg.prepare( ("root", "root") )\
             .send().fetch_response()
         """
         alternative use
@@ -301,7 +303,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         assert sid != -1
 
         shut_msg = ShutdownMessage(connection)
-        res = shut_msg.prepare(("root", "16ABC88EB0CAEE3774E00BABB6D19E69FD3495D6BFA32CAF8AD95A64DA7415CE")).\
+        res = shut_msg.prepare(("root", "root")).\
             send().send().fetch_response()
 
         assert res[:] == []

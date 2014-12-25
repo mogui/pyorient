@@ -104,23 +104,10 @@ class RecordCreateMessage(BaseMessage):
         # is present, but don't know why,
         #
         # Not every time this INT is present!!!!
-        # The next fetch too.
-        #
-        # So, i double check for protocol here
-        # and add a socket timeout.
-        if self.get_protocol() > 19:
-            import socket
-            try:
-                self._orientSocket._socket.settimeout(0.1)
-                self._append( FIELD_INT )  # count-of-collection-changes
-                chng = super( RecordCreateMessage, self ).fetch_response(True)
-                result.append(chng[0])
-            except socket.timeout as e:
-                # socket timeout ignore
-                # TODO: ???
-                pass
-            finally:
-                self._orientSocket._socket.settimeout(None)  # reset timeout
+        if self.get_protocol() > 21:
+            self._append( FIELD_INT )  # count-of-collection-changes
+            chng = super( RecordCreateMessage, self ).fetch_response(True)
+            result.append( chng[0] )
 
         _changes = []
         try:
@@ -499,23 +486,10 @@ class RecordUpdateMessage(BaseMessage):
         # is present, but don't know why,
         #
         # Not every time this INT is present!!!!
-        # The next fetch too.
-        #
-        # So, i double check for protocol here
-        # and add a socket timeout.
-        if self.get_protocol() > 19:
-            import socket
-            try:
-                self._orientSocket._socket.settimeout(0.1)
-                self._append( FIELD_INT )  # count-of-collection-changes
-                chng = super( RecordUpdateMessage, self ).fetch_response(True)
-                result.append(chng[0])
-            except socket.timeout as e:
-                # socket timeout ignore
-                # TODO: ???
-                pass
-            finally:
-                self._orientSocket._socket.settimeout(None)  # reset timeout
+        if self.get_protocol() > 21:
+            self._append( FIELD_INT )  # count-of-collection-changes
+            chng = super( RecordUpdateMessage, self ).fetch_response(True)
+            result.append(chng[0])
 
         _changes = []
         try:

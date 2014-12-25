@@ -18,13 +18,13 @@ class CommandTestCase(unittest.TestCase):
     def setUp(self):
 
         self.client = pyorient.OrientDB("localhost", 2424)
-        self.client.connect("admin", "admin")
+        self.client.connect("root", "root")
 
         db_name = "test_tr"
         try:
             self.client.db_drop(db_name)
         except pyorient.PyOrientCommandException as e:
-            print(e.message)
+            print(e)
         finally:
             db = self.client.db_create(db_name, pyorient.DB_TYPE_GRAPH,
                                        pyorient.STORAGE_TYPE_MEMORY)

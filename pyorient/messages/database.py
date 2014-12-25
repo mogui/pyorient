@@ -83,13 +83,6 @@ class DbOpenMessage(BaseMessage):
                 # Use default for non existent indexes
                 pass
 
-        # if session id is -1, so we aren't connected
-        # because ConnectMessage set the client id
-        # this block of code check for session because this class
-        # can be initialized directly from orient socket
-        if self._orientSocket.session_id < 0:
-            self._perform_connection()
-
         if self.get_protocol() > 21:
             connect_string = (FIELD_STRINGS, [self._client_id,
                                               self._serialization_type,
@@ -113,6 +106,9 @@ class DbOpenMessage(BaseMessage):
 
         self._session_id, cluster_num = \
             super( DbOpenMessage, self ).fetch_response()
+
+        # IMPORTANT needed to pass the id to other messages
+        self._update_socket_id()
 
         clusters = []
         try:

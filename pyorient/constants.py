@@ -5,7 +5,7 @@ __author__ = 'mogui <mogui83@gmail.com>'
 #
 NAME = "OrientDB Python binary client (pyorient)"
 VERSION = "1.2.1"
-SUPPORTED_PROTOCOL = 25
+SUPPORTED_PROTOCOL = 26
 
 #
 # Binary Types

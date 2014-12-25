@@ -72,7 +72,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         # ##################
         conn_msg = ConnectMessage( connection )
 
-        session_id = conn_msg.prepare( ("admin", "admin") )\
+        session_id = conn_msg.prepare( ("root", "root") )\
             .send().fetch_response()
 
         assert session_id == connection.session_id
@@ -119,7 +119,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         assert connection.protocol != -1
 
-        session_id = conn_msg.prepare( ("admin", "admin") ) \
+        session_id = conn_msg.prepare( ("root", "root") ) \
             .send().fetch_response()
 
         assert session_id == connection.session_id
@@ -204,7 +204,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         conn_msg = ConnectMessage( connection )
         assert connection.protocol != -1
 
-        session_id = conn_msg.prepare( ("admin", "admin") ) \
+        session_id = conn_msg.prepare( ("root", "root") ) \
             .send().fetch_response()
 
         print("Sid: %s" % session_id)
