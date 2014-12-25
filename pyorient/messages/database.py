@@ -90,25 +90,27 @@ class DbOpenMessage(BaseMessage):
         if self._orientSocket.session_id < 0:
             self._perform_connection()
 
-        if self.get_protocol() > 21:
-            connect_string = (FIELD_STRINGS, [self._client_id,
-                                              self._serialization_type,
-                                              self._db_name,
-                                              self._db_type,
-                                              self._user, self._pass])
-        else:
-            connect_string = (FIELD_STRINGS, [self._client_id,
-                                              self._db_name, self._db_type,
-                                              self._user, self._pass])
-
         self._append( ( FIELD_STRINGS, [NAME, VERSION] ) )
         self._append( ( FIELD_SHORT, SUPPORTED_PROTOCOL ) )
-        self._append( connect_string )
+        self._append( ( FIELD_STRING, self._client_id ) )
+
+        if self.get_protocol() > 21:
+            self._append( ( FIELD_STRING, self._serialization_type ) )
+
+        if self.get_protocol() > 26:
+            self._append( ( FIELD_BOOLEAN, True ) )
+
+        self._append( ( FIELD_STRING, self._db_name ) )
+        self._append( ( FIELD_STRING, self._db_type ) )
+
+        self._append( ( FIELD_STRING, self._user ) )
+        self._append( ( FIELD_STRING, self._pass ) )
 
         return super( DbOpenMessage, self ).prepare()
 
     def fetch_response(self):
         self._append( FIELD_INT )  # session_id
+        # self._append( FIELD_STRING )  # session_id # if FALSE NO PRESENT??
         self._append( FIELD_SHORT )  # cluster_num
 
         self._session_id, cluster_num = \

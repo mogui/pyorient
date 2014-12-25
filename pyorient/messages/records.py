@@ -338,9 +338,9 @@ class RecordLoadMessage(BaseMessage):
         __record = []
         _record = OrientRecord()
         if _status != 0:
-            self._append( FIELD_BYTES )
-            self._append( FIELD_INT )
-            self._append( FIELD_BYTE )
+            self._append( FIELD_BYTES )  # record content
+            self._append( FIELD_INT )    # record version
+            self._append( FIELD_BYTE )   # record type
 
             __record = super( RecordLoadMessage, self ).fetch_response(True)
             # bug in orientdb csv serialization in snapshot 2.0,

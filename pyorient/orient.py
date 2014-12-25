@@ -29,6 +29,7 @@ class OrientSocket(object):
         """:type : socket.socket"""
         self.protocol = -1
         self.session_id = -1
+        self.token = ''
         self.db_opened = None
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
         self.in_transaction = False

@@ -3,7 +3,8 @@ __author__ = 'Ostico <ostico@gmail.com>'
 from ..exceptions import PyOrientBadMethodCallException
 from .base import BaseMessage
 from ..constants import CONNECT_OP, FIELD_BYTE, FIELD_INT, FIELD_SHORT, \
-    FIELD_STRINGS, NAME, SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, \
+    FIELD_STRINGS, FIELD_BOOLEAN, FIELD_STRING, NAME, \
+    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, \
     VERSION, SERIALIZATION_SERIAL_BIN, SERIALIZATION_TYPES, SHUTDOWN_OP
 from ..utils import need_connected
 
@@ -36,21 +37,25 @@ class ConnectMessage(BaseMessage):
                 # Use default for non existent indexes
                 pass
 
-        if self.get_protocol() > 21:
-            connect_string = (FIELD_STRINGS, [self._client_id,
-                                              self._serialization_type,
-                                              self._user, self._pass])
-        else:
-            connect_string = (FIELD_STRINGS, [self._client_id,
-                                              self._user, self._pass])
-
         self._append( ( FIELD_STRINGS, [NAME, VERSION] ) )
         self._append( ( FIELD_SHORT, SUPPORTED_PROTOCOL ) )
-        self._append( connect_string )
+
+        self._append( ( FIELD_STRING, self._client_id ) )
+
+        if self.get_protocol() > 21:
+            self._append( ( FIELD_STRING, self._serialization_type ) )
+
+        if self.get_protocol() > 26:
+            self._append( ( FIELD_BOOLEAN, False ) )
+
+        self._append( ( FIELD_STRING, self._user ) )
+        self._append( ( FIELD_STRING, self._pass ) )
+
         return super( ConnectMessage, self ).prepare()
 
     def fetch_response(self):
         self._append( FIELD_INT )
+        self._append( FIELD_STRINGS )
         self._session_id = super( ConnectMessage, self ).fetch_response()[0]
 
         # IMPORTANT needed to pass the id to other messages
