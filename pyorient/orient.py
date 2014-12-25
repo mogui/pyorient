@@ -5,6 +5,7 @@ __author__ = 'Ostico <ostico@gmail.com>'
 
 import socket
 import struct
+import select
 
 from .exceptions import PyOrientBadMethodCallException, \
     PyOrientConnectionException, PyOrientWrongProtocolVersionException
@@ -12,10 +13,7 @@ from .exceptions import PyOrientBadMethodCallException, \
 from .constants import FIELD_SHORT, \
     QUERY_ASYNC, QUERY_CMD, QUERY_SYNC, QUERY_SCRIPT, \
     SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL
-from .utils import dlog, is_debug_verbose
-
-from io import BytesIO
-
+from .utils import dlog
 
 class OrientSocket(object):
     """docstring for OrientSocket"""
@@ -43,8 +41,8 @@ class OrientSocket(object):
         dlog("Trying to connect...")
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            self._socket.settimeout(30)  # 30 secs of timeout
             self._socket.connect( (self.host, self.port) )
-            self._socket.settimeout(30.0)  # 30 secs of timeout
             _value = self._socket.recv( FIELD_SHORT['bytes'] )
             self.protocol = struct.unpack('!h', _value)[0]
             if self.protocol > SUPPORTED_PROTOCOL:
@@ -75,22 +73,31 @@ class OrientSocket(object):
     #   in a loop and concatenate the returned packets until
     #   you have read enough.
     def read(self, _len_to_read):
-        try:
-            buf = bytearray(_len_to_read)
-            view = memoryview(buf)
-            while _len_to_read:
-                nbytes = self._socket.recv_into(view, _len_to_read)
-                view = view[nbytes:]  # slicing views is cheap
-                _len_to_read -= nbytes
-            return bytes(buf)
-        except socket.timeout as e:
-            # we don't set false because of
-            # RecordUpdateMessage/RecordCreateMessage trick
-            """@see pyorient.messages.records.RecordUpdateMessage"""
-            raise e
-        except Exception as e:
-            self._connected = False
-            raise e
+        while True:
+
+            # This is a trick to detect server disconnection
+            # or broken line issues because of
+            """:see: https://docs.python.org/2/howto/sockets.html#when-sockets-die """
+            try:
+                ready_to_read, ready_to_write, in_error = \
+                    select.select( [self._socket, ], [self._socket, ], [], 30 )
+            except select.error as e:
+                self._connected = False
+                raise e
+
+            if len(ready_to_read) > 0:
+
+                buf = bytearray(_len_to_read)
+                view = memoryview(buf)
+                while _len_to_read:
+                    n_bytes = self._socket.recv_into(view, _len_to_read)
+                    view = view[n_bytes:]  # slicing views is cheap
+                    _len_to_read -= n_bytes
+                return bytes(buf)
+
+            if len(ready_to_write) > 0:
+                # nothing to send
+                pass
 
 
 def ByteToHex( byte_str ):

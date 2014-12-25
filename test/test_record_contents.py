@@ -288,6 +288,5 @@ class CommandTestCase( unittest.TestCase ):
         print(res[0])
 
     def test_db_list(self):
-        self.skipTest('TODO SOME ASSERTS')
-        res = self.client.db_list()
-        print(res.oRecordData['databases'])
+        databases = self.client.db_list()
+        assert databases.oRecordData[ 'databases' ][ 'GratefulDeadConcerts' ]
