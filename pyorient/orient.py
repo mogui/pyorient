@@ -91,6 +91,12 @@ class OrientSocket(object):
                 view = memoryview(buf)
                 while _len_to_read:
                     n_bytes = self._socket.recv_into(view, _len_to_read)
+                    if not n_bytes:
+                        self._socket.close()
+                        # Additional cleanup
+                        raise PyOrientConnectionException(
+                            "Server seems to have went down", [])
+
                     view = view[n_bytes:]  # slicing views is cheap
                     _len_to_read -= n_bytes
                 return bytes(buf)
