@@ -59,6 +59,8 @@ TTYPE_KEY = 11
 TTYPE_EMBEDDED = 12
 TTYPE_BUFFER = 13
 TTYPE_BASE64 = 14
+TTYPE_LINKSET_START = 15
+TTYPE_LINKSET_END = 16
 
 
 class ORecordEncoder(object):
@@ -146,6 +148,7 @@ class ORecordDecoder(object):
         self._previousStackTokenType = -1
         self._isCollection = False
         self._isMap = False
+        self._isLinkSet = False
         self.escape = False
         self._stateCase = [self.__state_guess, self.__state_name,
                            self.__state_value, self.__state_string,
@@ -194,7 +197,8 @@ class ORecordDecoder(object):
             if token_type == TTYPE_NAME or \
                     token_type == TTYPE_KEY or \
                     token_type == TTYPE_COLLECTION_START or \
-                    token_type == TTYPE_MAP_START:
+                    token_type == TTYPE_MAP_START or \
+                    token_type == TTYPE_LINKSET_START:
                 pass
 
             elif token_type == TTYPE_CLASS:   # TTYPE_CLASS = 1
@@ -208,7 +212,8 @@ class ORecordDecoder(object):
                     token_type == TTYPE_EMBEDDED or \
                     token_type == TTYPE_BASE64 or \
                     token_type == TTYPE_LINK:
-                if not self._isCollection and not self._isMap:
+                if not self._isCollection and not self._isMap \
+                        and not self._isLinkSet:
                     tt, t_value = self.__stack_pop()
                     tt, t_name = self.__stack_pop()
                     # print("%s -> %s" % (tname, tvalue))
@@ -229,6 +234,17 @@ class ORecordDecoder(object):
                 self._stackTokenTypes.reverse()
                 self._stackTokenValues.reverse()
                 self.data = self.__reduce_maps( self.data )
+                pass
+
+            elif token_type == TTYPE_LINKSET_END:
+                listSet = []
+                while self.__stack_get_last_type() != TTYPE_KEY:
+                    tt, t_value = self.__stack_pop()
+                    if tt == TTYPE_LINK:
+                        listSet.append( t_value )
+                tt, t_name = self.__stack_pop()
+                # print("%s -> %s" % (tname, tvalue))
+                self.data[t_name] = listSet
                 pass
 
             else:
@@ -429,6 +445,22 @@ class ORecordDecoder(object):
             # end of current document reached
             self._continue = False
 
+        elif char == '<':
+            # [ found, state is still value
+            self._state = STATE_VALUE
+            # token type is linkset start
+            self.__stack_push(TTYPE_LINKSET_START)
+            # started linkset
+            self._isLinkSet = True
+            self._i += 1
+
+        elif char == '>':
+            # > found,
+            self.__stack_push(TTYPE_LINKSET_END)
+            self._state = STATE_COMMA
+            self._isLinkSet = False
+            self._i += 1
+
         elif char == 'f' or char == 't':
             # boolean found - switch state to boolean
             self._state = STATE_BOOLEAN
@@ -511,6 +543,8 @@ class ORecordDecoder(object):
                 self._state = STATE_VALUE
             elif self._isMap:
                 self._state = STATE_KEY
+            elif self._isLinkSet:
+                self._state = STATE_VALUE
             else:
                 self._state = STATE_GUESS
             self._i += 1
