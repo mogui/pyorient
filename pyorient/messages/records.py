@@ -2,7 +2,8 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
 from .base import BaseMessage
-from ..exceptions import PyOrientBadMethodCallException
+from ..exceptions import PyOrientBadMethodCallException, \
+    PyOrientConnectionException
 from ..types import OrientRecord
 from ..constants import FIELD_BOOLEAN, FIELD_BYTE, FIELD_BYTES, \
     FIELD_INT, FIELD_LONG, FIELD_SHORT, FIELD_STRING, RECORD_CREATE_OP, \
@@ -104,10 +105,15 @@ class RecordCreateMessage(BaseMessage):
         # is present, but don't know why,
         #
         # Not every time this INT is present!!!!
-        if self.get_protocol() >= 21:
-            self._append( FIELD_INT )  # count-of-collection-changes
-            chng = super( RecordCreateMessage, self ).fetch_response(True)
-            result.append( chng[0] )
+        # On Protocol version between 21 and 23 record Upload/Create could
+        # hangs for 30 second
+        if self.get_protocol() > 19:
+            try:
+                chng =  self._decode_field( FIELD_INT )
+                """ count-of-collection-changes """
+                result.append(chng)
+            except ( PyOrientConnectionException, TypeError ):
+                pass
 
         _changes = []
         try:
@@ -491,10 +497,15 @@ class RecordUpdateMessage(BaseMessage):
         # is present, but don't know why,
         #
         # Not every time this INT is present!!!!
-        if self.get_protocol() >= 21:
-            self._append( FIELD_INT )  # count-of-collection-changes
-            chng = super( RecordUpdateMessage, self ).fetch_response(True)
-            result.append(chng[0])
+        # On Protocol version between 21 and 23 record Upload/Create could
+        # hangs for 30 second
+        if self.get_protocol() > 19:
+            try:
+                chng =  self._decode_field( FIELD_INT )
+                """ count-of-collection-changes """
+                result.append(chng)
+            except ( PyOrientConnectionException, TypeError ):
+                pass
 
         _changes = []
         try:

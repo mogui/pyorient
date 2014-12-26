@@ -55,16 +55,6 @@ class DbOpenMessage(BaseMessage):
 
         self._append( ( FIELD_BYTE, DB_OPEN_OP ) )
 
-    def _perform_connection(self):
-        # try to connect, we inherited BaseMessage
-        conn_message = ConnectMessage( self._orientSocket )
-        # set session id and protocol
-        self._session_id = conn_message\
-            .prepare( ( self._user, self._pass, self._client_id ) )\
-            .send().fetch_response()
-        # now, self._session_id and _orient_socket.session_id are updated
-        self.get_protocol()
-
     def prepare(self, params=None ):
 
         if isinstance( params, tuple ) or isinstance( params, list ):
@@ -131,7 +121,7 @@ class DbOpenMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
-        self._append( FIELD_INT )  # cluster config string ( -1 )
+        self._append( FIELD_STRING )  # cluster config string ( -1 )
         self._append( FIELD_STRING )  # cluster release
 
         response = super( DbOpenMessage, self ).fetch_response(True)

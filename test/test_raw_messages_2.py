@@ -12,7 +12,7 @@ from pyorient.messages.commands import *
 from pyorient.messages.cluster import *
 from pyorient.messages.records import *
 from pyorient.constants import DB_TYPE_DOCUMENT, QUERY_SYNC, \
-    STORAGE_TYPE_PLOCAL, DB_TYPE_GRAPH
+    STORAGE_TYPE_PLOCAL, DB_TYPE_GRAPH, STORAGE_TYPE_MEMORY
 
 os.environ['DEBUG'] = "0"
 os.environ['DEBUG_VERBOSE'] = "0"
@@ -141,7 +141,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             print(str(e))
         finally:
             ( DbCreateMessage( connection ) ).prepare(
-                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
+                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_MEMORY)
             ).send().fetch_response()
 
         msg = DbOpenMessage( connection )
@@ -225,7 +225,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             print(str(e))
         finally:
             ( DbCreateMessage( connection ) ).prepare(
-                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
+                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_MEMORY)
             ).send().fetch_response()
 
         msg = DbOpenMessage( connection )

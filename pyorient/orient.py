@@ -73,6 +73,7 @@ class OrientSocket(object):
     #   in a loop and concatenate the returned packets until
     #   you have read enough.
     def read(self, _len_to_read):
+
         while True:
 
             # This is a trick to detect server disconnection
