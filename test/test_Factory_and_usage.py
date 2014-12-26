@@ -20,7 +20,7 @@ class CommandTestCase(unittest.TestCase):
 
         factory = pyorient.OrientDB('localhost', 2424)
 
-        factory.get_message( pyorient.CONNECT ).prepare( ("admin", "admin") )\
+        factory.get_message( pyorient.CONNECT ).prepare( ("root", "root") )\
             .send().fetch_response()
 
         db_name = 'demo_db'
@@ -79,6 +79,8 @@ class CommandTestCase(unittest.TestCase):
             .prepare( [cluster, rec] )\
             .send().fetch_response()
 
+        factory.get_message( pyorient.CONNECT ).prepare( ("root", "root") )\
+            .send().fetch_response()
 
         drop_db_result = ( factory.get_message(pyorient.DB_DROP) )\
             .prepare(['demo_db', pyorient.STORAGE_TYPE_MEMORY])\
@@ -102,7 +104,7 @@ class CommandTestCase(unittest.TestCase):
 
         factory = pyorient.OrientDB('localhost', 2424)
 
-        factory.get_message( pyorient.CONNECT ).prepare( ("admin", "admin") )\
+        factory.get_message( pyorient.CONNECT ).prepare( ("root", "root") )\
             .send().fetch_response()
 
         db_name = 'test_transactions'
@@ -179,6 +181,9 @@ class CommandTestCase(unittest.TestCase):
         assert res["#3:3"].vacanza == 'mare'
         assert res["#3:4"].vacanza == 'lago'
 
+        sid = ( factory.get_message(pyorient.CONNECT) ).prepare( ("root", "root") )\
+            .send().fetch_response()
+
         ( factory.get_message(pyorient.DB_DROP) ).prepare(
             [db_name, pyorient.STORAGE_TYPE_MEMORY ]) \
             .send().fetch_response()
@@ -189,8 +194,7 @@ class CommandTestCase(unittest.TestCase):
 
         factory = pyorient.OrientDB(connection)
 
-
-        session_id = ( factory.get_message(pyorient.CONNECT) ).prepare( ("admin", "admin") )\
+        session_id = ( factory.get_message(pyorient.CONNECT) ).prepare( ("root", "root") )\
             .send().fetch_response()
 
         db_name = "tmp_test1"

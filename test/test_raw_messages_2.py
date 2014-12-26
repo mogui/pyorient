@@ -12,7 +12,7 @@ from pyorient.messages.commands import *
 from pyorient.messages.cluster import *
 from pyorient.messages.records import *
 from pyorient.constants import DB_TYPE_DOCUMENT, QUERY_SYNC, \
-    STORAGE_TYPE_PLOCAL, DB_TYPE_GRAPH
+    STORAGE_TYPE_PLOCAL, DB_TYPE_GRAPH, STORAGE_TYPE_MEMORY
 
 os.environ['DEBUG'] = "0"
 os.environ['DEBUG_VERBOSE'] = "0"
@@ -72,7 +72,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         # ##################
         conn_msg = ConnectMessage( connection )
 
-        session_id = conn_msg.prepare( ("admin", "admin") )\
+        session_id = conn_msg.prepare( ("root", "root") )\
             .send().fetch_response()
 
         assert session_id == connection.session_id
@@ -119,7 +119,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         assert connection.protocol != -1
 
-        session_id = conn_msg.prepare( ("admin", "admin") ) \
+        session_id = conn_msg.prepare( ("root", "root") ) \
             .send().fetch_response()
 
         assert session_id == connection.session_id
@@ -141,7 +141,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             print(str(e))
         finally:
             ( DbCreateMessage( connection ) ).prepare(
-                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
+                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_MEMORY)
             ).send().fetch_response()
 
         msg = DbOpenMessage( connection )
@@ -192,6 +192,9 @@ class RawMessages_2_TestCase(unittest.TestCase):
         assert res[0].lavoro == 'ufficio'
         assert res[0].vacanza == 'montagna'
 
+        sid = ( ConnectMessage( connection ) ).prepare( ("root", "root") ) \
+            .send().fetch_response()
+
         # at the end drop the test database
         ( DbDropMessage( connection ) ).prepare([db_name]) \
             .send().fetch_response()
@@ -204,7 +207,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         conn_msg = ConnectMessage( connection )
         assert connection.protocol != -1
 
-        session_id = conn_msg.prepare( ("admin", "admin") ) \
+        session_id = conn_msg.prepare( ("root", "root") ) \
             .send().fetch_response()
 
         print("Sid: %s" % session_id)
@@ -225,7 +228,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             print(str(e))
         finally:
             ( DbCreateMessage( connection ) ).prepare(
-                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
+                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_MEMORY)
             ).send().fetch_response()
 
         msg = DbOpenMessage( connection )
@@ -269,6 +272,9 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .send().fetch_response()
 
         assert deletion is False
+
+        sid = ( ConnectMessage( connection ) ).prepare( ("root", "root") ) \
+            .send().fetch_response()
 
         # at the end drop the test database
         ( DbDropMessage( connection ) ).prepare([db_name]) \

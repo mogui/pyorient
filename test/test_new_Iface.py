@@ -19,7 +19,7 @@ class CommandTestCase(unittest.TestCase):
     def test_new_client_interface(self):
 
             client = pyorient.OrientDB("localhost", 2424)
-            session_id = client.connect( "admin", "admin" )
+            session_id = client.connect( "root", "root" )
 
             db_name = "GratefulDeadConcerts"
 
@@ -52,9 +52,10 @@ class CommandTestCase(unittest.TestCase):
             assert res._in != 0
             assert res._out != 0
 
+            session_id = client.connect( "root", "root" )
+
             # TEST COMMANDS
             db_name = 'test_commands'
-
             exists = client.db_exists( db_name, pyorient.STORAGE_TYPE_MEMORY )
 
             print("Before %r" % exists)
@@ -136,7 +137,7 @@ class CommandTestCase(unittest.TestCase):
 
         client = pyorient.OrientDB('localhost', 2424)
 
-        client.connect( "admin", "admin" )
+        client.connect( "root", "root" )
 
         db_name = 'test_transactions'
 
@@ -197,12 +198,13 @@ class CommandTestCase(unittest.TestCase):
         assert res["#3:2"].vacanza == 'mare'
         assert res["#3:3"].vacanza == 'lago'
 
+        client.connect( "root", "root" )
         client.db_drop( db_name, pyorient.STORAGE_TYPE_MEMORY )
 
     def test_reserved_words_and_batch_scripts(self):
 
         client = pyorient.OrientDB("localhost", 2424)
-        client.connect("admin", "admin")
+        client.connect("root", "root")
 
         db_name = "test_tr"
         try:
@@ -228,7 +230,7 @@ class CommandTestCase(unittest.TestCase):
 
     def test_use_of_dir(self):
         client = pyorient.OrientDB("localhost", 2424)
-        client.connect("admin", "admin")
+        client.connect("root", "root")
         dir(client)
 
 

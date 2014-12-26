@@ -6,7 +6,7 @@
 [Orientdb](http://www.orientechnologies.com/) driver for python that uses the binary protocol.
 
 Pyorient works with orientdb version 1.7 and later.
-
+> **Warning** Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
 
 
 ### Installation
@@ -74,9 +74,18 @@ client.command(
 ```
 
 ### Create a record
+> **Warning** Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
+
 ```python
 rec = { '@my_class': { 'accommodation': 'house', 'work': 'office', 'holiday': 'sea' } }
 rec_position = client.record_create( cluster_id, rec )
+```
+### Update a record
+> **Warning** Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
+
+```python
+rec3 = { '@my_class': { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' } }
+update_success = client.record_update( rec_position.rid, rec_position.rid, rec3, rec_position.version )
 ```
 
 ### Load a record

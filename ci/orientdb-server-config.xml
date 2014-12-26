@@ -142,8 +142,8 @@
     <storages>
     </storages>
     <users>
-        <user resources="*" password="16ABC88EB0CAEE3774E00BABB6D19E69FD3495D6BFA32CAF8AD95A64DA7415CE" name="root"/>
-        <user resources="*" password="admin" name="admin"/>
+        <user resources="*" password="root" name="root"/>
+        <!-- user resources="*" password="admin" name="admin"/ -->
         <user resources="connect,server.listDatabases,server.dblist" password="guest" name="guest"/>
     </users>
     <properties>

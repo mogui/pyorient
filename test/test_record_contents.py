@@ -19,7 +19,7 @@ class CommandTestCase( unittest.TestCase ):
     def setUp( self ):
 
         self.client = pyorient.OrientDB( "localhost", 2424 )
-        self.client.connect( "admin", "admin" )
+        self.client.connect( "root", "root" )
 
         db_name = "test_tr"
         try:
@@ -286,3 +286,8 @@ class CommandTestCase( unittest.TestCase ):
         assert res[0].oRecordData['c'] == 3
 
         print(res[0])
+
+    def test_db_list(self):
+        self.client.connect( "root", "root" )
+        databases = self.client.db_list()
+        assert databases.oRecordData[ 'databases' ][ 'GratefulDeadConcerts' ]

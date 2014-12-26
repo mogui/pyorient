@@ -55,16 +55,6 @@ class DbOpenMessage(BaseMessage):
 
         self._append( ( FIELD_BYTE, DB_OPEN_OP ) )
 
-    def _perform_connection(self):
-        # try to connect, we inherited BaseMessage
-        conn_message = ConnectMessage( self._orientSocket )
-        # set session id and protocol
-        self._session_id = conn_message\
-            .prepare( ( self._user, self._pass, self._client_id ) )\
-            .send().fetch_response()
-        # now, self._session_id and _orient_socket.session_id are updated
-        self.get_protocol()
-
     def prepare(self, params=None ):
 
         if isinstance( params, tuple ) or isinstance( params, list ):
@@ -83,13 +73,6 @@ class DbOpenMessage(BaseMessage):
                 # Use default for non existent indexes
                 pass
 
-        # if session id is -1, so we aren't connected
-        # because ConnectMessage set the client id
-        # this block of code check for session because this class
-        # can be initialized directly from orient socket
-        if self._orientSocket.session_id < 0:
-            self._perform_connection()
-
         self._append( ( FIELD_STRINGS, [NAME, VERSION] ) )
         self._append( ( FIELD_SHORT, SUPPORTED_PROTOCOL ) )
         self._append( ( FIELD_STRING, self._client_id ) )
@@ -98,7 +81,7 @@ class DbOpenMessage(BaseMessage):
             self._append( ( FIELD_STRING, self._serialization_type ) )
 
         if self.get_protocol() > 26:
-            self._append( ( FIELD_BOOLEAN, True ) )
+            self._append( ( FIELD_BOOLEAN, False ) )
 
         self._append( ( FIELD_STRING, self._db_name ) )
         self._append( ( FIELD_STRING, self._db_type ) )
@@ -110,11 +93,20 @@ class DbOpenMessage(BaseMessage):
 
     def fetch_response(self):
         self._append( FIELD_INT )  # session_id
-        # self._append( FIELD_STRING )  # session_id # if FALSE NO PRESENT??
+        if self.get_protocol() > 26:
+            self._append( FIELD_STRING )  # token # if FALSE: Placeholder
+
         self._append( FIELD_SHORT )  # cluster_num
 
-        self._session_id, cluster_num = \
-            super( DbOpenMessage, self ).fetch_response()
+        result = super( DbOpenMessage, self ).fetch_response()
+        if self.get_protocol() > 26:
+            self._session_id, self._token, cluster_num = result
+            self._update_token()
+        else:
+            self._session_id, cluster_num = result
+
+        # IMPORTANT needed to pass the id to other messages
+        self._update_socket_id()
 
         clusters = []
         try:
@@ -137,7 +129,7 @@ class DbOpenMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
-        self._append( FIELD_INT )  # cluster config string ( -1 )
+        self._append( FIELD_STRING )  # cluster config string ( -1 )
         self._append( FIELD_STRING )  # cluster release
 
         response = super( DbOpenMessage, self ).fetch_response(True)

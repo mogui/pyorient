@@ -35,6 +35,7 @@ class BaseMessage(object):
         self._orientSocket = sock
         self._protocol = self._orientSocket.protocol
         self._session_id = self._orientSocket.session_id
+        self._token = self._orientSocket.token
 
         self._header = []
         """:type : list of [str]"""
@@ -60,6 +61,11 @@ class BaseMessage(object):
     def _update_socket_id(self):
         """Force update of socket id from inside the class"""
         self._orientSocket.session_id = self._session_id
+        return self
+
+    def _update_token(self):
+        """Force update of socket token from inside the class"""
+        self._orientSocket.token = self._token
         return self
 
     def _reset_fields_definition(self):

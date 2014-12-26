@@ -2,13 +2,16 @@
 
 build(){
 
-    if command_exists "mvn" && [[ "$1" != *"-"* ]]; then
+    if command_exists "mvn" && [[ "$1" != *"-"* ]] && [[ "$1" != *"SNAPSHOT"* ]]; then
         echo "Build started with MAVEN"
         build_via_mvn $1 $2
+    elif [[ "$1" == *"SNAPSHOT"* ]]; then
+        echo "Build by clone/pull github develop branch"
+        build_via_git $1 $2
     else
         echo "Build by download from github repository"
         build_via_github $1 $2
-    fi;
+    fi
 
 }
 
@@ -58,6 +61,35 @@ download () {
         echo "Cannot download $1 [missing wget or curl]"
         exit 1
     fi
+}
+
+build_via_git (){
+
+    ODB_VERSION=$1
+    CI_DIR=$2
+
+    cd ${CI_DIR}
+    if [ ! -d "orientdb-develop" ]; then
+        echo "No git clone found."
+        echo "git clone https://github.com/orientechnologies/orientdb.git orientdb-develop"
+        git clone https://github.com/orientechnologies/orientdb.git orientdb-develop
+        cd orientdb-develop
+        git checkout develop
+    else
+        echo "Git clone found. Updating."
+        cd orientdb-develop
+        git checkout develop
+    fi
+
+    git pull origin develop
+    ant clean install
+
+    echo "mv ${CI_DIR}/releases/* ${CI_DIR}"
+    mv ${CI_DIR}/releases/* ${CI_DIR}
+
+    echo "rm -rf ${CI_DIR}/releases"
+    rm -rf ${CI_DIR}/releases
+
 }
 
 build_via_github (){

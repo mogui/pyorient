@@ -2,7 +2,8 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
 from .base import BaseMessage
-from ..exceptions import PyOrientBadMethodCallException
+from ..exceptions import PyOrientBadMethodCallException, \
+    PyOrientConnectionException
 from ..types import OrientRecord
 from ..constants import FIELD_BOOLEAN, FIELD_BYTE, FIELD_BYTES, \
     FIELD_INT, FIELD_LONG, FIELD_SHORT, FIELD_STRING, RECORD_CREATE_OP, \
@@ -104,29 +105,21 @@ class RecordCreateMessage(BaseMessage):
         # is present, but don't know why,
         #
         # Not every time this INT is present!!!!
-        # The next fetch too.
-        #
-        # So, i double check for protocol here
-        # and add a socket timeout.
+        # On Protocol version between 21 and 23 record Upload/Create could
+        # not work
+        chng = 0
         if self.get_protocol() > 19:
-            import socket
             try:
-                self._orientSocket._socket.settimeout(0.1)
-                self._append( FIELD_INT )  # count-of-collection-changes
-                chng = super( RecordCreateMessage, self ).fetch_response(True)
-                result.append(chng[0])
-            except socket.timeout as e:
-                # socket timeout ignore
-                # TODO: ???
+                chng =  self._decode_field( FIELD_INT )
+                """ count-of-collection-changes """
+            except ( PyOrientConnectionException, TypeError ):
                 pass
-            finally:
-                self._orientSocket._socket.settimeout(None)  # reset timeout
 
         _changes = []
         try:
-            if result[2] > 0 and self.get_protocol() > 23:
+            if chng > 0 and self.get_protocol() > 23:
 
-                for x in range( 0, result[2] ):
+                for x in range( 0, chng ):
                     change = [
                         self._decode_field( FIELD_LONG ),  # (uuid-most-sig-bits:long)
                         self._decode_field( FIELD_LONG ),  # (uuid-least-sig-bits:long)
@@ -140,10 +133,15 @@ class RecordCreateMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
-        rid = "#" + self._cluster_id + ":" + str(result[0])
+        if self.get_protocol() > 25:
+            rid = "#" + str(result[0]) + ":" + str(result[1])
+            version = result[2]
+        else:
+            rid = "#" + self._cluster_id + ":" + str(result[0])
+            version = result[1]
 
         self._record_content.update(
-            version=result[1],
+            version=version,
             rid=rid
         )
 
@@ -318,8 +316,12 @@ class RecordLoadMessage(BaseMessage):
             # Use default for non existent indexes
             pass
 
-        _cluster, _position = self._record_id.split( ':' )
-        # print("aa", repr(self._record_id), repr(_cluster), repr(_position))
+        try:
+            _cluster, _position = self._record_id.split( ':' )
+        except ValueError:
+            raise PyOrientBadMethodCallException( "Not valid Rid to load: "
+                                                  + self._record_id, [] )
+
         if _cluster[0] == '#':
             _cluster = _cluster[1:]
 
@@ -335,26 +337,35 @@ class RecordLoadMessage(BaseMessage):
         self._append( FIELD_BYTE )
         _status = super( RecordLoadMessage, self ).fetch_response()[0]
 
-        __record = []
         _record = OrientRecord()
         if _status != 0:
-            self._append( FIELD_BYTES )  # record content
-            self._append( FIELD_INT )    # record version
-            self._append( FIELD_BYTE )   # record type
+
+            if self.get_protocol() > 27:
+                self._append( FIELD_BYTE )   # record type
+                self._append( FIELD_INT )    # record version
+                self._append( FIELD_BYTES )  # record content
+                rec_position = 2
+            else:
+                self._append( FIELD_BYTES )  # record content
+                self._append( FIELD_INT )    # record version
+                self._append( FIELD_BYTE )   # record type
+                rec_position = 0
 
             __record = super( RecordLoadMessage, self ).fetch_response(True)
             # bug in orientdb csv serialization in snapshot 2.0,
             # strip trailing spaces
-            _record = ORecordDecoder( __record[0].rstrip() )
+            _record = ORecordDecoder( __record[ rec_position ].rstrip() )
 
             self._read_async_records()  # get cache
 
-        return OrientRecord(
-            _record.data,
-            o_class=_record.className,
-            rid=self._record_id,
-            version=__record[1]
-        )
+            _record = OrientRecord(
+                _record.data,
+                o_class=_record.className,
+                rid=self._record_id,
+                version=__record[1]
+            )
+
+        return _record
 
     def set_record_id(self, _record_id):
         self._record_id = _record_id
@@ -499,29 +510,21 @@ class RecordUpdateMessage(BaseMessage):
         # is present, but don't know why,
         #
         # Not every time this INT is present!!!!
-        # The next fetch too.
-        #
-        # So, i double check for protocol here
-        # and add a socket timeout.
+        # On Protocol version between 21 and 23 record Upload/Create could
+        # not work
+        chng = 0
         if self.get_protocol() > 19:
-            import socket
             try:
-                self._orientSocket._socket.settimeout(0.1)
-                self._append( FIELD_INT )  # count-of-collection-changes
-                chng = super( RecordUpdateMessage, self ).fetch_response(True)
-                result.append(chng[0])
-            except socket.timeout as e:
-                # socket timeout ignore
-                # TODO: ???
+                chng =  self._decode_field( FIELD_INT )
+                """ count-of-collection-changes """
+            except ( PyOrientConnectionException, TypeError ):
                 pass
-            finally:
-                self._orientSocket._socket.settimeout(None)  # reset timeout
 
         _changes = []
         try:
-            if result[1] > 0 and self.get_protocol() > 23:
+            if chng > 0 and self.get_protocol() > 23:
 
-                for x in range( 0, result[1] ):
+                for x in range( 0, chng ):
                     change = [
                         self._decode_field( FIELD_LONG ),  # (uuid-most-sig-bits:long)
                         self._decode_field( FIELD_LONG ),  # (uuid-least-sig-bits:long)
@@ -539,7 +542,7 @@ class RecordUpdateMessage(BaseMessage):
             version=result[0]
         )
 
-        return [ self._record_content, result[1], _changes ]
+        return [ self._record_content, chng, _changes ]
 
 
     def set_data_segment_id(self, data_segment_id):

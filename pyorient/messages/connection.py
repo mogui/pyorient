@@ -55,11 +55,18 @@ class ConnectMessage(BaseMessage):
 
     def fetch_response(self):
         self._append( FIELD_INT )
-        self._append( FIELD_STRINGS )
-        self._session_id = super( ConnectMessage, self ).fetch_response()[0]
+        if self.get_protocol() > 26:
+            self._append( FIELD_STRINGS )
+
+        result = super( ConnectMessage, self ).fetch_response()
 
         # IMPORTANT needed to pass the id to other messages
+        self._session_id = result[0]
         self._update_socket_id()
+
+        if self.get_protocol() > 26:
+            self._token = result[1]
+            self._update_token()
 
         return self._session_id
 
