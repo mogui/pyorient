@@ -84,7 +84,7 @@ rec_position = client.record_create( cluster_id, rec )
 > **Warning** Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
 
 ```python
-rec3 = { '@my_class': { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' } }
+rec3 = { '@my_class': { 'accommodation': 'hotel', 'work': 'home', 'holiday': 'hills' } }
 update_success = client.record_update( rec_position.rid, rec_position.rid, rec3, rec_position.version )
 ```
 
