@@ -52,6 +52,7 @@ if [ ! -d "$ODB_DIR" ]; then
   fi
 
   cp -a ${PARENT_DIR}/ci/GratefulDeadConcerts "${ODB_DIR}/databases/"
+  cp -a ${PARENT_DIR}/ci/VehicleHistoryGraph "${ODB_DIR}/databases/"
 else
   echo "!!! Found OrientDB v${ODB_VERSION} in ${ODB_DIR} !!!"
 fi
