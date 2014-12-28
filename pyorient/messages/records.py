@@ -108,7 +108,7 @@ class RecordCreateMessage(BaseMessage):
         # On Protocol version between 21 and 23 record Upload/Create could
         # not work
         chng = 0
-        if self.get_protocol() > 19:
+        if self.get_protocol() > 21:
             try:
                 chng =  self._decode_field( FIELD_INT )
                 """ count-of-collection-changes """
@@ -513,7 +513,7 @@ class RecordUpdateMessage(BaseMessage):
         # On Protocol version between 21 and 23 record Upload/Create could
         # not work
         chng = 0
-        if self.get_protocol() > 19:
+        if self.get_protocol() > 21:
             try:
                 chng =  self._decode_field( FIELD_INT )
                 """ count-of-collection-changes """
