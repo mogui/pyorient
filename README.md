@@ -223,7 +223,7 @@ client.command("insert into Animal set name = 'rat', specie = 'rodent'")
 
 # query the values 
 client.query("select * from Animal")
-[<OrientRecord at 0x7f…>, …]
+[<OrientRecord at 0x7f>..., ...]
 
 # Create the vertex and insert the food values
 
@@ -263,7 +263,7 @@ for food in animal_foods:
 
 - Fork the project.
 - Make your changes.
-- Add tests for it. This is important so I don’t break it in a future version unintentionally.
+- Add tests for it. This is important so I don't break it in a future version unintentionally.
 - Send me a pull request.
 - ???
 - PROFIT
@@ -274,4 +274,4 @@ for food in animal_foods:
 
 ## Copyright
 
-Copyright © 2014 Niko Usai, Domenico Lupinetti. See LICENSE for details.
+Copyright (c) 2014 Niko Usai, Domenico Lupinetti. See LICENSE for details.
