@@ -50,6 +50,11 @@ client.db_exists( db_name, pyorient.STORAGE_TYPE_MEMORY )
 client.db_open( db_name, "admin", "admin" )
 ```
 
+### Close a DB and destroy the connection ( by OrientDB design )
+```python
+client.db_close()
+```
+
 ### Get the the list of databases ( needs to be connected )
 ```python
 client.db_list()
