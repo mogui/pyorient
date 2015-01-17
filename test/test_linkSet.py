@@ -70,3 +70,49 @@ class LinkSetTestCase( unittest.TestCase ):
         assert len(res) == 3
         for user in res:
             assert user.oRecordData['roles'][0].clusterID == '4'
+
+    def testEmbed(self):
+
+        self._links_cluster_id = self.client.command("create class test_embed "
+                                                     "extends V")[0]
+
+        self.client.command("create vertex test_embed "
+                            "set embMap = "
+                            "{'en': 'english','it':'italian', 'ru': 'russian'}")
+
+        x = self.client.query("SELECT embMap.keys() FROM #13:0")[0].oRecordData
+
+        assert 'embMap' in x
+        assert 'it' in x['embMap']
+        assert 'en' in x['embMap']
+        assert 'ru' in x['embMap']
+
+        x = self.client.query(
+            "SELECT embMap.keys().asString() FROM #13:0"
+        )[0].oRecordData
+
+        assert 'embMap' in x
+        assert x['embMap'] == '[it, en, ru]'
+
+    def testEmbedNum(self):
+
+        self._links_cluster_id = self.client.command("create class test_embed "
+                                                     "extends V")[0]
+
+        self.client.command("create vertex test_embed "
+                            "set embMap = "
+                            "{'en': 1,'it':2, 'ru':3}")
+
+        x = self.client.query("SELECT embMap.values() FROM #13:0")[0].oRecordData
+
+        assert 'embMap' in x
+        assert 1 in x['embMap']
+        assert 2 in x['embMap']
+        assert 3 in x['embMap']
+
+        x = self.client.query(
+            "SELECT embMap.values().asString() FROM #13:0"
+        )[0].oRecordData
+
+        assert 'embMap' in x
+        assert x['embMap'] == '[2, 1, 3]'

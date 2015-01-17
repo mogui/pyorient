@@ -240,7 +240,7 @@ class ORecordDecoder(object):
                 listSet = []
                 while self.__stack_get_last_type() != TTYPE_KEY:
                     tt, t_value = self.__stack_pop()
-                    if tt == TTYPE_LINK:
+                    if tt != TTYPE_LINKSET_END and tt != TTYPE_LINKSET_START:
                         listSet.append( t_value )
                 tt, t_name = self.__stack_pop()
                 # print("%s -> %s" % (tname, tvalue))
