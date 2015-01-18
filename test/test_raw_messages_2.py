@@ -175,6 +175,10 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         assert update_success[0] != 0
 
+        if connection.protocol <= 21:
+            return unittest.skip("Protocol {!r} does not works well".format(
+                connection.protocol ))  # skip test
+
         res = ( CommandMessage( connection ) )\
             .prepare( [ QUERY_SYNC, "select from " + rec_position.rid ] )\
             .send().fetch_response()
