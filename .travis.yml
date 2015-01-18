@@ -5,9 +5,13 @@ python:
   - "3.4"
 
 before_script:
+  - pip install coveralls
   - ./ci/start-ci.sh $ORIENTDB_VERSION
 
-script: nosetests -vv
+script: nosetests -vv --with-coverage --cover-xml --cover-erase --cover-package=pyorient
+
+after_success:
+  - coveralls
 
 env:
   - ORIENTDB_VERSION=2.0-rc2
