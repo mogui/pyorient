@@ -152,8 +152,9 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         try:
             create_class = CommandMessage(connection)
-            create_class.prepare((QUERY_CMD, "create class my_class extends V"))\
-                .send().fetch_response()
+            cluster = create_class.prepare((QUERY_CMD, "create class my_class "
+                                                       "extends V"))\
+                .send().fetch_response()[0]
         except PyOrientCommandException:
             # class my_class already exists
             pass
@@ -161,7 +162,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         # classes are not allowed in record create/update/load
         rec = { '@my_class': { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' } }
         rec_position = ( RecordCreateMessage(connection) )\
-            .prepare( ( 1, rec ) )\
+            .prepare( ( cluster, rec ) )\
             .send().fetch_response()
 
         print("New Rec Position: %s" % rec_position.rid)
@@ -169,14 +170,10 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         rec = { '@my_class': { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' } }
         update_success = ( RecordUpdateMessage(connection) )\
-            .prepare( ( 1, rec_position.rid, rec ) )\
+            .prepare( ( cluster, rec_position.rid, rec ) )\
             .send().fetch_response()
 
         assert update_success[0] != 0
-
-        # res = ( CommandMessage( connection ) )\
-        #     .prepare( [ QUERY_SYNC, "select from " + rec_position.rid ] )\
-        #     .send().fetch_response()
 
         res = [ ( RecordLoadMessage(connection) ).prepare(
             [ rec_position.rid ]
@@ -189,8 +186,8 @@ class RawMessages_2_TestCase(unittest.TestCase):
         print("%r" % res[0].lavoro)
         print("%r" % res[0].vacanza)
 
-        assert res[0].rid == '#1:2'
-        assert res[0].o_class is None
+        assert res[0].rid == '#11:0'
+        assert res[0].o_class == 'my_class'
         assert res[0].version >= 0
         assert res[0].alloggio == 'albergo'
         assert res[0].lavoro == 'ufficio'
