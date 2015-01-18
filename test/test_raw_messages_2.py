@@ -141,7 +141,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             print(str(e))
         finally:
             ( DbCreateMessage( connection ) ).prepare(
-                (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_MEMORY)
+                (db_name, DB_TYPE_GRAPH, STORAGE_TYPE_MEMORY)
             ).send().fetch_response()
 
         msg = DbOpenMessage( connection )
