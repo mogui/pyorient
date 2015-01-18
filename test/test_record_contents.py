@@ -291,3 +291,13 @@ class CommandTestCase( unittest.TestCase ):
         self.client.connect( "root", "root" )
         databases = self.client.db_list()
         assert databases.oRecordData[ 'databases' ][ 'GratefulDeadConcerts' ]
+
+    def test_datetime(self):
+        x = self.client.query(
+            "SELECT DATE('2015-01-02 03:04:05')"
+        )[0].oRecordData
+
+        import datetime
+        assert 'DATE' in x
+        assert isinstance( x['DATE'], datetime.datetime )
+        assert str( x['DATE'] ) == '2015-01-02 03:04:05'
