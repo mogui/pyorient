@@ -174,9 +174,13 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         assert update_success[0] != 0
 
-        res = ( CommandMessage( connection ) )\
-            .prepare( [ QUERY_SYNC, "select from " + rec_position.rid ] )\
-            .send().fetch_response()
+        # res = ( CommandMessage( connection ) )\
+        #     .prepare( [ QUERY_SYNC, "select from " + rec_position.rid ] )\
+        #     .send().fetch_response()
+
+        res = [ ( RecordLoadMessage(connection) ).prepare(
+            [ rec_position.rid ]
+        ).send().fetch_response() ]
 
         print("%r" % res[0].rid)
         print("%r" % res[0].o_class)
