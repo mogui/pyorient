@@ -1,6 +1,7 @@
 # pyorient
 
-[![Build Status](https://travis-ci.org/Ostico/pyorient.svg?branch=master)](https://travis-ci.org/Ostico/pyorient)
+[![Build Status](https://travis-ci.org/Ostico/pyorient.svg?branch=master)]
+(https://travis-ci.org/Ostico/pyorient) [![Coverage Status](https://coveralls.io/repos/Ostico/pyorient/badge.svg?branch=master)](https://coveralls.io/r/Ostico/pyorient?branch=master)
 
 
 [Orientdb](http://www.orientechnologies.com/) driver for python that uses the binary protocol.
