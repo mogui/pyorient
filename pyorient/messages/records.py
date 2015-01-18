@@ -115,23 +115,23 @@ class RecordCreateMessage(BaseMessage):
             except ( PyOrientConnectionException, TypeError ):
                 pass
 
-        _changes = []
-        try:
-            if chng > 0 and self.get_protocol() > 23:
+            _changes = []
+            try:
+                if chng > 0 and self.get_protocol() > 23:
 
-                for x in range( 0, chng ):
-                    change = [
-                        self._decode_field( FIELD_LONG ),  # (uuid-most-sig-bits:long)
-                        self._decode_field( FIELD_LONG ),  # (uuid-least-sig-bits:long)
-                        self._decode_field( FIELD_LONG ),  # (updated-file-id:long)
-                        self._decode_field( FIELD_LONG ),  # (updated-page-index:long)
-                        self._decode_field( FIELD_INT )    # (updated-page-offset:int)
-                    ]
-                    _changes.append( change )
+                    for x in range( 0, chng ):
+                        change = [
+                            self._decode_field( FIELD_LONG ),  # (uuid-most-sig-bits:long)
+                            self._decode_field( FIELD_LONG ),  # (uuid-least-sig-bits:long)
+                            self._decode_field( FIELD_LONG ),  # (updated-file-id:long)
+                            self._decode_field( FIELD_LONG ),  # (updated-page-index:long)
+                            self._decode_field( FIELD_INT )    # (updated-page-offset:int)
+                        ]
+                        _changes.append( change )
 
-        except IndexError:
-            # Should not happen because of protocol check
-            pass
+            except IndexError:
+                # Should not happen because of protocol check
+                pass
 
         if self.get_protocol() > 25:
             rid = "#" + str(result[0]) + ":" + str(result[1])
@@ -515,28 +515,28 @@ class RecordUpdateMessage(BaseMessage):
         chng = 0
         if self.get_protocol() > 21:
             try:
-                chng =  self._decode_field( FIELD_INT )
+                chng = self._decode_field( FIELD_INT )
                 """ count-of-collection-changes """
             except ( PyOrientConnectionException, TypeError ):
                 pass
 
-        _changes = []
-        try:
-            if chng > 0 and self.get_protocol() > 23:
+            _changes = []
+            try:
+                if chng > 0 and self.get_protocol() > 23:
 
-                for x in range( 0, chng ):
-                    change = [
-                        self._decode_field( FIELD_LONG ),  # (uuid-most-sig-bits:long)
-                        self._decode_field( FIELD_LONG ),  # (uuid-least-sig-bits:long)
-                        self._decode_field( FIELD_LONG ),  # (updated-file-id:long)
-                        self._decode_field( FIELD_LONG ),  # (updated-page-index:long)
-                        self._decode_field( FIELD_INT )    # (updated-page-offset:int)
-                    ]
-                    _changes.append( change )
+                    for x in range( 0, chng ):
+                        change = [
+                            self._decode_field( FIELD_LONG ),  # (uuid-most-sig-bits:long)
+                            self._decode_field( FIELD_LONG ),  # (uuid-least-sig-bits:long)
+                            self._decode_field( FIELD_LONG ),  # (updated-file-id:long)
+                            self._decode_field( FIELD_LONG ),  # (updated-page-index:long)
+                            self._decode_field( FIELD_INT )    # (updated-page-offset:int)
+                        ]
+                        _changes.append( change )
 
-        except IndexError:
-            # append an empty field
-            result.append(None)
+            except IndexError:
+                # append an empty field
+                result.append(None)
 
         self._record_content.update(
             version=result[0]
