@@ -108,6 +108,7 @@ class RecordCreateMessage(BaseMessage):
         # On Protocol version between 21 and 23 record Upload/Create could
         # not work
         chng = 0
+        _changes = []
         if self.get_protocol() > 21:
             try:
                 chng =  self._decode_field( FIELD_INT )
@@ -115,7 +116,6 @@ class RecordCreateMessage(BaseMessage):
             except ( PyOrientConnectionException, TypeError ):
                 pass
 
-            _changes = []
             try:
                 if chng > 0 and self.get_protocol() > 23:
 
@@ -513,6 +513,7 @@ class RecordUpdateMessage(BaseMessage):
         # On Protocol version between 21 and 23 record Upload/Create could
         # not work
         chng = 0
+        _changes = []
         if self.get_protocol() > 21:
             try:
                 chng = self._decode_field( FIELD_INT )
@@ -520,7 +521,6 @@ class RecordUpdateMessage(BaseMessage):
             except ( PyOrientConnectionException, TypeError ):
                 pass
 
-            _changes = []
             try:
                 if chng > 0 and self.get_protocol() > 23:
 
