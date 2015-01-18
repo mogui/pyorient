@@ -206,6 +206,10 @@ class CommandTestCase(unittest.TestCase):
         client = pyorient.OrientDB("localhost", 2424)
         client.connect("root", "root")
 
+        if client._connection.protocol <= 21:
+            return unittest.skip("Protocol {!r} does not works well".format(
+                client._connection.protocol ))  # skip test
+
         db_name = "test_tr"
         try:
             client.db_drop(db_name)
