@@ -19,6 +19,7 @@ from __future__ import print_function
 
 import re
 import time
+import sys
 from datetime import date, datetime
 from .types import OrientRecordLink, OrientRecord, OrientBinaryObject
 from .utils import is_debug_active
@@ -92,14 +93,34 @@ class ORecordEncoder(object):
 
     def parse_value(self, value):
 
+        # if sys.version_info[0] < 3:
+        #     if isinstance(value, long):
+        #         ret = str(value) + 'l'
+        #     elif isinstance(value, int):
+        #         ret = str(value)
+        # else:
+        #     if value > 2147483647:
+        #         ret = str(value) + 'l'
+        #     elif isinstance(value, int):
+        #         ret = str(value)
+
+
         if isinstance(value, str):
             ret = '"' + value + '"'
-        elif isinstance(value, int):
-            ret = str(value)
         elif isinstance(value, float):
             ret = str(value) + 'f'
-        elif isinstance(value, long):
+
+        elif sys.version_info[0] >= 3 and isinstance(value, int):
+            if value > 2147483647:
+                ret = str(value) + 'l'
+            else:
+                ret = str(value)
+
+        elif sys.version_info[0] < 3 and isinstance(value, long):
             ret = str(value) + 'l'
+        elif isinstance(value, int):
+            ret = str(value)
+
         elif isinstance(value, datetime):
             ret = str(int(time.mktime(value.timetuple()))) + 't'
         elif isinstance(value, date):
