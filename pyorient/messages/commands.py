@@ -113,7 +113,11 @@ class CommandMessage(BaseMessage):
                 or self._command_type == QUERY_SYNC \
                 or self._command_type == QUERY_GREMLIN:
             # set limit from sql string every times override the limit param
-            _payload_definition.append( ( FIELD_INT, self._limit ) )
+            if ' limit ' not in self._query:
+                _payload_definition.append( ( FIELD_INT, self._limit ) )
+            else:
+                _payload_definition.append( ( FIELD_INT, -1 ) )
+
             _payload_definition.append( ( FIELD_STRING, self._fetch_plan ) )
 
         if self._command_type == QUERY_SCRIPT:
