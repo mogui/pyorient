@@ -240,11 +240,13 @@ client.command("insert into Food set name = 'pea', color = 'green'")
 client.command('create class Eat extends E')
 
 # Lets the rat likes to eat pea
-eat_edges = client.command("""
-        create edge Eat
-        from (select from Animal where name = 'rat')
-        to (select from Food where name = 'pea')
- """)
+eat_edges = client.command(
+    "create edge Eat from ("
+    "select from Animal where name = 'rat'"
+    ") to ("
+    "select from Food where name = 'pea'"
+    ")"
+)
  
 # Who eats the peas?
 pea_eaters = client.command("select expand( in( Eat )) from Food where name = 'pea'")
