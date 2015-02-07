@@ -5,7 +5,7 @@ import unittest
 import pyorient
 
 
-class LinkSetTestCase( unittest.TestCase ):
+class LinkSetTestCase(unittest.TestCase):
     """ Command Test Case """
 
     def setUp(self):
@@ -59,14 +59,14 @@ class LinkSetTestCase( unittest.TestCase ):
             "sites.id INVERSE")
 
     def test_read_LinkSet(self):
-        res = self.client.query( "SELECT FROM sites where id = 3" )
+        res = self.client.query("SELECT FROM sites where id = 3")
         assert len(res[0].oRecordData['link']) == 4
         for link in res[0].oRecordData['link']:
             assert link.clusterID == '11', "Failed to assert that 11 equals " + \
                                            link.clusterID
 
     def test_oUser(self):
-        res = self.client.query( "select from oUser" )
+        res = self.client.query("select from oUser")
         assert len(res) == 3
         for user in res:
             assert user.oRecordData['roles'][0].clusterID == '4'
@@ -103,7 +103,8 @@ class LinkSetTestCase( unittest.TestCase ):
                             "set embMap = "
                             "{'en': 1,'it':2, 'ru':3}")
 
-        x = self.client.query("SELECT embMap.values() FROM #13:0")[0].oRecordData
+        x = self.client.query("SELECT embMap.values() FROM #13:0")[
+            0].oRecordData
 
         assert 'embMap' in x
         assert 1 in x['embMap']
@@ -116,3 +117,13 @@ class LinkSetTestCase( unittest.TestCase ):
 
         assert 'embMap' in x
         assert x['embMap'] == '[2, 1, 3]'
+
+    def testEmbeddedMapsInList(self):
+        class_id1 = self.client.command("CREATE VERTEX V SET mapInList = "
+                                        "[ {'one': 2, 'three': 4 } ]"
+                                        )[0].oRecordData
+
+        assert 'mapInList' in class_id1
+        assert len(class_id1[ 'mapInList' ]) == 1
+        assert class_id1[ 'mapInList' ][0]['one'] == 2
+        assert class_id1[ 'mapInList' ][0]['three'] == 4
