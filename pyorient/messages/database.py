@@ -79,9 +79,8 @@ class DbOpenMessage(BaseMessage):
 
         if self.get_protocol() > 21:
             self._append( ( FIELD_STRING, self._serialization_type ) )
-
-        if self.get_protocol() > 26:
-            self._append( ( FIELD_BOOLEAN, False ) )
+            if self.get_protocol() > 26:
+                self._append( ( FIELD_BOOLEAN, self._request_token ) )
 
         self._append( ( FIELD_STRING, self._db_name ) )
         self._append( ( FIELD_STRING, self._db_type ) )
@@ -100,8 +99,10 @@ class DbOpenMessage(BaseMessage):
 
         result = super( DbOpenMessage, self ).fetch_response()
         if self.get_protocol() > 26:
-            self._session_id, self._token, cluster_num = result
-            self._update_token()
+            self._session_id, self._auth_token, cluster_num = result
+            if self._auth_token == b'':
+                self.set_session_token( False )
+            self._update_socket_token()
         else:
             self._session_id, cluster_num = result
 

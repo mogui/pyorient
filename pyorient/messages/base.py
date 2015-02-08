@@ -22,7 +22,7 @@ class BaseMessage(object):
         return self._orientSocket
 
     def is_connected(self):
-        return self._session_id != -1
+        return self._connected is True
 
     def database_opened(self):
         return self._db_opened
@@ -35,7 +35,10 @@ class BaseMessage(object):
         self._orientSocket = sock
         self._protocol = self._orientSocket.protocol
         self._session_id = self._orientSocket.session_id
-        self._token = self._orientSocket.token
+
+        # handles token auth
+        self._auth_token = self._orientSocket.auth_token
+        self._request_token = False
 
         self._header = []
         """:type : list of [str]"""
@@ -48,24 +51,49 @@ class BaseMessage(object):
 
         self._command = chr(0)
         self._db_opened = self._orientSocket.db_opened
+        self._connected = self._orientSocket.connected
         self._serialization_type = self._orientSocket.serialization_type
         self._output_buffer = b''
         self._input_buffer = b''
 
-        #callback function for async queries
+        # callback function for async queries
         self._callback = None
 
         global in_transaction
         in_transaction = False
+
+    def set_session_token( self, token='' ):
+        """
+        :param token: Set the request to True to use the token authentication
+        :type token: bool|string
+        :return: self
+        """
+        if token != '' and token is not None:
+            if type(token) is bool:
+                self._request_token = token
+            elif type(token) is str or type(token) is bytes:
+                self._request_token = True
+                self._auth_token = token
+                self._db_opened = True
+                self._connected = True
+                self._update_socket_token()
+        return self
+
+    def get_session_token( self ):
+        """
+        Retrieve the session token to reuse after
+        :return:
+        """
+        return self._auth_token
 
     def _update_socket_id(self):
         """Force update of socket id from inside the class"""
         self._orientSocket.session_id = self._session_id
         return self
 
-    def _update_token(self):
+    def _update_socket_token(self):
         """Force update of socket token from inside the class"""
-        self._orientSocket.token = self._token
+        self._orientSocket.auth_token = self._auth_token
         return self
 
     def _reset_fields_definition(self):
@@ -74,6 +102,19 @@ class BaseMessage(object):
     def prepare(self, *args):
         # session_id
         self._fields_definition.insert( 1, ( FIELD_INT, self._session_id ) )
+
+        from .connection import ConnectMessage
+        from .database import DbOpenMessage
+        """
+        #  Token authentication handling
+        #  we must recognize ConnectMessage and DbOpenMessage messages
+        """
+        if not isinstance( self, ( ConnectMessage, DbOpenMessage ) ) \
+                and self._request_token is True:
+            self._fields_definition.insert(
+                2, ( FIELD_STRING, self._auth_token )
+            )
+
         self._output_buffer = b''.join(
             self._encode_field( x ) for x in self._fields_definition
         )
@@ -90,8 +131,21 @@ class BaseMessage(object):
         self._header = [ self._decode_field( FIELD_BYTE ),
                          self._decode_field( FIELD_INT ) ]
 
+        from .connection import ConnectMessage
+        from .database import DbOpenMessage
+        """
+        #  Token authentication handling
+        #  we must recognize ConnectMessage and DbOpenMessage messages
+        """
+        if not isinstance( self, ( ConnectMessage, DbOpenMessage ) ) \
+                and self._request_token is True:
+            token_refresh = self._decode_field( FIELD_STRING )
+            if token_refresh != b'':
+                self._auth_token = token_refresh
+                self._update_socket_token()
+
         # decode message errors and raise an exception
-        if self._header[0]:
+        if self._header[0] == 1:
 
             # Parse the error
             exception_class = b''
@@ -111,8 +165,15 @@ class BaseMessage(object):
                 serialized_exception = self._decode_field( FIELD_STRING )
                 # trash
                 del serialized_exception
-                cmd_exc = exception_message + b' - ' + exception_class
+
+            cmd_exc = exception_message + b' - ' + exception_class
             raise PyOrientCommandException(cmd_exc, [])
+
+        elif self._header[0] == 3:
+            # TODO
+            # server push data for nodes up/down update info needed for
+            # failover on cluster requests
+            pass
 
     def _decode_body(self):
         # read body
@@ -233,7 +294,7 @@ class BaseMessage(object):
         if _type['type'] == STRING or _type['type'] == BYTES:
 
             _len = struct.unpack('!i', _value)[0]
-            if _len == -1:
+            if _len == -1 or _len == 0:
                 _decoded_string = b''
             else:
                 _decoded_string = self._orientSocket.read( _len )

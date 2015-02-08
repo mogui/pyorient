@@ -15,25 +15,26 @@ from .constants import FIELD_SHORT, \
     SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL
 from .utils import dlog
 
+
 class OrientSocket(object):
     """docstring for OrientSocket"""
 
     def __init__(self, host, port):
 
-        self._connected = False
+        self.connected = False
         self.host = host
         self.port = port
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         """:type : socket.socket"""
         self.protocol = -1
         self.session_id = -1
-        self.token = ''
+        self.auth_token = b''
         self.db_opened = None
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
         self.in_transaction = False
 
     def get_connection(self):
-        if not self._connected:
+        if not self.connected:
             self.connect()
 
         return self._socket
@@ -50,9 +51,9 @@ class OrientSocket(object):
                 raise PyOrientWrongProtocolVersionException(
                     "Protocol version " + str(self.protocol) +
                     " is not supported yet by this client.", [])
-            self._connected = True
+            self.connected = True
         except socket.error as e:
-            self._connected = False
+            self.connected = False
             raise PyOrientConnectionException( "Socket Error: %s" % e, [] )
 
     def close(self):
@@ -61,7 +62,7 @@ class OrientSocket(object):
         self.protocol = -1
         self.session_id = -1
         self._socket.close()
-        self._connected = False
+        self.connected = False
 
     def write(self, buff):
         return self._socket.send(buff)
@@ -84,7 +85,7 @@ class OrientSocket(object):
                 ready_to_read, ready_to_write, in_error = \
                     select.select( [self._socket, ], [self._socket, ], [], 30 )
             except select.error as e:
-                self._connected = False
+                self.connected = False
                 raise e
 
             if len(ready_to_read) > 0:
@@ -130,6 +131,7 @@ def ByteToHex( byte_str ):
 #
 class OrientDB(object):
     _connection = None
+    _auth_token = None
 
     _Messages = dict(
         # Server
@@ -179,6 +181,17 @@ class OrientDB(object):
             return _Message.prepare( args ).send().fetch_response()
         return wrapper
 
+    def set_session_token( self, token ):
+        self._auth_token = token
+        return self
+
+    def get_session_token( self ):
+        """
+        Retrieve the session token to reuse after
+        :return:
+        """
+        return self._connection.auth_token
+
     # SERVER COMMANDS
 
     def connect(self, *args):
@@ -213,7 +226,7 @@ class OrientDB(object):
         return self.get_message("ShutdownMessage") \
             .prepare(args).send().fetch_response()
 
-    #DATABASE COMMANDS
+    # DATABASE COMMANDS
 
     def command(self, *args):
         return self.get_message("CommandMessage") \
@@ -315,7 +328,12 @@ class OrientDB(object):
 
                 # Get the right instance from Import List
                 _Message = getattr(_msg, command)
-                return _Message(self._connection)
+                if self._connection.auth_token != b'':
+                    token = self._connection.auth_token
+                else:
+                    token = self._auth_token
+                return _Message(self._connection)\
+                    .set_session_token( token )
         except KeyError as e:
             raise PyOrientBadMethodCallException(
                 "Unable to find command " + str(e), []

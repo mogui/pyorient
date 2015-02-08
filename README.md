@@ -203,6 +203,41 @@ cmd = ("begin;"
     edge_result = self.client.batch(cmd)
 ```
 
+### Persistent Connections ( Session Token )
+Since version 27 is introduced an extension to allow use a token based session. This functionality must be enabled on the server config.
+
+- In the first negotiation the client can ask for a token based authentication using the ```client.set_session_token``` method.
+- The server will reply with a token or with an empty string meaning that it not support token based session and is using an old style session.
+- For each request, the client will send the token and eventually it will get a new one if token lifetime ends.
+
+When using the token based authentication, the connections can be shared between users of the same server.
+```python
+client = pyorient.OrientDB("localhost", 2424)
+client.set_session_token( True )  # set true to enable the token based 
+authentication
+client.db_open( "GratefulDeadConcerts", "admin", "admin" )
+sessionToken = client.get_session_token() # store this token somewhere
+
+#destroy the old client, equals to another user/socket/ip ecc.
+del client
+
+# create a new client
+client = pyorient.OrientDB("localhost", 2424)
+
+# set the previous obtained token to re-attach to the old session
+client.set_session_token( sessionToken ) 
+
+#now the dbOpen is not needed to perform database operations
+record = client.query( 'select from V where @rid = #9:1' )
+
+#set the flag again to true if you want to renew the token
+client.set_session_token( True )  # set true
+client.db_open( "GratefulDeadConcerts", "admin", "admin" )
+new_sessionToken = client.get_session_token()
+
+assert sessionToken != new_sessionToken
+```
+
 ## A GRAPH Example
 
 The GRAPH representation of animals and its food 

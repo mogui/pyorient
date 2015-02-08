@@ -46,7 +46,7 @@ class ConnectMessage(BaseMessage):
             self._append( ( FIELD_STRING, self._serialization_type ) )
 
         if self.get_protocol() > 26:
-            self._append( ( FIELD_BOOLEAN, False ) )
+            self._append( ( FIELD_BOOLEAN, self._request_token ) )
 
         self._append( ( FIELD_STRING, self._user ) )
         self._append( ( FIELD_STRING, self._pass ) )
@@ -56,7 +56,7 @@ class ConnectMessage(BaseMessage):
     def fetch_response(self):
         self._append( FIELD_INT )
         if self.get_protocol() > 26:
-            self._append( FIELD_STRINGS )
+            self._append( FIELD_STRING )
 
         result = super( ConnectMessage, self ).fetch_response()
 
@@ -65,8 +65,10 @@ class ConnectMessage(BaseMessage):
         self._update_socket_id()
 
         if self.get_protocol() > 26:
-            self._token = result[1]
-            self._update_token()
+            if result[1] is None:
+                self.set_session_token( False )
+            self._auth_token = result[1]
+            self._update_socket_token()
 
         return self._session_id
 
@@ -83,7 +85,7 @@ class ConnectMessage(BaseMessage):
         return self
 
     def set_serialization_type(self, serialization_type):
-        #TODO Implement version 22 of the protocol
+        # TODO Implement version 22 of the protocol
         if serialization_type == SERIALIZATION_SERIAL_BIN:
             raise NotImplementedError
 
