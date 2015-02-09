@@ -20,7 +20,7 @@ class TokenAuthTest(unittest.TestCase):
         client = pyorient.OrientDB("localhost", 2424)
         client.connect("root", "root")
         if client._connection.protocol < 26:
-            unittest.skip("Token not supported in OrientDB < 2.0")
+            self.skipTest("Token not supported in OrientDB < 2.0")
 
     def testPrepareConnection(self):
         global old_token
