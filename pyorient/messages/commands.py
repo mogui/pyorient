@@ -534,3 +534,7 @@ class TxCommitMessage:
 
     def rollback(self):
         return self._transaction.rollback()
+
+    def set_session_token(self, token):
+        self._transaction.set_session_token(token)
+        return self

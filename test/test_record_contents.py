@@ -295,7 +295,9 @@ class CommandTestCase( unittest.TestCase ):
     def test_datetime(self):
         x = self.client.query(
             "SELECT DATE('2015-01-02 03:04:05')"
-        )[0].oRecordData
+        )
+
+        x = x[0].oRecordData
 
         import datetime
         assert 'DATE' in x

@@ -127,3 +127,10 @@ class LinkSetTestCase(unittest.TestCase):
         assert len(class_id1[ 'mapInList' ]) == 1
         assert class_id1[ 'mapInList' ][0]['one'] == 2
         assert class_id1[ 'mapInList' ][0]['three'] == 4
+
+    def testEmptyEmbeddedMapsInList(self):
+        # self.skipTest('Bug')
+        print(1)
+        class_id1 = self.client.command("CREATE VERTEX V CONTENT "
+                                        "{'a': [ { 'b': [], 'c': [] } ] }"
+                                        )[0].oRecordData
