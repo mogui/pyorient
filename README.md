@@ -216,7 +216,9 @@ client = pyorient.OrientDB("localhost", 2424)
 client.set_session_token( True )  # set true to enable the token based 
 authentication
 client.db_open( "GratefulDeadConcerts", "admin", "admin" )
-sessionToken = client.get_session_token() # store this token somewhere
+
+# store this token somewhere
+sessionToken = client.get_session_token()
 
 #destroy the old client, equals to another user/socket/ip ecc.
 del client
@@ -293,7 +295,7 @@ for animal in pea_eaters:
 # What each animal eats?
 animal_foods = client.command("select expand( out( Eat )) from Animal")
 for food in animal_foods:
-    animal = self.client.query(
+    animal = client.query(
                 "select name from ( select expand( in('Eat') ) from Food where name = 'pea' )"
             )[0]
     print(food.name, food.color, animal.name)
