@@ -382,7 +382,7 @@ class ORecordDecoder(object):
             key = chunk[0]
             content = chunk[1].lstrip(' ')
             if len(content) > 0:
-                chunk = self.parse_key(content)
+                chunk = self.parse_value(content)
                 value = chunk[0]
                 content = chunk[1]
                 record[key] = value

@@ -105,3 +105,15 @@ class OrientBinaryObject(object):
     def getBin(self):
         import base64
         return base64.b64decode(self.b64)
+
+
+class OrientNodeList(object):
+    def __init__(self, nodelist):
+        self.listeners = {}
+        try:
+            for member in nodelist.data['members']:
+                _lst = [ listener for listener in member['listeners']
+                         if listener['protocol'] == 'ONetworkProtocolBinary' ][0]
+                self.listeners[ _lst['listen'] ] = _lst['listen'].split( ':' )
+        except KeyError:
+            pass

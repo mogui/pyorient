@@ -12,7 +12,7 @@ from .exceptions import PyOrientBadMethodCallException, \
 
 from .constants import FIELD_SHORT, \
     QUERY_ASYNC, QUERY_CMD, QUERY_SYNC, QUERY_SCRIPT, \
-    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL
+    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, SOCK_CONN_TIMEOUT
 from .utils import dlog
 
 
@@ -24,6 +24,7 @@ class OrientSocket(object):
         self.connected = False
         self.host = host
         self.port = port
+        self.node_listeners = {}
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         """:type : socket.socket"""
         self.protocol = -1
@@ -43,7 +44,7 @@ class OrientSocket(object):
         dlog("Trying to connect...")
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._socket.settimeout(30)  # 30 secs of timeout
+            self._socket.settimeout( SOCK_CONN_TIMEOUT )  # 30 secs of timeout
             self._socket.connect( (self.host, self.port) )
             _value = self._socket.recv( FIELD_SHORT['bytes'] )
             self.protocol = struct.unpack('!h', _value)[0]

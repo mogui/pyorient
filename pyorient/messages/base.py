@@ -170,9 +170,22 @@ class BaseMessage(object):
             raise PyOrientCommandException(cmd_exc, [])
 
         elif self._header[0] == 3:
-            # TODO
-            # server push data for nodes up/down update info needed for
-            # failover on cluster requests
+            # Push notification, Node cluster changed
+
+            # FIELD_BYTE (OChannelBinaryProtocol.PUSH_DATA);  # WRITE 3
+            # FIELD_INT (Integer.MIN_VALUE);  # SESSION ID = 2^-31
+            self._decode_field( FIELD_BYTE )  # 80: \x50 Request Push
+            push_notice = [ self._decode_field( FIELD_STRING ) ]  # JSON WITH THE NEW CLUSTER CFG
+
+            end_flag = self._decode_field( FIELD_BYTE )
+            while end_flag == 3:
+                self._decode_field( FIELD_INT )  # FAKE SESSION ID = 2^-31
+                self._decode_field( FIELD_BYTE )  # 80: 0x50 Request Push
+                push_notice.append( self._decode_field( FIELD_STRING ) )  # JSON
+                end_flag = self._decode_field( FIELD_BYTE )
+
+            # Try to set the new session id???
+            self._header[1] = self._decode_field( FIELD_INT )  # REAL SESSION ID
             pass
 
     def _decode_body(self):

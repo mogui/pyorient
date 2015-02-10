@@ -4,7 +4,6 @@ __author__ = 'Ostico <ostico@gmail.com>'
 from pyorient.exceptions import PyOrientBadMethodCallException
 
 from .base import BaseMessage
-from .connection import ConnectMessage
 from ..constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP, FIELD_BYTE, FIELD_INT, \
     FIELD_SHORT, FIELD_STRING, FIELD_STRINGS, FIELD_BYTES, FIELD_BOOLEAN, NAME, SUPPORTED_PROTOCOL, \
     VERSION, DB_TYPES, SERIALIZATION_SERIAL_BIN, SERIALIZATION_TYPES, \
@@ -12,6 +11,7 @@ from ..constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP, FIELD
     DB_DROP_OP, DB_RELOAD_OP, DB_SIZE_OP, DB_LIST_OP, STORAGE_TYPES, FIELD_LONG
 from ..utils import need_connected, need_db_opened
 from ..serialization import OrientRecord, ORecordDecoder
+from ..types import OrientNodeList
 
 #
 # DB OPEN
@@ -130,10 +130,15 @@ class DbOpenMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
-        self._append( FIELD_STRING )  # cluster config string ( -1 )
-        self._append( FIELD_STRING )  # cluster release
+        self._append( FIELD_STRING )  # orient node list | string ""
+        self._append( FIELD_STRING )  # Orient release
 
         response = super( DbOpenMessage, self ).fetch_response(True)
+        #
+        # This is not in CSV.... this is in Binary
+        # self._orientSocket.node_listeners = OrientNodeList(
+        #     ORecordDecoder( response[0] )
+        # )
 
         # set database opened
         self._orientSocket.db_opened = self._db_name
