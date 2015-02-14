@@ -175,16 +175,19 @@ class ORecordDecoder(object):
         length = len( content )
         collected = ''
         i = 0
-        for i in range( 0, length ):
+        while i < length:
             c = content[ i ]
             if c == '\\':
                 # escape, skip to the next character
                 i += 1
                 collected += content[ i ]
+                # increment again to pass over
+                i += 1
                 continue
             elif c == '"':
                 break
             else:
+                i += 1
                 collected += c
 
         return [ collected, content[ ( i + 1 ): ] ]
