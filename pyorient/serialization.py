@@ -175,16 +175,19 @@ class ORecordDecoder(object):
         length = len( content )
         collected = ''
         i = 0
-        for i in range( 0, length ):
+        while i < length:
             c = content[ i ]
             if c == '\\':
                 # escape, skip to the next character
                 i += 1
                 collected += content[ i ]
+                # increment again to pass over
+                i += 1
                 continue
             elif c == '"':
                 break
             else:
+                i += 1
                 collected += c
 
         return [ collected, content[ ( i + 1 ): ] ]
@@ -382,7 +385,7 @@ class ORecordDecoder(object):
             key = chunk[0]
             content = chunk[1].lstrip(' ')
             if len(content) > 0:
-                chunk = self.parse_key(content)
+                chunk = self.parse_value(content)
                 value = chunk[0]
                 content = chunk[1]
                 record[key] = value
