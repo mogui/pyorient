@@ -287,6 +287,17 @@ class CommandTestCase( unittest.TestCase ):
 
         print(res[0])
 
+    def test_quotes(self):
+        import json
+        test_data = {'scenario': 'a "quote" follows'}
+
+        record = self.client.command("CREATE VERTEX V CONTENT " +
+                                     json.dumps(test_data))[0]
+
+        assert record.rid == '#9:0'
+        assert record.oRecordData['scenario'] == 'a "quote" follows'
+
+
     def test_db_list(self):
         self.client.connect( "root", "root" )
         databases = self.client.db_list()
