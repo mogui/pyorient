@@ -42,10 +42,19 @@ class OrientSocket(object):
     def connect(self):
         dlog("Trying to connect...")
         try:
-            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._socket.settimeout(30)  # 30 secs of timeout
-            self._socket.connect( (self.host, self.port) )
-            _value = self._socket.recv( FIELD_SHORT['bytes'] )
+            # retry until server send 2 bytes
+            while True:
+                self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                self._socket.settimeout(30)  # 30 secs of timeout
+                self._socket.connect( (self.host, self.port) )
+                _value = self._socket.recv( FIELD_SHORT['bytes'] )
+
+                if len(_value) == 2:
+                    break
+
+                # server send '' if pool is exceeded, so we close and try again
+                self._socket.close()
+
             self.protocol = struct.unpack('!h', _value)[0]
             if self.protocol > SUPPORTED_PROTOCOL:
                 raise PyOrientWrongProtocolVersionException(
