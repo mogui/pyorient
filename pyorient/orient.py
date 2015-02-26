@@ -52,7 +52,7 @@ class OrientSocket(object):
                 self._socket.close()
 
                 raise PyOrientConnectionPoolException(
-                    "Server sent empty string"
+                    "Server sent empty string", []
                 )
 
             self.protocol = struct.unpack('!h', _value)[0]
