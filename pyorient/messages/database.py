@@ -140,6 +140,9 @@ class DbOpenMessage(BaseMessage):
         #     ORecordDecoder( response[0] )
         # )
 
+        # with open('binary.log', 'ba+') as f:
+        #     f.write(response[0])
+
         # set database opened
         self._orientSocket.db_opened = self._db_name
 

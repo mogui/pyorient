@@ -7,10 +7,9 @@ import unittest
 
 from pyorient.exceptions import *
 from pyorient import OrientSocket
-from pyorient import OrientRecord
+from pyorient.messages.connection import *
 from pyorient.messages.database import *
 from pyorient.messages.commands import *
-from pyorient.messages.cluster import *
 from pyorient.messages.records import *
 from pyorient.constants import *
 

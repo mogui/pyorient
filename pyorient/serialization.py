@@ -510,3 +510,49 @@ class ORecordEncoder(object):
 
     def get_raw(self):
         return self._raw
+
+
+def var_int_decode( str_num ):
+    """reads a sequence of unsigned integer byte values,
+    decodes them into an integer in variable-length format
+    and returns it as the function result."""
+    n = i = 0
+    shift = 0
+    while i < len(str_num):
+        this_byte = ord(str_num[i]) if sys.version_info[0] < 3 else str_num[i]
+        n |= (this_byte & 0x7f) << shift
+        if (this_byte & 0x80) == 0:
+            break
+        shift += 7
+        if shift >= 64:
+            raise Exception('Too many bytes when decoding variable int.')
+        i += 1
+    return n
+
+
+def signed_var_int_decode(mask, result_type):
+    """Like var_int_decode() but decodes signed values."""
+
+    local_ord = ord
+    py2 = False  ##PY25
+    # #!PY25  py2 = str is bytes
+    def DecodeVarint(buffer, pos):
+        result = 0
+        shift = 0
+        while 1:
+            b = local_ord(buffer[pos]) if py2 else buffer[pos]
+            result |= ((b & 0x7f) << shift)
+            pos += 1
+            if not (b & 0x80):
+                if result > 0x7fffffffffffffff:
+                    result -= (1 << 64)
+                    result |= ~mask
+                else:
+                    result &= mask
+                result = result_type(result)
+                return (result, pos)
+            shift += 7
+            if shift >= 64:
+                raise Exception('Too many bytes when decoding variable int.')
+
+    return DecodeVarint
