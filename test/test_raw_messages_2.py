@@ -260,7 +260,8 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( [ QUERY_SYNC, "select from " + str(rec_position.rid) ] )\
             .send().fetch_response()
 
-        assert res[0].rid == '#1:2'
+        import re
+        assert re.match( '#1:[0-9]', res[0].rid )
         assert res[0].o_class is None
         assert res[0].version >= 0
         assert res[0].alloggio == 'casa'
