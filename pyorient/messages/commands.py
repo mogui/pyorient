@@ -214,7 +214,6 @@ class CommandMessage(BaseMessage):
                 msg += m
                 m = self._orientSocket.read(1)
 
-
         return res
 
     def set_callback(self, func):
@@ -339,7 +338,7 @@ class _TXCommitMessage(BaseMessage):
                   ":" + str(result['created'][-1]['created_c_pos'])
 
             record = getattr(operation, "_record_content")
-            record.update(version=1, rid=rid)
+            record.update(__version=1, __rid=rid)
 
             self._operation_records[rid] = record
 
@@ -368,8 +367,8 @@ class _TXCommitMessage(BaseMessage):
                 rid = "#" + str(result['updated'][-1]['updated_c_id']) + \
                       ":" + str(result['updated'][-1]['updated_c_pos'])
                 record.update(
-                    version=result['updated'][-1]['new_version'],
-                    rid=rid
+                    __version=result['updated'][-1]['new_version'],
+                    __rid=rid
                 )
 
                 self._operation_records[rid] = record

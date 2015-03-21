@@ -404,11 +404,14 @@ class BaseMessage(object):
             __res = self._decode_field( FIELD_RECORD )
 
             # bug in orientdb csv serialization in snapshot 2.0
-            _res = ORecordDecoder( __res['content'].rstrip() )
-            # _res = ORecordDecoder( __res['content'] )
+            _res = ORecordDecoder(__res['content'].rstrip())
             res = OrientRecord(
-                _res.data, o_class=_res.className,
-                rid=__res['rid'], version=__res['version']
+                dict(
+                    __o_storage=_res.data,
+                    __o_class=_res.className,
+                    __version=__res['version'],
+                    __rid=__res['rid']
+                )
             )
 
         self.dump_streams()  # debug log

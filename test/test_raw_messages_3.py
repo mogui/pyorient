@@ -122,54 +122,50 @@ class RawMessages_5_TestCase(unittest.TestCase):
         # ##################
 
         # execute real create
-        rec = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
-        rec_position = ( RecordCreateMessage(connection) )\
-            .prepare( ( 3, rec ) )\
+        rec0 = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
+        real_record1 = ( RecordCreateMessage(connection) )\
+            .prepare( ( 3, rec0 ) )\
             .send().fetch_response()
 
+        #######################
         # prepare for an update
-        rec3 = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
-        update_success = ( RecordUpdateMessage(connection) )\
-            .prepare( ( 3, rec_position.rid, rec3, rec_position.version ) )
-
+        rec3 = { 'alloggio': 'ciao', 'lavoro': 'ciao2', 'vacanza': 'ciao3' }
+        temp_update_real_rec = ( RecordUpdateMessage(connection) )\
+            .prepare( ( 3, real_record1._rid, rec3, real_record1._version ) )
 
         # prepare transaction
         rec1 = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
-        rec_position1 = ( RecordCreateMessage(connection) )\
+        temp_record1 = ( RecordCreateMessage(connection) )\
             .prepare( ( -1, rec1 ) )
 
         rec2 = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
-        rec_position2 = ( RecordCreateMessage(connection) )\
+        temp_record2 = ( RecordCreateMessage(connection) )\
             .prepare( ( -1, rec2 ) )
 
+        delete_real_rec = RecordDeleteMessage(connection)
+        delete_real_rec.prepare( ( 3, real_record1._rid ) )
+        #######################
 
         # create another real record
-        rec = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
-        rec_position = ( RecordCreateMessage(connection) )\
+        rec = { 'alloggio': 'bim', 'lavoro': 'bum', 'vacanza': 'bam' }
+        real_record1 = ( RecordCreateMessage(connection) )\
             .prepare( ( 3, rec ) )\
             .send().fetch_response()
 
-        delete_msg = RecordDeleteMessage(connection)
-        delete_msg.prepare( ( 3, rec_position.rid ) )
-
-
         tx = TxCommitMessage(connection)
         tx.begin()
-        tx.attach( rec_position1 )
-        tx.attach( rec_position1 )
-        tx.attach( rec_position2 )
-        tx.attach( update_success )
-        tx.attach( delete_msg )
+        tx.attach( temp_record1 )
+        tx.attach( temp_record2 )
+        tx.attach( temp_update_real_rec )
+        tx.attach( delete_real_rec )
         res = tx.commit()
 
         for k, v in res.items():
             print(k + " -> " + v.vacanza)
 
-        assert len(res) == 4
-        assert res["#3:0"].vacanza == 'montagna'
+        assert len(res) == 2
         assert res["#3:2"].vacanza == 'mare'
-        assert res["#3:3"].vacanza == 'mare'
-        assert res["#3:4"].vacanza == 'lago'
+        assert res["#3:3"].vacanza == 'lago'
 
         sid = ( ConnectMessage( connection ) ).prepare( ("root", "root") )\
             .send().fetch_response()

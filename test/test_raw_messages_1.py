@@ -337,7 +337,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         res = req_msg.prepare( [ QUERY_SYNC, "select * from followed_by limit 1" ] ) \
             .send().fetch_response()
 
-        print("%r" % res[0].rid)
-        print("%r" % res[0].o_class)
-        print("%r" % res[0].version)
+        print("%r" % res[0]._rid)
+        print("%r" % res[0]._class)
+        print("%r" % res[0]._version)
 
