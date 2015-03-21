@@ -47,8 +47,8 @@ class CommandTestCase(unittest.TestCase):
             assert result is None
 
             res = client.record_load( "#11:0", "*:-1", _callback )
-            assert res.rid == "#11:0"
-            assert res.o_class == 'followed_by'
+            assert res._rid == "#11:0"
+            assert res._class == 'followed_by'
             assert res._in != 0
             assert res._out != 0
 
@@ -78,19 +78,19 @@ class CommandTestCase(unittest.TestCase):
             rec = { '@my_class': { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' } }
             rec_position = client.record_create( cluster_id, rec )
 
-            print("New Rec Position: %s" % rec_position.rid)
-            assert rec_position.rid is not None
-            assert rec_position.rid != 0
-            assert rec_position.rid != -1
+            print("New Rec Position: %s" % rec_position._rid)
+            assert rec_position._rid is not None
+            assert rec_position._rid != 0
+            assert rec_position._rid != -1
 
-            res = client.record_load( rec_position.rid, "*:0" )
-            assert res.rid == rec_position.rid
-            assert res.o_class == 'my_class'
+            res = client.record_load( rec_position._rid, "*:0" )
+            assert res._rid == rec_position._rid
+            assert res._class == 'my_class'
             assert res.alloggio == 'casa'
             assert res.lavoro == 'ufficio'
             assert res.vacanza == 'mare'
 
-            deletion = client.record_delete( cluster_id, rec_position.rid )
+            deletion = client.record_delete( cluster_id, rec_position._rid )
             assert deletion is True
 
             result = client.query("select from my_class", 10, '*:0')
@@ -170,8 +170,8 @@ class CommandTestCase(unittest.TestCase):
 
         # prepare for an update
         rec3 = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
-        update_success = client.record_update( 3, rec_position.rid, rec3,
-                                  rec_position.version )
+        update_success = client.record_update( 3, rec_position._rid, rec3,
+                                  rec_position._version )
 
         # prepare transaction
         rec1 = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
@@ -180,7 +180,7 @@ class CommandTestCase(unittest.TestCase):
         rec2 = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
         rec_position2 = client.record_create( -1, rec2 )
 
-        delete_msg = client.record_delete( 3, rec_position.rid )
+        delete_msg = client.record_delete( 3, rec_position._rid )
 
 
         tx.attach( rec_position1 )
@@ -229,7 +229,7 @@ class CommandTestCase(unittest.TestCase):
         rec2 = { '@my_v_class': { 'accommodation': 'house', 'work2': 'office', 'holiday': 'sea3' } }
         rec_position1 = client.record_create(class_id1, rec1)
         rec_position2 = client.record_create(class_id1, rec2)
-        sql_edge = "create edge from " + rec_position1.rid + " to " + rec_position2.rid
+        sql_edge = "create edge from " + rec_position1._rid + " to " + rec_position2._rid
         res = client.command( sql_edge )
 
     def test_use_of_dir(self):

@@ -44,34 +44,35 @@ class CommandTestCase(unittest.TestCase):
         rec_position1 = self.client.record_create(class_id1, rec1)
         rec_position2 = self.client.record_create(class_id1, rec2)
 
-        sql_edge = "create edge from " + rec_position1.rid + " to " + \
-                   rec_position2.rid
+        sql_edge = "create edge from " + rec_position1._rid + " to " + \
+                   rec_position2._rid
         res = self.client.command(sql_edge)
 
         # print (res[0]._in)
         assert isinstance(res[0]._in,
                           pyorient.OrientRecordLink)
-        assert res[0]._in.get_hash() == rec_position2.rid
+        assert res[0]._in.get_hash() == rec_position2._rid
 
         # print (res[0]._out)
         assert isinstance(res[0]._out, pyorient.OrientRecordLink)
-        assert res[0]._out.get_hash() == rec_position1.rid
+        assert res[0]._out.get_hash() == rec_position1._rid
 
         result = self.client.query(
             "select @rid, @version, holiday from my_v_class")
         # for x in result:
-        # print ( "%r" % x.rid.get() )
-        # print ( "%r" % x.rid.get_hash() )
+        # print ( "%r" % x._rid.get() )
+        # print ( "%r" % x._rid.get_hash() )
         # print ( "%r" % x.holiday )
-        # print ( "%r" % x.version )
+        # print ( "%r" % x._version )
 
-        assert result[0].rid.get() == '11:0'
-        assert result[0].rid.get_hash() == rec_position1.rid
+        assert result[0].oRecordData['rid'].get() == '11:0'
+        assert result[0].rid.get_hash() == rec_position1._rid
         assert result[0].holiday == rec1['@my_v_class']['holiday']
         assert result[0].version != 0
 
         assert result[1].rid.get() == '11:1'
-        assert result[1].rid.get_hash() == rec_position2.rid
+        assert result[1].rid.get_hash() == rec_position2._rid
+        assert result[1].rid.get_hash() == rec_position2._rid
         assert result[1].holiday == rec2['@my_v_class']['holiday']
         assert result[0].version != 0
 
@@ -83,16 +84,18 @@ class CommandTestCase(unittest.TestCase):
 
         x = self.client.command("select rid, @rid, model, ciao from V")
 
+        assert x[0]._rid == '#-2:0'
         assert x[0].rid == 'test_rid'
+        assert x[0].rid2.get_hash() == '#9:0'
         try:
-            x[0].rid.get_hash()
+            x[0]._rid.get_hash()
             assert False
         except AttributeError:
             assert True
 
         assert x[0].rid2.get_hash() == '#9:0', ("Failed to assert that "
                                                 "'#9:0' equals received "
-                                                "value: '%s'" % x[0].rid2)
+                                                "value: '%s'" % x[0]._rid2)
         assert x[0].model == '1123'
         assert x[0].ciao == 1234
 

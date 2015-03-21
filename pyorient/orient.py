@@ -8,7 +8,8 @@ import struct
 import select
 
 from .exceptions import PyOrientBadMethodCallException, \
-    PyOrientConnectionException, PyOrientWrongProtocolVersionException
+    PyOrientConnectionException, PyOrientWrongProtocolVersionException, \
+    PyOrientConnectionPoolException
 
 from .constants import FIELD_SHORT, \
     QUERY_ASYNC, QUERY_CMD, QUERY_SYNC, QUERY_SCRIPT, \
@@ -47,6 +48,14 @@ class OrientSocket(object):
             self._socket.settimeout( SOCK_CONN_TIMEOUT )  # 30 secs of timeout
             self._socket.connect( (self.host, self.port) )
             _value = self._socket.recv( FIELD_SHORT['bytes'] )
+
+            if len(_value) != 2:
+                self._socket.close()
+
+                raise PyOrientConnectionPoolException(
+                    "Server sent empty string", []
+                )
+
             self.protocol = struct.unpack('!h', _value)[0]
             if self.protocol > SUPPORTED_PROTOCOL:
                 raise PyOrientWrongProtocolVersionException(

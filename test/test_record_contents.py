@@ -58,27 +58,26 @@ class CommandTestCase( unittest.TestCase ):
         rec = self.client.command( 'create vertex v content {"a":false,'
                                    '"q":TRUE}' )
 
-        p = re.compile(
-            "\{'@V':\{'[a|q]': (True|False), '[a|q]': (True|False)\}\}" )
-        assert p.match( str( rec[0] ) ), \
-            ( "Failed to assert that received " + str( rec[0] ) +
-              " match to: {'@V':{'a': False, 'q': True}}" )
+        assert rec[0].a is False
+        assert rec[0].q is True
+        assert rec[0]._version == 1
+        assert rec[0]._rid == '#9:0'
 
         rec = {'a': 1, 'b': 2, 'c': 3}
         rec_position = self.client.record_create( 3, rec )
 
-        p = re.compile(
-            "\{'[abc]': [123], '[abc]': [123], '[abc]': [123]\}" )
-        assert p.match( str( rec_position ) ), \
-            ("Failed to assert that received " + str(
-                rec_position ) + " match to: "
-                                 "{'a': 1, 'b': 2, 'c': 3}" )
+        assert rec_position.a == 1
+        assert rec_position.b == 2
+        assert rec_position.c == 3
+        assert rec_position._version == 1
+        assert rec_position._rid == '#3:0'
 
-        res = self.client.query( "select from " + rec_position.rid )
-        assert p.match( str( res[0] ) ), \
-            ("Failed to assert that received " + str(
-                rec_position ) + " match to: "
-                                 "{'a': 1, 'b': 2, 'c': 3}" )
+        res = self.client.query( "select from " + rec_position._rid )
+        assert res[0].a == 1
+        assert res[0].b == 2
+        assert res[0].c == 3
+        assert res[0]._version == 1
+        assert res[0]._rid == '#3:0'
 
         print( res[0].oRecordData['a'] )
 
@@ -294,7 +293,7 @@ class CommandTestCase( unittest.TestCase ):
         record = self.client.command("CREATE VERTEX V CONTENT " +
                                      json.dumps(test_data))[0]
 
-        assert record.rid == '#9:0'
+        assert record._rid == '#9:0'
         assert record.oRecordData['scenario'] == 'a "quote" follows'
 
 

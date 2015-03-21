@@ -451,8 +451,7 @@ class ORecordEncoder(object):
         if o_class:
             raw = o_class + '@'
 
-        fields = list(filter(lambda item: not item.startswith('_OrientRecord_'),
-                             record.oRecordData))
+        fields = list(record.oRecordData)
 
         for idx, key in enumerate(fields):
             raw += key + ':'

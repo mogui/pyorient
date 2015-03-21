@@ -88,7 +88,7 @@ class CommandTestCase(unittest.TestCase):
 
         # print(clusters
         # print(sql_insert_result
-        # print(load.rid
+        # print(load._rid
         # print(drop_db_result
 
         assert isinstance( clusters, list )
@@ -96,7 +96,7 @@ class CommandTestCase(unittest.TestCase):
         assert isinstance( sql_insert_result, list )
         assert len( sql_insert_result ) == 1
         assert isinstance( load, pyorient.OrientRecord )
-        assert load.rid != -1
+        assert load._rid != -1
         assert isinstance( drop_db_result, list )
         assert len( drop_db_result ) == 0
 
@@ -141,7 +141,7 @@ class CommandTestCase(unittest.TestCase):
         # prepare for an update
         rec3 = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
         update_success = ( factory.get_message(pyorient.RECORD_UPDATE) )\
-            .prepare( ( 3, rec_position.rid, rec3, rec_position.version ) )
+            .prepare( ( 3, rec_position._rid, rec3, rec_position._version ) )
 
         # prepare transaction
         rec1 = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
@@ -160,7 +160,7 @@ class CommandTestCase(unittest.TestCase):
             .send().fetch_response()
 
         delete_msg = ( factory.get_message(pyorient.RECORD_DELETE) )
-        delete_msg.prepare( ( 3, rec_position.rid ) )
+        delete_msg.prepare( ( 3, rec_position._rid ) )
 
 
         tx = ( factory.get_message(pyorient.TX_COMMIT) )
@@ -242,19 +242,19 @@ class CommandTestCase(unittest.TestCase):
         rec4 = ins_msg4.send().fetch_response()
 
         rec1 = rec1[0]
-        upd_res = upd_msg5.prepare( ( rec1.rid, rec1.rid, { 'Band': 'Metallica', 'Song': 'One' } ) )\
+        upd_res = upd_msg5.prepare( ( rec1._rid, rec1._rid, { 'Band': 'Metallica', 'Song': 'One' } ) )\
             .send().fetch_response()
 
         res = req_msg.prepare( [ pyorient.QUERY_SYNC, "select from c_test" ] ) \
             .send().fetch_response()
 
         assert isinstance(cluster, list)
-        assert rec1.rid == res[0].rid
-        assert rec1.version != res[0].version
-        assert res[0].version == upd_res[0].version
+        assert rec1._rid == res[0]._rid
+        assert rec1._version != res[0]._version
+        assert res[0]._version == upd_res[0]._version
 
         assert len(res) == 4
-        assert res[0].rid == '#11:0'
+        assert res[0]._rid == '#11:0'
         assert res[0].Band == 'Metallica'
         assert res[0].Song == 'One'
 
@@ -262,9 +262,9 @@ class CommandTestCase(unittest.TestCase):
 
         # for x in res:
         #     print("############"
-        #     print("%r" % x.rid
-        #     print("%r" % x.o_class
-        #     print("%r" % x.version
+        #     print("%r" % x._rid
+        #     print("%r" % x._class
+        #     print("%r" % x._version
         #     print("%r" % x.Band
         #     print("%r" % x.Song
 
@@ -275,29 +275,29 @@ class CommandTestCase(unittest.TestCase):
             .prepare( ( cluster[0], rec ) )\
             .send().fetch_response()
 
-        print("New Rec Position: %s" % rec_position.rid)
-        assert rec_position.rid is not None
+        print("New Rec Position: %s" % rec_position._rid)
+        assert rec_position._rid is not None
 
         rec = { '@c_test': { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' } }
         update_success = ( factory.get_message(pyorient.RECORD_UPDATE) )\
-            .prepare( ( rec_position.rid, rec_position.rid, rec ) )\
+            .prepare( ( rec_position._rid, rec_position._rid, rec ) )\
             .send().fetch_response()
 
 
         req_msg = factory.get_message(pyorient.RECORD_LOAD)
-        res = req_msg.prepare( [ rec_position.rid, "*:-1" ] ) \
+        res = req_msg.prepare( [ rec_position._rid, "*:-1" ] ) \
             .send().fetch_response()
 
         # print(res)
-        # print(res.rid)
-        # print(res.o_class)
-        # print(res.version)
+        # print(res._rid)
+        # print(res._class)
+        # print(res._version)
         # print(res.alloggio)
         # print(res.lavoro)
         # print(res.vacanza)
 
-        assert res.rid == "#11:4"
-        assert res.o_class == "c_test"
+        assert res._rid == "#11:4"
+        assert res._class == "c_test"
         assert res.alloggio == 'albergo'
         assert not hasattr( res, 'Band')
         assert not hasattr( res, 'Song')

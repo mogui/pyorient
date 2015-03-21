@@ -207,12 +207,13 @@ class CommandMessage(BaseMessage):
         else:
             # this should be never happen, used only to debug the protocol
             msg = b''
+            import socket
+            self._orientSocket._socket.settimeout(5)
+
             m = self._orientSocket.read(1)
             while m != "":
                 msg += m
                 m = self._orientSocket.read(1)
-                # with open('trash.log', 'ba+') as f:
-                #     f.write(m)
 
         return res
 
@@ -338,7 +339,7 @@ class _TXCommitMessage(BaseMessage):
                   ":" + str(result['created'][-1]['created_c_pos'])
 
             record = getattr(operation, "_record_content")
-            record.update(version=1, rid=rid)
+            record.update(__version=1, __rid=rid)
 
             self._operation_records[rid] = record
 
@@ -367,8 +368,8 @@ class _TXCommitMessage(BaseMessage):
                 rid = "#" + str(result['updated'][-1]['updated_c_id']) + \
                       ":" + str(result['updated'][-1]['updated_c_pos'])
                 record.update(
-                    version=result['updated'][-1]['new_version'],
-                    rid=rid
+                    __version=result['updated'][-1]['new_version'],
+                    __rid=rid
                 )
 
                 self._operation_records[rid] = record

@@ -30,9 +30,9 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
     def test_record_object(self):
         x = OrientRecord()
-        assert x.rid is None
-        assert x.version is None
-        assert x.o_class is None
+        assert x._rid is None
+        assert x._version is None
+        assert x._class is None
 
     def test_record_load(self):
         connection = OrientSocket( "localhost", 2424 )
@@ -51,15 +51,15 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         def _test_callback(record):
             assert record is not []
-            assert record.rid is not None  # assert no exception
+            assert record._rid is not None  # assert no exception
 
         req_msg = RecordLoadMessage( connection )
 
-        res = req_msg.prepare( [ "#11:0", "*:-1", _test_callback ] ) \
+        res = req_msg.prepare( [ "#11:0", "*:2", _test_callback ] ) \
             .send().fetch_response()
 
-        assert res.rid == "#11:0"
-        assert res.o_class == 'followed_by'
+        assert res._rid == "#11:0"
+        assert res._class == 'followed_by'
         assert res._in != 0
         assert res._out != 0
 
@@ -165,12 +165,12 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( ( cluster, rec ) )\
             .send().fetch_response()
 
-        print("New Rec Position: %s" % rec_position.rid)
-        assert rec_position.rid is not None
+        print("New Rec Position: %s" % rec_position._rid)
+        assert rec_position._rid is not None
 
         rec = { '@my_class': { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' } }
         update_success = ( RecordUpdateMessage(connection) )\
-            .prepare( ( cluster, rec_position.rid, rec ) )\
+            .prepare( ( cluster, rec_position._rid, rec ) )\
             .send().fetch_response()
 
         assert update_success[0] != 0
@@ -180,23 +180,23 @@ class RawMessages_2_TestCase(unittest.TestCase):
                 connection.protocol ))  # skip test
 
         res = ( CommandMessage( connection ) )\
-            .prepare( [ QUERY_SYNC, "select from " + rec_position.rid ] )\
+            .prepare( [ QUERY_SYNC, "select from " + rec_position._rid ] )\
             .send().fetch_response()
 
         # res = [ ( RecordLoadMessage(connection) ).prepare(
-        #     [ rec_position.rid ]
+        #     [ rec_position._rid ]
         # ).send().fetch_response() ]
 
-        print("%r" % res[0].rid)
-        print("%r" % res[0].o_class)
-        print("%r" % res[0].version)
+        print("%r" % res[0]._rid)
+        print("%r" % res[0]._class)
+        print("%r" % res[0]._version)
         print("%r" % res[0].alloggio)
         print("%r" % res[0].lavoro)
         print("%r" % res[0].vacanza)
 
-        assert res[0].rid == '#11:0'
-        assert res[0].o_class == 'my_class'
-        assert res[0].version >= 0
+        assert res[0]._rid == '#11:0'
+        assert res[0]._class == 'my_class'
+        assert res[0]._version >= 0
         assert res[0].alloggio == 'albergo'
         assert res[0].lavoro == 'ufficio'
         assert res[0].vacanza == 'montagna'
@@ -252,17 +252,18 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( ( 1, rec ) )\
             .send().fetch_response()
 
-        print("New Rec Position: %s" % rec_position.rid)
-        assert rec_position.rid is not None
+        print("New Rec Position: %s" % rec_position._rid)
+        assert rec_position._rid is not None
 
         ######################## Check Success
         res = ( CommandMessage( connection ) )\
-            .prepare( [ QUERY_SYNC, "select from " + str(rec_position.rid) ] )\
+            .prepare( [ QUERY_SYNC, "select from " + str(rec_position._rid) ] )\
             .send().fetch_response()
 
-        assert res[0].rid == '#1:2'
-        assert res[0].o_class is None
-        assert res[0].version >= 0
+        import re
+        assert re.match( '#1:[0-9]', res[0]._rid )
+        assert res[0]._class is None
+        assert res[0]._version >= 0
         assert res[0].alloggio == 'casa'
         assert res[0].lavoro == 'ufficio'
         assert res[0].vacanza == 'mare'
@@ -270,7 +271,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         ######################## Delete Rid
 
         del_msg = (RecordDeleteMessage(connection))
-        deletion = del_msg.prepare( ( 1, rec_position.rid ) )\
+        deletion = del_msg.prepare( ( 1, rec_position._rid ) )\
             .send().fetch_response()
 
         assert deletion is True
@@ -345,7 +346,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         def _test_callback(record):
             assert record is not []
-            assert record.rid is not None  # assert no exception
+            assert record._rid is not None  # assert no exception
 
         try_select_async = CommandMessage(connection)
 

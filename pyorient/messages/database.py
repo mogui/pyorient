@@ -562,6 +562,4 @@ class DbListMessage(BaseMessage):
         # strip trailing spaces
         _record = ORecordDecoder( __record.rstrip() )
 
-        return OrientRecord(
-            _record.data
-        )
+        return OrientRecord( dict( __o_storage=_record.data ) )

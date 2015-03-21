@@ -17,6 +17,10 @@ class PyOrientConnectionException(PyOrientException):
     pass
 
 
+class PyOrientConnectionPoolException(PyOrientConnectionException):
+    pass
+
+
 class PyOrientDatabaseException(PyOrientException):
     pass
 

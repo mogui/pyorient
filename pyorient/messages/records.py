@@ -111,7 +111,7 @@ class RecordCreateMessage(BaseMessage):
         _changes = []
         if self.get_protocol() > 21:
             try:
-                chng =  self._decode_field( FIELD_INT )
+                chng = self._decode_field( FIELD_INT )
                 """ count-of-collection-changes """
             except ( PyOrientConnectionException, TypeError ):
                 pass
@@ -141,8 +141,8 @@ class RecordCreateMessage(BaseMessage):
             version = result[1]
 
         self._record_content.update(
-            version=version,
-            rid=rid
+            __version=version,
+            __rid=rid
         )
 
         return self._record_content  # [ self._record_content, _changes ]
@@ -359,10 +359,12 @@ class RecordLoadMessage(BaseMessage):
             self._read_async_records()  # get cache
 
             _record = OrientRecord(
-                _record.data,
-                o_class=_record.className,
-                rid=self._record_id,
-                version=__record[1]
+                dict(
+                    __o_storage=_record.data,
+                    __o_class=_record.className,
+                    __version=__record[1],
+                    __rid=self._record_id
+                )
             )
 
         return _record
@@ -539,7 +541,7 @@ class RecordUpdateMessage(BaseMessage):
                 result.append(None)
 
         self._record_content.update(
-            version=result[0]
+            __version=result[0]
         )
 
         return [ self._record_content, chng, _changes ]
