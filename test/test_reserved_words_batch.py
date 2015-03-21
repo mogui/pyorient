@@ -83,10 +83,15 @@ class CommandTestCase(unittest.TestCase):
         assert x[0].ciao == 1234
 
         x = self.client.command("select rid, @rid, model, ciao from V")
+        import re
+        assert re.match( '#[-]*[0-9]+:[0-9]+', x[0]._rid ), (
+            "Failed to assert that "
+            "'#[-]*[0-9]+:[0-9]+' matches received "
+            "value: '%s'" % x[0]._rid
+        )
+        print( x[0]._rid )
 
-        assert x[0]._rid == '#-2:0'
         assert x[0].rid == 'test_rid'
-        assert x[0].rid2.get_hash() == '#9:0'
         try:
             x[0]._rid.get_hash()
             assert False
@@ -98,6 +103,15 @@ class CommandTestCase(unittest.TestCase):
                                                 "value: '%s'" % x[0]._rid2)
         assert x[0].model == '1123'
         assert x[0].ciao == 1234
+
+    def test_new_projection(self):
+        rec = {'@Package': {'name': 'foo', 'version': '1.0.0'}}
+        x = self.client.record_create(9, rec)
+        assert x._rid == '#9:0'
+        assert x._version == 1
+        assert x._class == 'Package'
+        assert x.name == 'foo'
+        assert x.version == '1.0.0'
 
     def test_sql_batch(self):
         cmd = "begin;" + \

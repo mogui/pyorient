@@ -91,12 +91,12 @@ rec_position = client.record_create( cluster_id, rec )
 
 ```python
 rec3 = { '@my_class': { 'accommodation': 'hotel', 'work': 'home', 'holiday': 'hills' } }
-update_success = client.record_update( rec_position.rid, rec_position.rid, rec3, rec_position.version )
+update_success = client.record_update( rec_position._rid, rec_position._rid, rec3, rec_position._version )
 ```
 
 ### Load a record
 ```python
-client.record_load( rec_position.rid )
+client.record_load( rec_position._rid )
 ```
 
 ### Load a record with cache
@@ -104,7 +104,7 @@ client.record_load( rec_position.rid )
 def _my_callback(for_every_record):
     print(for_every_record)
 
-client.record_load( rec_position.rid, "*:-1", _my_callback )
+client.record_load( rec_position._rid, "*:-1", _my_callback )
 ```
 
 ### Make a query
@@ -122,7 +122,7 @@ result = client.query_async("select from my_class", 10, '*:0', _my_callback)
 
 ### Delete a record
 ```python
-client.record_delete( cluster_id, rec_position.rid )
+client.record_delete( cluster_id, rec_position._rid )
 ```
 
 ### Drop a DB
@@ -180,7 +180,7 @@ rec_position1 = client.record_create( -1, rec1 )
 	
 # prepare for an update
 rec2 = { 'accommodation': 'hotel', 'work': 'office', 'holiday': 'mountain' }
-update_record = client.record_update( cluster_id, rec_position.rid, rec2, rec_position.version )
+update_record = client.record_update( cluster_id, rec_position._rid, rec2, rec_position._version )
 
 tx.attach( rec_position1 )
 tx.attach( rec_position1 )
