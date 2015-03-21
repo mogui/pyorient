@@ -112,6 +112,8 @@ class CommandTestCase(unittest.TestCase):
         assert x._class == 'Package'
         assert x.name == 'foo'
         assert x.version == '1.0.0'
+        assert x.oRecordData['name'] == 'foo'
+        assert x.oRecordData['version'] == '1.0.0'
 
     def test_sql_batch(self):
         cmd = "begin;" + \
