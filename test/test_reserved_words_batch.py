@@ -105,15 +105,17 @@ class CommandTestCase(unittest.TestCase):
         assert x[0].ciao == 1234
 
     def test_new_projection(self):
-        rec = {'@Package': {'name': 'foo', 'version': '1.0.0'}}
+        rec = {'@Package': {'name': 'foo', 'version': '1.0.0', 'rid': 'this_is_fake'}}
         x = self.client.record_create(9, rec)
         assert x._rid == '#9:0'
         assert x._version == 1
         assert x._class == 'Package'
         assert x.name == 'foo'
         assert x.version == '1.0.0'
+        assert x.rid == 'this_is_fake'
         assert x.oRecordData['name'] == 'foo'
         assert x.oRecordData['version'] == '1.0.0'
+        assert x.oRecordData['rid'] == 'this_is_fake'
 
     def test_sql_batch(self):
         cmd = "begin;" + \
