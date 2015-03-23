@@ -108,7 +108,9 @@ class CommandTestCase(unittest.TestCase):
         rec = {'@Package': {'name': 'foo', 'version': '1.0.0', 'rid': 'this_is_fake'}}
         x = self.client.record_create(9, rec)
         assert x._rid == '#9:0'
-        assert x._version == 1
+        import re
+        # this can differ from orientDB versions, so i use a regular expression
+        assert re.match( '[0-1]', str( x._version ) )
         assert x._class == 'Package'
         assert x.name == 'foo'
         assert x.version == '1.0.0'

@@ -67,7 +67,7 @@ class OrientSocket(object):
 
     def close(self):
         self.host = ''
-        self.port = ''
+        self.port = 0
         self.protocol = -1
         self.session_id = -1
         self._socket.close()

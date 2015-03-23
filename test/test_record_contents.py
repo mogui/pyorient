@@ -60,7 +60,9 @@ class CommandTestCase( unittest.TestCase ):
 
         assert rec[0].a is False
         assert rec[0].q is True
-        assert rec[0]._version == 1
+        import re
+        # this can differ from orientDB versions, so i use a regular expression
+        assert re.match( '[0-1]', str( rec[0]._version ) )
         assert rec[0]._rid == '#9:0'
 
         rec = {'a': 1, 'b': 2, 'c': 3}
@@ -69,14 +71,16 @@ class CommandTestCase( unittest.TestCase ):
         assert rec_position.a == 1
         assert rec_position.b == 2
         assert rec_position.c == 3
-        assert rec_position._version == 1
+        # this can differ from orientDB versions, so i use a regular expression
+        assert re.match( '[0-1]', str( rec_position._version ) )
         assert rec_position._rid == '#3:0'
 
         res = self.client.query( "select from " + rec_position._rid )
         assert res[0].a == 1
         assert res[0].b == 2
         assert res[0].c == 3
-        assert res[0]._version == 1
+        # this can differ from orientDB versions, so i use a regular expression
+        assert re.match( '[0-1]', str( res[0]._version ) )
         assert res[0]._rid == '#3:0'
 
         print( res[0].oRecordData['a'] )
