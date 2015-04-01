@@ -483,7 +483,7 @@ class ORecordEncoder(object):
             ret = str(value)
 
         elif isinstance(value, datetime):
-            ret = str(int(time.mktime(value.timetuple()))) + 't'
+            ret = str(int(time.mktime(value.timetuple())) * 1000) + 't'
         elif isinstance(value, date):
             ret = str(int(time.mktime(value.timetuple())) * 1000) + 'a'
         elif isinstance(value, list):
