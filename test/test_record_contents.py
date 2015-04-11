@@ -317,3 +317,28 @@ class CommandTestCase( unittest.TestCase ):
         assert 'DATE' in x
         assert isinstance( x['DATE'], datetime.datetime )
         assert str( x['DATE'] ) == '2015-01-02 03:04:05'
+
+    def test_deserialize_numeric_types(self):
+
+        lon1 = self.client.command(
+            "CREATE VERTEX V CONTENT {'longitude': 1.1}")[0].longitude
+        lon2 = self.client.command(
+            "CREATE VERTEX V CONTENT {'longitude': -1.1}")[0].longitude
+        lon3 = self.client.command(
+            "CREATE VERTEX V CONTENT {'longNum': 5356336298435356336}"
+        )[0].longNum
+
+        assert isinstance(lon1, float), \
+            "type(lon1) is not equal to 'float': %r" % type(lon1)
+        assert isinstance(lon2, float), \
+            "type(lon1) is not equal to 'float': %r" % type(lon2)
+
+        import sys
+        if sys.version_info[0] < 3:
+            assert isinstance(lon3, long), \
+                "type(lon3) is not equal to 'long': %r" \
+                % type(lon3)  # python 2.x long type
+        else:
+            assert isinstance(lon3, int), \
+                "type(lon3) is not equal to 'int': %r" \
+                % type(lon3)
