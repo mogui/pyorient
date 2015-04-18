@@ -205,6 +205,8 @@ class DbCloseMessage(BaseMessage):
         return super( DbCloseMessage, self ).prepare()
 
     def fetch_response(self):
+        # set database closed
+        self._orientSocket.db_opened = None
         super( DbCloseMessage, self ).close()
         return 0
 
