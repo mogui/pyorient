@@ -179,6 +179,9 @@ class CommandMessage(BaseMessage):
             response_type = response_type.decode()
         res = []
         if response_type == 'n':
+            self._append( FIELD_CHAR )
+            super( CommandMessage, self ).fetch_response(True)
+            # end Line \x00
             return None
         elif response_type == 'r':
             res = [ self._read_record() ]

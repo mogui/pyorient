@@ -269,14 +269,14 @@ class BaseMessage(object):
         elif t['type'] == BYTES:
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRING:
-            if sys.version_info.major >= 3:
+            if sys.version_info[0] >= 3:
                 if isinstance( v, str ):
                     v = v.encode('utf-8')
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRINGS:
             _content = b''
             for s in v:
-                if sys.version_info.major >= 3:
+                if sys.version_info[0] >= 3:
                     if isinstance( s, str ):
                         s = s.encode('utf-8')
                 _content += struct.pack("!i", len(s)) + s

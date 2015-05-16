@@ -237,6 +237,39 @@ class CommandTestCase(unittest.TestCase):
         client.connect("root", "root")
         dir(client)
 
+    def test_alter_statement(self):
+        client = pyorient.OrientDB("localhost", 2424)
+        client.connect("root", "root")
+
+        db_name = "test_1234_db"
+        try:
+            client.db_drop(db_name)
+        except pyorient.PyOrientCommandException as e:
+            print(e)
+        finally:
+            db = client.db_create(db_name, pyorient.DB_TYPE_GRAPH,
+                                  pyorient.STORAGE_TYPE_MEMORY)
+
+        cluster_info = client.db_open(
+            db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
+        )
+
+        client.command( "create class obj" )
+        client.command( "create property obj._KEY string" )
+        client.command( "alter property obj._KEY mandatory true" )
+        with self.assertRaises( pyorient.PyOrientCommandException ) as context:
+            client.command( "create index KEY on obj _KEY unique" )
+
+        import re
+        match_obj = re.match( r'(.*):.*',
+                             str( context.exception ) )
+
+        self.assertTrue( 'Error on parsing command at position #23'
+                         in match_obj.group(1) )
+
+        client.command( "create index KEY on obj ( _KEY ) unique" )
+        assert True is True
+
 
 # x = CommandTestCase('test_command').run()
 
