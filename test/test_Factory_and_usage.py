@@ -91,7 +91,7 @@ class CommandTestCase(unittest.TestCase):
         # print(load._rid
         # print(drop_db_result
 
-        assert isinstance( clusters, list )
+        assert isinstance( clusters, pyorient.Information )
         assert len( clusters ) != 0
         assert isinstance( sql_insert_result, list )
         assert len( sql_insert_result ) == 1

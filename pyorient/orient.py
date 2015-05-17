@@ -31,6 +31,7 @@ class OrientSocket(object):
         self.session_id = -1
         self.auth_token = b''
         self.db_opened = None
+        self.cluster_map = None
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
         self.in_transaction = False
 
@@ -140,8 +141,8 @@ def ByteToHex( byte_str ):
 # OrientDB Message Factory
 #
 class OrientDB(object):
-    _connection = None
-    _auth_token = None
+    _connection  = None
+    _auth_token  = None
 
     _Messages = dict(
         # Server

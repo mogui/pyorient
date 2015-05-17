@@ -12,6 +12,7 @@ from ..constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP, FIELD
     DB_DROP_OP, DB_RELOAD_OP, DB_SIZE_OP, DB_LIST_OP, STORAGE_TYPES, FIELD_LONG
 from ..utils import need_connected, need_db_opened
 from ..serialization import OrientRecord, ORecordDecoder
+from .cluster import Information
 
 #
 # DB OPEN
@@ -141,7 +142,10 @@ class DbOpenMessage(BaseMessage):
         # set serialization type, as global in the orient socket class
         self._orientSocket.serialization_type = self._serialization_type
 
-        return clusters
+        self._cluster_map = self._orientSocket.cluster_map = \
+            Information( [ clusters, response ] )
+
+        return self._cluster_map
 
     def set_db_name(self, db_name):
         self._db_name = db_name
@@ -502,7 +506,14 @@ class DbReloadMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
-        return clusters
+        self._cluster_map = Information([
+            clusters,
+            [self._cluster_map.hiAvailabilityList,
+             self._cluster_map.orientRelease]
+        ])
+        """ :type: Information """
+
+        return self._cluster_map
 
 #
 # DB SIZE

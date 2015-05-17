@@ -27,6 +27,12 @@ class BaseMessage(object):
     def database_opened(self):
         return self._db_opened
 
+    def get_cluster_map(self):
+        """
+        :type self._cluster_map: Information
+        """
+        return self._cluster_map
+
     def __init__(self, sock=OrientSocket):
         """
         :type sock: OrientSocket
@@ -53,6 +59,10 @@ class BaseMessage(object):
         self._db_opened = self._orientSocket.db_opened
         self._connected = self._orientSocket.connected
         self._serialization_type = self._orientSocket.serialization_type
+
+        self._cluster_map = self._orientSocket.cluster_map
+        """ :type : Information """
+
         self._output_buffer = b''
         self._input_buffer = b''
 

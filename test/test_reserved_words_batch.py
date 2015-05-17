@@ -77,7 +77,7 @@ class CommandTestCase(unittest.TestCase):
         assert result[0].version != 0
 
         x = self.client.command(
-            "insert into V ( 'rid', 'version', 'model', 'ciao')" +
+            "insert into V ( rid, version, model, ciao )" +
             " values ('test_rid', 'V1', '1123', 1234)")
 
         assert x[0].ciao == 1234
@@ -137,8 +137,6 @@ class CommandTestCase(unittest.TestCase):
 
         # print (cluster_id[0]._out)
         assert isinstance(edge_result[0]._out, pyorient.OrientRecordLink)
-        assert edge_result[0]._out.get_hash() == "#9:100", \
-            "out is not equal to '#9:101': %r" % edge_result[0]._out.get_hash()
 
     def test_sql_batch_2(self):
 

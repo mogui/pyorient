@@ -104,7 +104,7 @@ class CommandTestCase(unittest.TestCase):
             assert new_cluster_id > 0
 
             new_cluster_list = client.db_reload()
-            new_cluster_list.sort(key=lambda cluster: cluster['id'])
+            new_cluster_list.dataClusters.sort(key=lambda cluster: cluster['id'])
 
             _list = []
             for cluster in new_cluster_list:
