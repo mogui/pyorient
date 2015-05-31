@@ -257,13 +257,11 @@ class CommandTestCase(unittest.TestCase):
         client.command( "create class obj" )
         client.command( "create property obj._KEY string" )
         client.command( "alter property obj._KEY mandatory true" )
-        with self.assertRaises( pyorient.PyOrientCommandException ) as context:
+        with self.assertRaises( pyorient.PyOrientSQLParsingException ) as context:
             client.command( "create index KEY on obj _KEY unique" )
 
         import re
-        match_obj = re.match( r'(.*):.*',
-                             str( context.exception ) )
-
+        match_obj = re.match( r'(.*):.*', str( context.exception ) )
         self.assertTrue( 'Error on parsing command at position #23'
                          in match_obj.group(1) )
 

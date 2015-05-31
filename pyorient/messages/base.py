@@ -176,8 +176,10 @@ class BaseMessage(object):
                 # trash
                 del serialized_exception
 
-            cmd_exc = exception_message + b' - ' + exception_class
-            raise PyOrientCommandException(cmd_exc, [])
+            raise PyOrientCommandException(
+                exception_class.decode( 'utf8' ),
+                [ exception_message.decode( 'utf8' ) ]
+            )
 
         elif self._header[0] == 3:
             # TODO
