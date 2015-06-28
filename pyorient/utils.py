@@ -3,6 +3,7 @@ __author__ = 'Ostico <ostico@gmail.com>'
 import os
 from pyorient.exceptions import PyOrientConnectionException, \
     PyOrientDatabaseException
+from pyorient.types import OrientRecordLink
 
 
 def is_debug_active():
@@ -71,6 +72,8 @@ def parse_cluster_id(cluster_id):
             cluster_id = str(cluster_id)
         elif isinstance( cluster_id, bytes ):
             cluster_id = cluster_id.decode("utf-8")
+        elif isinstance( cluster_id, OrientRecordLink ):
+            cluster_id = cluster_id.get()
 
         _cluster_id, _position = cluster_id.split( ':' )
         if _cluster_id[0] is '#':
@@ -91,6 +94,8 @@ def parse_cluster_position(_cluster_position):
             _cluster_position = str(_cluster_position)
         elif isinstance( _cluster_position, bytes ):
             _cluster_position = _cluster_position.decode("utf-8")
+        elif isinstance( _cluster_position, OrientRecordLink ):
+            _cluster_position = _cluster_position.get()
 
         _cluster, _position = _cluster_position.split( ':' )
     except (AttributeError, ValueError):

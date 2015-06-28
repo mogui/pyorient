@@ -211,6 +211,8 @@ class ORecordDecoder(object):
             elif c == '.':
                 is_float = True
                 collected += c
+            elif c == 'E' and is_float:
+                collected += c
             else:
                 break
 
@@ -228,14 +230,18 @@ class ORecordDecoder(object):
             # date
             collected = datetime.fromtimestamp(float(collected) / 1000)
             content = content[1:]
-        elif c == 'f':
-            # float
+        elif c == 'f' or c == 'c' or c == 'd':
+            # float # decimal (signed32 bit floating point) # double
             collected = float(collected)
             content = content[1:]
-        elif c == 'b' or c == 's' or c == 'l':
+        elif c == 'b' or c == 's':
             collected = int(collected)
             content = content[1:]
-        elif c == 'c' or c == 'd':
+        elif c == 'l':
+            if sys.version_info[0] < 3:
+                collected = long(collected)  # python 2.x long type
+            else:
+                collected = int(collected)
             content = content[1:]
         elif is_float:
             collected = float(collected)
@@ -483,14 +489,18 @@ class ORecordEncoder(object):
             ret = str(value)
 
         elif isinstance(value, datetime):
-            ret = str(int(time.mktime(value.timetuple()))) + 't'
+            ret = str(int(time.mktime(value.timetuple())) * 1000) + 't'
         elif isinstance(value, date):
             ret = str(int(time.mktime(value.timetuple())) * 1000) + 'a'
         elif isinstance(value, list):
             try:
                 ret = "[" + ','.join(
-                    map(lambda elem: self.parse_value(type(value[0])(elem)),
-                        value)) + ']'
+                    map(
+                        lambda elem: self.parse_value(type(value[0])(elem))
+                        if not isinstance(value[0], OrientRecordLink)
+                        else elem.get_hash(),
+                        value
+                    )) + ']'
             except ValueError as e:
                 raise Exception("wrong type commistion")
         elif isinstance(value, dict):

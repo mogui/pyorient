@@ -60,7 +60,9 @@ class CommandTestCase( unittest.TestCase ):
 
         assert rec[0].a is False
         assert rec[0].q is True
-        assert rec[0]._version == 1
+        import re
+        # this can differ from orientDB versions, so i use a regular expression
+        assert re.match( '[0-1]', str( rec[0]._version ) )
         assert rec[0]._rid == '#9:0'
 
         rec = {'a': 1, 'b': 2, 'c': 3}
@@ -69,14 +71,16 @@ class CommandTestCase( unittest.TestCase ):
         assert rec_position.a == 1
         assert rec_position.b == 2
         assert rec_position.c == 3
-        assert rec_position._version == 1
+        # this can differ from orientDB versions, so i use a regular expression
+        assert re.match( '[0-1]', str( rec_position._version ) )
         assert rec_position._rid == '#3:0'
 
         res = self.client.query( "select from " + rec_position._rid )
         assert res[0].a == 1
         assert res[0].b == 2
         assert res[0].c == 3
-        assert res[0]._version == 1
+        # this can differ from orientDB versions, so i use a regular expression
+        assert re.match( '[0-1]', str( res[0]._version ) )
         assert res[0]._rid == '#3:0'
 
         print( res[0].oRecordData['a'] )
@@ -296,7 +300,6 @@ class CommandTestCase( unittest.TestCase ):
         assert record._rid == '#9:0'
         assert record.oRecordData['scenario'] == 'a "quote" follows'
 
-
     def test_db_list(self):
         self.client.connect( "root", "root" )
         databases = self.client.db_list()
@@ -313,3 +316,38 @@ class CommandTestCase( unittest.TestCase ):
         assert 'DATE' in x
         assert isinstance( x['DATE'], datetime.datetime )
         assert str( x['DATE'] ) == '2015-01-02 03:04:05'
+
+    def test_deserialize_numeric_types(self):
+
+        lon1 = self.client.command(
+            "CREATE VERTEX V CONTENT {'longitude': 1.1}")[0].longitude
+        lon2 = self.client.command(
+            "CREATE VERTEX V CONTENT {'longitude': -1.1}")[0].longitude
+        lon3 = self.client.command(
+            "CREATE VERTEX V CONTENT {'longNum': 5356336298435356336}"
+        )[0].longNum
+        lon4 = self.client.command(
+            "CREATE VERTEX V CONTENT {'sciNum': 6.022E23}"
+        )[0].sciNum
+        lon5 = self.client.command(
+            "CREATE VERTEX V CONTENT {'sciNum': 6.022E-23}"
+        )[0].sciNum
+
+        assert isinstance(lon1, float), \
+            "type(lon1) is not equal to 'float': %r" % type(lon1)
+        assert isinstance(lon2, float), \
+            "type(lon2) is not equal to 'float': %r" % type(lon2)
+        assert isinstance(lon4, float), \
+            "type(lon4) is not equal to 'float': %r" % type(lon4)
+        assert isinstance(lon5, float), \
+            "type(lon5) is not equal to 'float': %r" % type(lon5)
+
+        import sys
+        if sys.version_info[0] < 3:
+            assert isinstance(lon3, long), \
+                "type(lon3) is not equal to 'long': %r" \
+                % type(lon3)  # python 2.x long type
+        else:
+            assert isinstance(lon3, int), \
+                "type(lon3) is not equal to 'int': %r" \
+                % type(lon3)

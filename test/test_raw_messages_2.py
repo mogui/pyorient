@@ -389,7 +389,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send().fetch_response()
 
-        cluster_info.sort(key=lambda cluster: cluster['id'])
+        cluster_info.dataClusters.sort(key=lambda cluster: cluster['id'])
 
         for cluster in cluster_info:
             # os.environ['DEBUG'] = '0'  # silence debug

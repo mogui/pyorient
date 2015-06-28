@@ -63,7 +63,7 @@ class DataClusterTestCase(unittest.TestCase):
         _reload = DbReloadMessage(connection)
         new_cluster_list =_reload.prepare().send().fetch_response()
 
-        new_cluster_list.sort(key=lambda cluster: cluster['id'])
+        new_cluster_list.dataClusters.sort(key=lambda cluster: cluster['id'])
 
         _list = []
         for cluster in new_cluster_list:
@@ -96,7 +96,7 @@ class DataClusterTestCase(unittest.TestCase):
 
         _reload = DbReloadMessage(connection)
         new_cluster_list = _reload.prepare().send().fetch_response()
-        new_cluster_list.sort(key=lambda cluster: cluster['id'])
+        new_cluster_list.dataClusters.sort(key=lambda cluster: cluster['id'])
 
         _list = []
         for cluster in new_cluster_list:

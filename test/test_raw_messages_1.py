@@ -257,7 +257,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         cluster_reload = reload_msg.prepare().send().fetch_response()
 
         print("Cluster: %s" % cluster_info)
-        assert cluster_info == cluster_reload
+        assert cluster_info.dataClusters == cluster_reload.dataClusters
 
     def test_db_size(self):
 

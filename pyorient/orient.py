@@ -32,6 +32,7 @@ class OrientSocket(object):
         self.session_id = -1
         self.auth_token = b''
         self.db_opened = None
+        self.cluster_map = None
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
         self.in_transaction = False
 
@@ -68,7 +69,7 @@ class OrientSocket(object):
 
     def close(self):
         self.host = ''
-        self.port = ''
+        self.port = 0
         self.protocol = -1
         self.session_id = -1
         self._socket.close()
@@ -92,8 +93,8 @@ class OrientSocket(object):
             # or broken line issues because of
             """:see: https://docs.python.org/2/howto/sockets.html#when-sockets-die """
             try:
-                ready_to_read, ready_to_write, in_error = \
-                    select.select( [self._socket, ], [self._socket, ], [], 30 )
+                ready_to_read, _, in_error = \
+                    select.select( [self._socket, ], [], [self._socket, ], 30 )
             except select.error as e:
                 self.connected = False
                 raise e
@@ -114,9 +115,10 @@ class OrientSocket(object):
                     _len_to_read -= n_bytes
                 return bytes(buf)
 
-            if len(ready_to_write) > 0:
-                # nothing to send
-                pass
+            if len(in_error) > 0:
+                self._socket.close()
+                raise PyOrientConnectionException(
+                    "Socket error", [])
 
 
 def ByteToHex( byte_str ):
@@ -140,8 +142,8 @@ def ByteToHex( byte_str ):
 # OrientDB Message Factory
 #
 class OrientDB(object):
-    _connection = None
-    _auth_token = None
+    _connection  = None
+    _auth_token  = None
 
     _Messages = dict(
         # Server
@@ -225,6 +227,10 @@ class OrientDB(object):
             .prepare(args).send().fetch_response()
 
     def db_open(self, *args):
+        """
+        :param args:
+        :rtype: pyorient.Information
+        """
         return self.get_message("DbOpenMessage") \
             .prepare(args).send().fetch_response()
 

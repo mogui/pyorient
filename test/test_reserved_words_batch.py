@@ -29,7 +29,7 @@ class CommandTestCase(unittest.TestCase):
             db = self.client.db_create(db_name, pyorient.DB_TYPE_GRAPH,
                                        pyorient.STORAGE_TYPE_MEMORY)
 
-        cluster_info = self.client.db_open(
+        self.cluster_info = self.client.db_open(
             db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
         )
 
@@ -77,16 +77,21 @@ class CommandTestCase(unittest.TestCase):
         assert result[0].version != 0
 
         x = self.client.command(
-            "insert into V ( 'rid', 'version', 'model', 'ciao')" +
+            "insert into V ( rid, version, model, ciao )" +
             " values ('test_rid', 'V1', '1123', 1234)")
 
         assert x[0].ciao == 1234
 
         x = self.client.command("select rid, @rid, model, ciao from V")
+        import re
+        assert re.match( '#[-]*[0-9]+:[0-9]+', x[0]._rid ), (
+            "Failed to assert that "
+            "'#[-]*[0-9]+:[0-9]+' matches received "
+            "value: '%s'" % x[0]._rid
+        )
+        print( x[0]._rid )
 
-        assert x[0]._rid == '#-2:0'
         assert x[0].rid == 'test_rid'
-        assert x[0].rid2.get_hash() == '#9:0'
         try:
             x[0]._rid.get_hash()
             assert False
@@ -98,6 +103,21 @@ class CommandTestCase(unittest.TestCase):
                                                 "value: '%s'" % x[0]._rid2)
         assert x[0].model == '1123'
         assert x[0].ciao == 1234
+
+    def test_new_projection(self):
+        rec = {'@Package': {'name': 'foo', 'version': '1.0.0', 'rid': 'this_is_fake'}}
+        x = self.client.record_create(9, rec)
+        assert x._rid == '#9:0'
+        import re
+        # this can differ from orientDB versions, so i use a regular expression
+        assert re.match( '[0-1]', str( x._version ) )
+        assert x._class == 'Package'
+        assert x.name == 'foo'
+        assert x.version == '1.0.0'
+        assert x.rid == 'this_is_fake'
+        assert x.oRecordData['name'] == 'foo'
+        assert x.oRecordData['version'] == '1.0.0'
+        assert x.oRecordData['rid'] == 'this_is_fake'
 
     def test_sql_batch(self):
         cmd = "begin;" + \
@@ -117,8 +137,6 @@ class CommandTestCase(unittest.TestCase):
 
         # print (cluster_id[0]._out)
         assert isinstance(edge_result[0]._out, pyorient.OrientRecordLink)
-        assert edge_result[0]._out.get_hash() == "#9:100", \
-            "out is not equal to '#9:101': %r" % edge_result[0]._out.get_hash()
 
     def test_sql_batch_2(self):
 
@@ -149,7 +167,18 @@ class CommandTestCase(unittest.TestCase):
             "commit;"
         )
 
-        cluster_id = self.client.batch(cmd)
+        assert isinstance(self.cluster_info, pyorient.Information)
+
+        # The preceding batch script create an exception
+        # in OrientDB newest than 2.1
+        if self.cluster_info.version_info['major'] == 2 and \
+                self.cluster_info.version_info['minor'] >= 1:
+            with self.assertRaises( pyorient.PyOrientCommandException ):
+                cluster_id = self.client.batch(cmd)
+        else:
+            cluster_id = self.client.batch(cmd)
+
+
 
 
 # x = CommandTestCase('test_sql_batch_2').run()

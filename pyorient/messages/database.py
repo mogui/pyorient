@@ -11,7 +11,7 @@ from ..constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP, FIELD
     DB_DROP_OP, DB_RELOAD_OP, DB_SIZE_OP, DB_LIST_OP, STORAGE_TYPES, FIELD_LONG
 from ..utils import need_connected, need_db_opened
 from ..serialization import OrientRecord, ORecordDecoder
-from ..types import OrientNodeList
+from .cluster import Information
 
 #
 # DB OPEN
@@ -134,14 +134,6 @@ class DbOpenMessage(BaseMessage):
         self._append( FIELD_STRING )  # Orient release
 
         response = super( DbOpenMessage, self ).fetch_response(True)
-        #
-        # This is not in CSV.... this is in Binary
-        # self._orientSocket.node_listeners = OrientNodeList(
-        #     ORecordDecoder( response[0] )
-        # )
-
-        # with open('binary.log', 'ba+') as f:
-        #     f.write(response[0])
 
         # set database opened
         self._orientSocket.db_opened = self._db_name
@@ -149,7 +141,10 @@ class DbOpenMessage(BaseMessage):
         # set serialization type, as global in the orient socket class
         self._orientSocket.serialization_type = self._serialization_type
 
-        return clusters
+        self._cluster_map = self._orientSocket.cluster_map = \
+            Information( [ clusters, response ] )
+
+        return self._cluster_map
 
     def set_db_name(self, db_name):
         self._db_name = db_name
@@ -178,7 +173,7 @@ class DbOpenMessage(BaseMessage):
         return self
 
     def set_serialization_type(self, serialization_type):
-        #TODO Implement version 22 of the protocol
+        # TODO Implement version 22 of the protocol
         if serialization_type == SERIALIZATION_SERIAL_BIN:
             raise NotImplementedError
 
@@ -213,6 +208,8 @@ class DbCloseMessage(BaseMessage):
         return super( DbCloseMessage, self ).prepare()
 
     def fetch_response(self):
+        # set database closed
+        self._orientSocket.db_opened = None
         super( DbCloseMessage, self ).close()
         return 0
 
@@ -508,7 +505,14 @@ class DbReloadMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
-        return clusters
+        self._cluster_map = Information([
+            clusters,
+            [self._cluster_map.hiAvailabilityList,
+             self._cluster_map.orientRelease]
+        ])
+        """ :type: Information """
+
+        return self._cluster_map
 
 #
 # DB SIZE

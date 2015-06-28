@@ -52,7 +52,7 @@ class TokenAuthTest(unittest.TestCase):
         # //this because the connection credentials
         # // are not correct for Orient root access
         self.assertRaises(
-            pyorient.exceptions.PyOrientCommandException,
+            pyorient.exceptions.PyOrientSecurityAccessException,
             self.client.db_exists,
             "GratefulDeadConcerts"
         )

@@ -134,3 +134,38 @@ class LinkSetTestCase(unittest.TestCase):
         class_id1 = self.client.command("CREATE VERTEX V CONTENT "
                                         "{'a': [ { 'b': [], 'c': [] } ] }"
                                         )[0].oRecordData
+
+    def testLinkList(self):
+
+        DB = pyorient.OrientDB("localhost", 2424)
+        DB.connect("root", "root")
+
+        db_name = "test_tr"
+        try:
+            DB.db_drop(db_name)
+        except pyorient.PyOrientCommandException as e:
+            print(e)
+            pass
+        finally:
+            db = DB.db_create(db_name, pyorient.DB_TYPE_GRAPH,
+                                       pyorient.STORAGE_TYPE_MEMORY)
+            pass
+
+        DB.command( "insert into V set key1 = 'row0'" )
+        DB.command( "insert into V set key1 = 'row1'" )
+        DB.command( "insert into V set key1 = 'row2'" )
+        DB.command( "insert into V set key1 = 'row3'" )
+
+        o1 = pyorient.OrientRecordLink( "9:0" )
+        o2 = pyorient.OrientRecordLink( "9:1" )
+        o3 = pyorient.OrientRecordLink( "9:2" )
+        o4 = pyorient.OrientRecordLink( "9:3" )
+        lList = [ o1, o2, o3, o4 ]
+
+        rec = DB.record_create( 9, { 'test': lList, 'key1': 'row4' } )  # 9:4
+
+        if self.cluster_info.version_info['major'] > 1:
+            _rec = DB.record_load( "#9:4" )
+            assert len( _rec.oRecordData['test'] ) == 4
+            assert isinstance( _rec.oRecordData['test'][0], pyorient.OrientRecordLink )
+

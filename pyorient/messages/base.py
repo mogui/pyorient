@@ -27,6 +27,12 @@ class BaseMessage(object):
     def database_opened(self):
         return self._db_opened
 
+    def get_cluster_map(self):
+        """
+        :type self._cluster_map: Information
+        """
+        return self._cluster_map
+
     def __init__(self, sock=OrientSocket):
         """
         :type sock: OrientSocket
@@ -53,6 +59,10 @@ class BaseMessage(object):
         self._db_opened = self._orientSocket.db_opened
         self._connected = self._orientSocket.connected
         self._serialization_type = self._orientSocket.serialization_type
+
+        self._cluster_map = self._orientSocket.cluster_map
+        """ :type : Information """
+
         self._output_buffer = b''
         self._input_buffer = b''
 
@@ -166,8 +176,10 @@ class BaseMessage(object):
                 # trash
                 del serialized_exception
 
-            cmd_exc = exception_message + b' - ' + exception_class
-            raise PyOrientCommandException(cmd_exc, [])
+            raise PyOrientCommandException(
+                exception_class.decode( 'utf8' ),
+                [ exception_message.decode( 'utf8' ) ]
+            )
 
         elif self._header[0] == 3:
             # Push notification, Node cluster changed
@@ -282,14 +294,14 @@ class BaseMessage(object):
         elif t['type'] == BYTES:
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRING:
-            if sys.version_info.major >= 3:
+            if sys.version_info[0] >= 3:
                 if isinstance( v, str ):
                     v = v.encode('utf-8')
             _content = struct.pack("!i", len(v)) + v
         elif t['type'] == STRINGS:
             _content = b''
             for s in v:
-                if sys.version_info.major >= 3:
+                if sys.version_info[0] >= 3:
                     if isinstance( s, str ):
                         s = s.encode('utf-8')
                 _content += struct.pack("!i", len(s)) + s
