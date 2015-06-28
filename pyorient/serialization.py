@@ -211,6 +211,8 @@ class ORecordDecoder(object):
             elif c == '.':
                 is_float = True
                 collected += c
+            elif c == 'E' and is_float:
+                collected += c
             else:
                 break
 

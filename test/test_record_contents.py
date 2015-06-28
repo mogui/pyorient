@@ -300,7 +300,6 @@ class CommandTestCase( unittest.TestCase ):
         assert record._rid == '#9:0'
         assert record.oRecordData['scenario'] == 'a "quote" follows'
 
-
     def test_db_list(self):
         self.client.connect( "root", "root" )
         databases = self.client.db_list()
@@ -327,11 +326,21 @@ class CommandTestCase( unittest.TestCase ):
         lon3 = self.client.command(
             "CREATE VERTEX V CONTENT {'longNum': 5356336298435356336}"
         )[0].longNum
+        lon4 = self.client.command(
+            "CREATE VERTEX V CONTENT {'sciNum': 6.022E23}"
+        )[0].sciNum
+        lon5 = self.client.command(
+            "CREATE VERTEX V CONTENT {'sciNum': 6.022E-23}"
+        )[0].sciNum
 
         assert isinstance(lon1, float), \
             "type(lon1) is not equal to 'float': %r" % type(lon1)
         assert isinstance(lon2, float), \
-            "type(lon1) is not equal to 'float': %r" % type(lon2)
+            "type(lon2) is not equal to 'float': %r" % type(lon2)
+        assert isinstance(lon4, float), \
+            "type(lon4) is not equal to 'float': %r" % type(lon4)
+        assert isinstance(lon5, float), \
+            "type(lon5) is not equal to 'float': %r" % type(lon5)
 
         import sys
         if sys.version_info[0] < 3:
