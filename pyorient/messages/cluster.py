@@ -8,6 +8,7 @@ from ..constants import CLUSTER_TYPE_PHYSICAL, DATA_CLUSTER_ADD_OP, \
     FIELD_STRING, DATA_CLUSTER_DATA_RANGE_OP, DATA_CLUSTER_DROP_OP, CLUSTER_TYPES
 from ..utils import need_db_opened
 from .base import BaseMessage
+from ..serialization import ORecordDecoder
 
 #
 # DATACLUSTER ADD
@@ -274,7 +275,7 @@ class Information(object):
             self._reverseMap[ str( cluster[ 'name' ] ) ] = [ position, cluster[ 'id' ] ]
             self._reverseIDMap[ cluster[ 'id' ] ] = [ position, str( cluster[ 'name' ] ) ]
 
-        self.hiAvailabilityList = params[1][0]
+        self.hiAvailabilityList = ORecordDecoder( params[1][0] )
         self._parse_version( params[1][1] )
 
     def _parse_version( self, param ):
