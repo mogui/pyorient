@@ -262,6 +262,7 @@ class Information(object):
         self._reverseMap    = {}
         self._reverseIDMap  = {}
         self.orientRelease = None
+        self.hiAvailabilityList = None
         self.version_info = {
             'major': None,
             'minor': None,
@@ -275,12 +276,14 @@ class Information(object):
             self._reverseMap[ str( cluster[ 'name' ] ) ] = [ position, cluster[ 'id' ] ]
             self._reverseIDMap[ cluster[ 'id' ] ] = [ position, str( cluster[ 'name' ] ) ]
 
-        if isinstance( params[1][0], ORecordDecoder ):
-            self.hiAvailabilityList = params[1][0]
-        else:
-            self.hiAvailabilityList = ORecordDecoder( params[1][0] )
-
+        self.set_hi_availability_list( params[1][0] )
         self._parse_version( params[1][1] )
+
+    def set_hi_availability_list(self, params ):
+        if isinstance( params, ORecordDecoder ):
+            self.hiAvailabilityList = params
+        else:
+            self.hiAvailabilityList = ORecordDecoder( params )
 
     def _parse_version( self, param ):
 

@@ -187,13 +187,21 @@ class BaseMessage(object):
             # FIELD_BYTE (OChannelBinaryProtocol.PUSH_DATA);  # WRITE 3
             # FIELD_INT (Integer.MIN_VALUE);  # SESSION ID = 2^-31
             self._decode_field( FIELD_BYTE )  # 80: \x50 Request Push
-            push_notice = [ self._decode_field( FIELD_STRING ) ]  # JSON WITH THE NEW CLUSTER CFG
+            self._cluster_map.set_hi_availability_list(
+                self._decode_field( FIELD_STRING )
+            )  # JSON WITH THE NEW CLUSTER CFG
 
             end_flag = self._decode_field( FIELD_BYTE )
             while end_flag == 3:
                 self._decode_field( FIELD_INT )  # FAKE SESSION ID = 2^-31
                 self._decode_field( FIELD_BYTE )  # 80: 0x50 Request Push
-                push_notice.append( self._decode_field( FIELD_STRING ) )  # JSON
+
+                self._cluster_map.set_hi_availability_list(
+                    self._decode_field( FIELD_STRING ) # JSON
+                )
+                """
+                :type: self._cluster_map pyorient.messages.cluster.Information
+                """
                 end_flag = self._decode_field( FIELD_BYTE )
 
             # Try to set the new session id???
