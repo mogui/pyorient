@@ -14,6 +14,8 @@ after_success:
   - coveralls
 
 env:
+  - ORIENTDB_VERSION=2.1-rc4
+  - ORIENTDB_VERSION=2.0.10
   - ORIENTDB_VERSION=2.0.8
   - ORIENTDB_VERSION=2.0.7
   - ORIENTDB_VERSION=2.0.6

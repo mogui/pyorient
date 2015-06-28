@@ -493,8 +493,12 @@ class ORecordEncoder(object):
         elif isinstance(value, list):
             try:
                 ret = "[" + ','.join(
-                    map(lambda elem: self.parse_value(type(value[0])(elem)),
-                        value)) + ']'
+                    map(
+                        lambda elem: self.parse_value(type(value[0])(elem))
+                        if not isinstance(value[0], OrientRecordLink)
+                        else elem.get_hash(),
+                        value
+                    )) + ']'
             except ValueError as e:
                 raise Exception("wrong type commistion")
         elif isinstance(value, dict):

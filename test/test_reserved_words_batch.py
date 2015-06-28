@@ -29,7 +29,7 @@ class CommandTestCase(unittest.TestCase):
             db = self.client.db_create(db_name, pyorient.DB_TYPE_GRAPH,
                                        pyorient.STORAGE_TYPE_MEMORY)
 
-        cluster_info = self.client.db_open(
+        self.cluster_info = self.client.db_open(
             db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
         )
 
@@ -167,7 +167,18 @@ class CommandTestCase(unittest.TestCase):
             "commit;"
         )
 
-        cluster_id = self.client.batch(cmd)
+        assert isinstance(self.cluster_info, pyorient.Information)
+
+        # The preceding batch script create an exception
+        # in OrientDB newest than 2.1
+        if self.cluster_info.version_info['major'] == 2 and \
+                self.cluster_info.version_info['minor'] >= 1:
+            with self.assertRaises( pyorient.PyOrientCommandException ):
+                cluster_id = self.client.batch(cmd)
+        else:
+            cluster_id = self.client.batch(cmd)
+
+
 
 
 # x = CommandTestCase('test_sql_batch_2').run()

@@ -317,13 +317,11 @@ class RecordLoadMessage(BaseMessage):
             pass
 
         try:
-            _cluster, _position = self._record_id.split( ':' )
+            _cluster = parse_cluster_id( self._record_id )
+            _position = parse_cluster_position( self._record_id )
         except ValueError:
             raise PyOrientBadMethodCallException( "Not valid Rid to load: "
                                                   + self._record_id, [] )
-
-        if _cluster[0] == '#':
-            _cluster = _cluster[1:]
 
         self._append( ( FIELD_SHORT, int(_cluster) ) )
         self._append( ( FIELD_LONG, int(_position) ) )
@@ -545,7 +543,6 @@ class RecordUpdateMessage(BaseMessage):
         )
 
         return [ self._record_content, chng, _changes ]
-
 
     def set_data_segment_id(self, data_segment_id):
         self._data_segment_id = data_segment_id

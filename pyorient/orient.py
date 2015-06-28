@@ -226,6 +226,10 @@ class OrientDB(object):
             .prepare(args).send().fetch_response()
 
     def db_open(self, *args):
+        """
+        :param args:
+        :rtype: pyorient.Information
+        """
         return self.get_message("DbOpenMessage") \
             .prepare(args).send().fetch_response()
 

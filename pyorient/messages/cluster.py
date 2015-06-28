@@ -296,9 +296,16 @@ class Information(object):
             _temp = self.version_info[ 'minor' ].split( "-" )
             self.version_info[ 'minor' ] = int( _temp[0] )
             self.version_info[ 'build' ] = _temp[1]
+        else:
+            self.version_info[ 'minor' ] = int( self.version_info[ 'minor' ] )
 
-        self.version_info[ 'build' ] = \
-            self.version_info[ 'build' ].split( " ", 1 )[0]
+        build = self.version_info[ 'build' ].split( " ", 1 )[0]
+        try:
+            build = int( build )
+        except ValueError:
+            pass
+
+        self.version_info[ 'build' ] = build
 
     def get_class_position( self, cluster_name ):
         return self._reverseMap[ cluster_name.lower() ][1]
