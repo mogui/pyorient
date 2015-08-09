@@ -362,6 +362,7 @@ class RawMessages_1_TestCase(unittest.TestCase):
         res = req_msg.prepare( [ QUERY_GREMLIN, "g.V.outE('followed_by')[0]" ] ) \
             .send().fetch_response()
 
+        assert len(res) == 1
         assert res[0]._rid == '#11:0'
         assert res[0]._class == 'followed_by'
         assert res[0]._version == 2
