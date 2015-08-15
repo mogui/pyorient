@@ -101,6 +101,8 @@ class ORecordDecoder(object):
             :return: dict The collected string and any remaining content.
         """
         length = len(content)
+        if length == 0:
+            return [None, None]
         collected = ''
         if content[ 0 ] == '"':
             result = self.parse_string( content[1:] )
