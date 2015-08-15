@@ -3,6 +3,7 @@ __author__ = 'gremorian'
 import sys
 import time
 from datetime import date, datetime
+from decimal import Decimal
 from .types import OrientRecordLink, OrientRecord, OrientBinaryObject
 
 
@@ -100,8 +101,6 @@ class ORecordDecoder(object):
             :return: dict The collected string and any remaining content.
         """
         length = len(content)
-        if length == 0:
-            return [None, None]
         collected = ''
         if content[ 0 ] == '"':
             result = self.parse_string( content[1:] )
@@ -232,9 +231,12 @@ class ORecordDecoder(object):
             # date
             collected = datetime.fromtimestamp(float(collected) / 1000)
             content = content[1:]
-        elif c == 'f' or c == 'c' or c == 'd':
-            # float # decimal (signed32 bit floating point) # double
+        elif c == 'f' or c == 'd':
+            # float # double
             collected = float(collected)
+            content = content[1:]
+        elif c == 'c':
+            collected = Decimal(collected)
             content = content[1:]
         elif c == 'b' or c == 's':
             collected = int(collected)
@@ -494,6 +496,8 @@ class ORecordEncoder(object):
             ret = str(int(time.mktime(value.timetuple())) * 1000) + 't'
         elif isinstance(value, date):
             ret = str(int(time.mktime(value.timetuple())) * 1000) + 'a'
+        elif isinstance(value, Decimal):
+            ret = str(value) + 'c'
         elif isinstance(value, list):
             try:
                 ret = "[" + ','.join(
