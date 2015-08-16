@@ -39,6 +39,9 @@ extract(){
         exit 1
     fi;
 
+    echo "rm -rf ${ODB_PACKAGE_PATH}"
+    rm -rf ${ODB_PACKAGE_PATH}
+
 }
 
 download () {
@@ -125,9 +128,6 @@ build_via_github (){
 
     echo "rm -rf ${CI_DIR}/${ODB_ARCHIVED_NAME}"
     rm -rf ${CI_DIR}/${ODB_ARCHIVED_NAME}
-
-    echo "rm -rf ${CI_DIR}/${ODB_COMPRESSED}"
-    rm -rf ${CI_DIR}/${ODB_COMPRESSED}
 
 }
 
