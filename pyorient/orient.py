@@ -12,7 +12,7 @@ from .exceptions import PyOrientBadMethodCallException, \
     PyOrientConnectionPoolException
 
 from .constants import FIELD_SHORT, \
-    QUERY_ASYNC, QUERY_CMD, QUERY_SYNC, QUERY_SCRIPT, \
+    QUERY_ASYNC, QUERY_CMD, QUERY_GREMLIN, QUERY_SYNC, QUERY_SCRIPT, \
     SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL
 from .utils import dlog
 
@@ -242,6 +242,10 @@ class OrientDB(object):
             .prepare(args).send().fetch_response()
 
     # DATABASE COMMANDS
+
+    def gremlin(self, *args):
+        return self.get_message("CommandMessage") \
+            .prepare(( QUERY_GREMLIN, ) + args).send().fetch_response()
 
     def command(self, *args):
         return self.get_message("CommandMessage") \
