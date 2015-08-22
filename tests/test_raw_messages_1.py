@@ -8,7 +8,7 @@ from pyorient.messages.connection import ConnectMessage, ShutdownMessage
 from pyorient.messages.database import DbExistsMessage, DbOpenMessage, DbCreateMessage,\
  DbDropMessage, DbReloadMessage, DbCloseMessage, DbSizeMessage, DbListMessage
 from pyorient.messages.commands import CommandMessage
-from pyorient.constants import DB_TYPE_DOCUMENT, QUERY_SYNC, \
+from pyorient.constants import DB_TYPE_DOCUMENT, QUERY_SYNC, QUERY_GREMLIN, \
     STORAGE_TYPE_PLOCAL
 
 
@@ -336,6 +336,36 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
         res = req_msg.prepare( [ QUERY_SYNC, "select * from followed_by limit 1" ] ) \
             .send().fetch_response()
+
+        print("%r" % res[0]._rid)
+        print("%r" % res[0]._class)
+        print("%r" % res[0]._version)
+        
+    def test_gremlin(self):
+        connection = OrientSocket( "localhost", 2424 )
+
+        print("Sid, should be -1 : %s" % connection.session_id)
+        assert connection.session_id == -1
+
+        # ##################
+
+        msg = DbOpenMessage( connection )
+
+        db_name = "GratefulDeadConcerts"
+        cluster_info = msg.prepare(
+            (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
+        ).send().fetch_response()
+        assert len(cluster_info) != 0
+
+        req_msg = CommandMessage( connection )
+
+        res = req_msg.prepare( [ QUERY_GREMLIN, "g.V.outE('followed_by')[0]" ] ) \
+            .send().fetch_response()
+
+        assert len(res) == 1
+        assert res[0]._rid == '#11:0'
+        assert res[0]._class == 'followed_by'
+        assert res[0]._version == 1
 
         print("%r" % res[0]._rid)
         print("%r" % res[0]._class)
