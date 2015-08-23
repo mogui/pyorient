@@ -7,6 +7,7 @@ from .property import (
 from .exceptions import ReservedWordError
 from .vertex import Vertex
 from .edge import Edge
+from .broker import get_broker
 from .query import Query
 
 import pyorient
@@ -189,6 +190,8 @@ class Graph(object):
                 # FIXME Query server version instead?
                 pass
 
+            # FIXME Should nullable correspond to 'MANDATORY' instead?
+            # Or should there be a separate property
             self.client.command(
                     'ALTER PROPERTY {0} NOTNULL {1}'
                         .format(class_prop
@@ -245,11 +248,17 @@ class Graph(object):
 
     def create_vertex(self, vertex_cls, **kwargs):
         class_name = vertex_cls.registry_name
+
+        if kwargs:
+            db_props = self.props_to_db(vertex_cls, kwargs)
+            set_clause = ' SET {}'.format(
+                ','.join('{}={}'.format(k,PropertyEncoder.encode(v))
+                         for k,v in db_props.items()))
+        else:
+            set_clause = ''
+
         result = self.client.command(
-            'INSERT INTO {0} CONTENT {1}'.format(
-                class_name
-                , json.dumps(self.props_to_db(vertex_cls, kwargs)
-                             , cls=PropertyEncoder)))[0]
+            'INSERT INTO {}{}'.format(class_name, set_clause))[0]
 
         props = result.oRecordData
         return vertex_cls.from_graph(self, result._rid,
@@ -257,13 +266,19 @@ class Graph(object):
 
     def create_edge(self, edge_cls, from_vertex, to_vertex, **kwargs):
         class_name = edge_cls.registry_name
+
+        if kwargs:
+            db_props = self.props_to_db(vertex_cls, kwargs)
+            set_clause = ' SET {}'.format(
+                ','.join('{}={}'.format(k,PropertyEncoder.encode(v))
+                         for k,v in db_props.items()))
+        else:
+            set_clause = ''
+
         result = self.client.command(
-            'CREATE EDGE {0} FROM {1} TO {2} CONTENT {3}'.format(
-                class_name
-                , from_vertex._id
-                , to_vertex._id
-                , json.dumps(self.props_to_db(edge_cls, kwargs)
-                             , cls=PropertyEncoder)))[0]
+            'CREATE EDGE {} FROM {} TO {}{}'.format(
+                class_name, from_vertex._id, to_vertex._id, set_clause))[0]
+
         return self.edge_from_record(result, edge_cls)
 
     def get_vertex(self, vertex_id):
@@ -342,7 +357,7 @@ class Graph(object):
         return [self.get_edge(e) for e in records[0].oRecordData['bothE']] \
             if records else []
 
-    def outV(self, from_, *edge_classes):
+    def out(self, from_, *edge_classes):
         """Get adjacent outgoing vertexes from vertex or class.
 
         :param from_: Vertex id, class, or class name
@@ -354,7 +369,7 @@ class Graph(object):
         return [self.get_vertex(v) for v in records[0].oRecordData['out']] \
             if records else []
 
-    def inV(self, to, *edge_classes):
+    def in_(self, to, *edge_classes):
         """Get adjacent incoming vertexes to vertex or class.
 
         :param to: Vertex id, class, or class name
@@ -366,7 +381,7 @@ class Graph(object):
         return [self.get_vertex(v) for v in records[0].oRecordData['in']] \
             if records else []
 
-    def bothV(self, from_to, *edge_classes):
+    def both(self, from_to, *edge_classes):
         """Get adjacent vertexes to vertex or class.
 
         :param from_to: Vertex id, class, or class name
@@ -446,8 +461,7 @@ class Graph(object):
     @staticmethod
     def createable(cls):
         try:
-            return cls.registry[cls.registry_name] is cls \
-                and cls.registry_plural is not None
+            return cls.registry[cls.registry_name] is cls
         except KeyError:
             return False
 
@@ -488,26 +502,24 @@ class Graph(object):
             else getattr(classes, 'registry_name', classes)
 
     def init_broker_for_class(self, cls):
-        setattr(self, cls.registry_plural,
-                create_edge_broker(self, cls) if cls.decl_type == 1
-                else create_vertex_broker(self, cls))
+        broker = get_broker(cls)
+        if broker:
+            broker.init(self, cls)
+        else:
+            broker = cls.Broker(self, cls)
+            setattr(cls, 'objects', broker)
 
-def create_vertex_broker(g, vertex_cls):
-    class VertexBroker(object):
-        def create(self, **kwargs):
-            return g.create_vertex(vertex_cls, **kwargs)
+        # Graph will only be assigned the broker for this element class if a
+        # 'registry_plural' is set.
+        #
+        # Otherwise, only the class itself will get a Broker.
+        broker_name = getattr(cls, 'registry_plural', None)
+        if broker_name and not getattr(cls, 'no_graph_broker', False):
+            if hasattr(self, broker_name):
+                raise RuntimeError(
+                    'Attempt to use a broker name reserved by Graph. '
+                    'Could use a different name, or set the \'no_graph_broker\''
+                    ' attribute to True for this element class.')
+            setattr(self, broker_name, broker)
 
-        def query(self, *entities):
-            return g.query(vertex_cls, *entities)
-
-    return VertexBroker()
-
-def create_edge_broker(g, edge_cls):
-    class EdgeBroker(object):
-        def create(self, from_vertex, to_vertex, **kwargs):
-            return g.create_edge(edge_cls, from_vertex, to_vertex, **kwargs)
-
-        def query(self, *entities):
-            return g.query(edge_cls, *entities)
-    return EdgeBroker()
 

@@ -27,5 +27,6 @@ setup(name='pyorient',
     packages = [
         'pyorient',
         'pyorient.messages',
+        'pyorient.ogm',
     ]
 )

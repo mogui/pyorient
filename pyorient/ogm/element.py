@@ -44,7 +44,7 @@ class GraphElement(object):
     def __ne__(self, other):
         return not self.__eq__(other)
 
-    def __str__(self):
+    def __format__(self, format_spec):
         """Quoted record id for specifying element as string argument."""
         return repr(self._id)
 

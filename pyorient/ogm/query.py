@@ -1,26 +1,52 @@
-from .operators import Operator, Conditional
+from .operators import Operator, RelativeOperand, Operand, ArithmeticOperation
 from .property import Property
+from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
+from .what import What, FunctionWhat, ChainableWhat
+from .query_utils import ArgConverter
+
+#from .traverse import Traverse
 
 from collections import namedtuple
+from keyword import iskeyword
+
+import sys
+if sys.version < '3':
+    from itertools import izip_longest as zip_longest
+else:
+    from itertools import zip_longest
 
 class Query(object):
     def __init__(self, graph, entities):
         """Query against a class or a selection of its properties.
 
         :param graph: Graph to query
-        :param entities: Vertex/Edge class, _or_ a collection of its properties
+        :param entities: Vertex/Edge class/a collection of its properties,
+        an instance of such a class, or a subquery.
         """
         self._graph = graph
+        self._subquery = None
 
         first_entity = entities[0]
 
         if isinstance(first_entity, Property):
-            self._element_class = first_entity._context
+            self.source_name = first_entity._context.registry_name
             self._class_props = entities
-        else:
-            self._element_class = first_entity
+        elif isinstance(first_entity, GraphElement):
+            # Vertex or edge instance
+            self.source_name = first_entity._id
             self._class_props = tuple()
+            pass
+        elif isinstance(first_entity, Query):# \
+                #or isinstance(first_entity, Traverse):
+            # Subquery
+            self._subquery = first_entity
+            self.source_name = first_entity.source_name
+            self._class_props = tuple()
+            pass
+        else:
+            self.source_name = first_entity.registry_name
+            self._class_props = tuple(entities[1:])
 
         self._params = {}
 
@@ -30,64 +56,77 @@ class Query(object):
         with TempParams(params, skip='#-1:-1', limit=1):
             optional_clauses = self.build_optional_clauses(params, None)
 
-            # TODO Determine which other queries always take only one iteration
-            class_propnames = tuple(
-                prop.context_name() for prop in self._class_props)
-            selecting_props = len(class_propnames) > 0
-            #multiple_iterations = 'count' not in params
-            multiple_iterations = True
-            include_rid = selecting_props and multiple_iterations
-
-            props = self.build_props(params, include_rid)
+            prop_names = []
+            props = self.build_props(params, prop_names, for_iterator=True)
+            if len(prop_names) > 1:
+                selectuple = namedtuple(self.source_name + '_props',
+                    [name + '_' if iskeyword(name) else name
+                        for name in prop_names])
             wheres = self.build_wheres(params)
 
             g = self._graph
             while True:
+                current_skip = params['skip']
                 where = 'WHERE {0}'.format(
                     ' and '.join(
-                        [self.rid_lower(params['skip'])]
-                        if multiple_iterations else [] + wheres))
+                        [self.rid_lower(current_skip)] + wheres))
                 select = self.build_select(props, [where] + optional_clauses)
+
                 response = g.client.command(select)
                 if response:
                     response = response[0]
-                    if include_rid:
-                        self.skip(response.oRecordData['rid'])
-                    elif '-' in response._rid:
-                        # Further queries would yield the same
-                        # TODO Find out if any single iteration queries return
-                        #      multiple values
-                        yield next(iter(response.oRecordData.values()))
-                        break
-                    else:
-                        self.skip(response._rid)
 
-                    if selecting_props:
-                        if len(class_propnames) > 1:
-                            selectuple = namedtuple(
-                                self._element_class.registry_name + '_props',
-                                class_propnames)
-                            yield selectuple(
-                                *tuple(response.oRecordData.get(name)
-                                    for name in class_propnames))
+                    if prop_names:
+                        next_skip = response.oRecordData.get('rid')
+                        if next_skip:
+                            self.skip(next_skip)
+
+                            if len(prop_names) > 1:
+                                yield selectuple(
+                                    *tuple(response.oRecordData.get(name)
+                                        for name in prop_names))
+                            else:
+                                yield response.oRecordData[prop_names[0]]
                         else:
-                            yield response.oRecordData[class_propnames[0]]
+                            yield g.element_from_record(response)
+                            break
                     else:
+                        if '-' in response._rid:
+                            # Further queries would yield the same
+                            # TODO Find out if any single iteration queries
+                            #      return multiple values
+                            yield next(iter(response.oRecordData.values()))
+                            break
+                        elif response._rid == current_skip:
+                            # OrientDB bug?
+                            # expand() makes for strange responses
+                            break
+                        else:
+                            self.skip(response._rid)
+
                         yield g.element_from_record(response)
                 else:
                     break
 
     def __getitem__(self, key):
+        """Set query slice, or just get result by index."""
         if isinstance(key, slice):
             return self.slice(key.start, key.stop)
-        return self.slice(key, key+1)
+
+        with TempParams(self._params, skip=key, limit=1):
+            response = self.all()
+            return response[0] if response else None
+
+    def __str__(self):
+        props, where, optional_clauses = self.prepare()
+        return self.build_select(props, where + optional_clauses)
 
     def __len__(self):
         return self.count()
 
-    def all(self):
+    def prepare(self, prop_names=None):
         params = self._params
-        props = self.build_props(params)
+        props = self.build_props(params, prop_names)
         skip = params.get('skip')
         if skip and ':' in str(skip):
             rid_clause = [self.rid_lower(skip)]
@@ -98,31 +137,33 @@ class Query(object):
 
         wheres = rid_clause + self.build_wheres(params)
         where = ['WHERE {0}'.format(' and '.join(wheres))] if wheres else []
+
+        return props, where, optional_clauses
+
+    def all(self):
+        prop_names = []
+        props, where, optional_clauses = self.prepare(prop_names)
+        if len(prop_names) > 1:
+            selectuple = namedtuple(self.source_name + '_props',
+                [name + '_' if iskeyword(name) else name
+                    for name in prop_names])
         select = self.build_select(props, where + optional_clauses)
 
         g = self._graph
         response = g.client.command(select)
         if response:
             # TODO Determine which other queries always take only one iteration
-            list_query = 'count' not in params
+            list_query = 'count' not in self._params
 
             if list_query:
-                class_propnames = tuple(
-                    prop.context_name() for prop in self._class_props)
-                selecting_props = len(class_propnames) > 0
-                if selecting_props:
-                    if len(class_propnames) > 1:
-                        # TODO Convert to namedtuple
-                        selectuple = namedtuple(
-                            self._element_class.registry_name + '_props',
-                            class_propnames)
-
+                if prop_names:
+                    if len(prop_names) > 1:
                         return [
                             selectuple(*tuple(record.oRecordData.get(name)
-                                       for name in class_propnames))
+                                       for name in prop_names))
                             for record in response]
                     else:
-                        return [record.oRecordData[class_propnames[0]]
+                        return [record.oRecordData[prop_names[0]]
                                 for record in response]
                 else:
                     return g.elements_from_records(response)
@@ -157,8 +198,23 @@ class Query(object):
             return response[0] if isinstance(response, tuple) else response
 
     def count(self, field=None):
-        with TempParams(self._params, count=field):
+        params = self._params
+
+        if not field:
+            whats = params.get('what')
+            if whats and len(whats) == 1:
+                field = self.build_what(whats[0])
+            elif len(self._class_props) == 1:
+                field = self._class_props[0]
+            else:
+                field = '*'
+
+        with TempParams(params, count=field):
             return self.all()
+
+    def what(self, *whats):
+        self._params['what'] = whats
+        return self
 
     def filter(self, expression):
         self._params['filter'] = expression
@@ -172,8 +228,12 @@ class Query(object):
         self._params['group_by'] = criteria
         return self
 
-    def order_by(self, *criteria):
-        self._params['order_by'] = criteria
+    def order_by(self, *criteria, **kwargs):
+        self._params['order_by'] = (criteria, kwargs.get('reverse', False))
+        return self
+
+    def unwind(self, field):
+        self._params['unwind'] = field
         return self
 
     def skip(self, skip):
@@ -207,72 +267,130 @@ class Query(object):
 
         left = expression_root.operands[0]
         right = expression_root.operands[1]
-        if isinstance(left, Conditional):
-            left_name = left.context_name()
+        if isinstance(left, RelativeOperand):
+            if isinstance(left, Operand):
+                left_str = left.context_name() # Expecting a Property
+            elif isinstance(left, ArithmeticOperation):
+                left_str = '({})'.format(self.arithmetic_string(left))
+            elif isinstance(left, FunctionWhat):
+                left_str = self.build_what(left)
+            else:
+                raise ValueError(
+                    'Operator {} not supported as a filter'.format(op))
 
             if op is Operator.Equal:
-                return '{0}={1}'.format(
-                    left_name, repr(right) if isinstance(right, str) else right)
+                return '{0} = {1}'.format(
+                    left_str, ArgConverter.convert_to(ArgConverter.Value
+                                                      , right, self))
             elif op is Operator.GreaterEqual:
-                return '{0}>={1}'.format(
-                    left_name, repr(right) if isinstance(right, str) else right)
+                return '{0} >= {1}'.format(
+                    left_str, ArgConverter.convert_to(ArgConverter.Value
+                                                      , right, self))
             elif op is Operator.Greater:
-                return '{0}>{1}'.format(
-                    left_name, repr(right) if isinstance(right, str) else right)
+                return '{0} > {1}'.format(
+                    left_str, ArgConverter.convert_to(ArgConverter.Value
+                                                      , right, self))
             elif op is Operator.LessEqual:
-                return '{0}<={1}'.format(
-                    left_name, repr(right) if isinstance(right, str) else right)
+                return '{0} <= {1}'.format(
+                    left_str, ArgConverter.convert_to(ArgConverter.Value
+                                                      , right, self))
             elif op is Operator.Less:
-                return '{0}<{1}'.format(
-                    left_name, repr(right) if isinstance(right, str) else right)
+                return '{0} < {1}'.format(
+                    left_str, ArgConverter.convert_to(ArgConverter.Value
+                                                      , right, self))
             elif op is Operator.NotEqual:
-                return '{0}<>{1}'.format(
-                    left_name, repr(right) if isinstance(right, str) else right)
+                return '{0} <> {1}'.format(
+                    left_str, ArgConverter.convert_to(ArgConverter.Value
+                                                      , right, self))
             elif op is Operator.Between:
                 far_right = expression_root.operands[2]
                 if isinstance(far_right, str):
                     far_right = repr(far_right)
                 return '{0} BETWEEN {1} and {2}'.format(
-                    left_name, right, far_right)
+                    left_str, right, far_right)
             elif op is Operator.Contains:
                 return '{0} contains({1})'.format(
-                    left_name, self.filter_string(right))
+                    left_str, self.filter_string(right))
             elif op is Operator.EndsWith:
-                return '{0} like \'%{1}\''.format(left_name, right)
+                return '{0} like \'%{1}\''.format(left_str, right)
             elif op is Operator.Is:
                 if not right: # :)
-                    return '{0} is null'.format(left_name)
+                    return '{0} is null'.format(left_str)
             elif op is Operator.Like:
                 return '{0} like \'{1}\''.format(
-                    left_name, right)
+                    left_str, right)
             elif op is Operator.Matches:
                 return '{0} matches \'{1}\''.format(
-                    left_name, right)
+                    left_str, right)
             elif op is Operator.StartsWith:
                 return '{0} like \'{1}%\''.format(
-                    left_name, right)
-            else:
-                raise ValueError(
-                    'Operator {} not supported as a filter'.format(op))
+                    left_str, right)
         else:
             return '{0} {1} {2}'.format(
                 self.filter_string(left)
                 , 'and' if op is Operator.And else 'or'
                 , self.filter_string(right))
 
-    def build_props(self, params, include_rid=False):
-        props = None
-        if 'count' in params:
-            field = params['count']
-            if isinstance(field, Property):
-                field = field.context_name()
+    def arithmetic_string(self, operation_root):
+        if isinstance(operation_root, ArithmeticOperation):
+            op = operation_root.operator
+            if operation_root.paren:
+                lp = '('
+                rp = ')'
+            else:
+                lp = rp = ''
+
+            left = operation_root.operands[0]
+            # Unary operators not yet supported?
+            right = operation_root.operands[1]
+
+            if op is Operator.Add:
+                exp = '{} + {}'.format(
+                        self.arithmetic_string(left)
+                        , self.arithmetic_string(right))
+            elif op is Operator.Sub:
+                exp = '{} - {}'.format(
+                        self.arithmetic_string(left)
+                        , self.arithmetic_string(right))
+            elif op is Operator.Mul:
+                exp = '{} * {}'.format(
+                        self.arithmetic_string(left)
+                        , self.arithmetic_string(right))
+            elif op is Operator.Div:
+                exp = '{} / {}'.format(
+                        self.arithmetic_string(left)
+                        , self.arithmetic_string(right))
+            elif op is Operator.Mod:
+                exp = '{} % {}'.format(
+                        self.arithmetic_string(left)
+                        , self.arithmetic_string(right))
+
+            return '{}{}{}'.format(lp,exp,rp)
+        elif isinstance(operation_root, Property):
+            return operation_root.context_name()
+        else:
+            return operation_root
+
+
+    def build_props(self, params, prop_names=None, for_iterator=False):
+        count_field = params.get('count')
+        if count_field:
+            if isinstance(count_field, Property):
+                count_field = count_field.context_name()
 
             # Record response will use the same (lower-)case as the request
-            props = ['count({})'.format(field or '*')]
+            return ['count({})'.format(count_field or '*')]
+
+        whats = params.get('what')
+        if whats:
+            props = [self.build_what(what, prop_names) for what in whats]
         else:
             props = [e.context_name() for e in self._class_props]
-            if include_rid:
-                props[0:0] = ['@rid']
+            if prop_names is not None:
+                prop_names.extend(props)
+
+        if props and for_iterator:
+            props[0:0] = ['@rid']
 
         return props
 
@@ -301,9 +419,17 @@ class Query(object):
 
         order_by = params.get('order_by')
         if order_by:
-            # FIXME Support ascending/descending specification
-            order_clause = 'ORDER BY {}'.format(
-                ','.join([by.context_name() for by in order_by]))
+            order_clause = 'ORDER BY {0} {1}'.format(
+                ','.join([by.context_name() for by in order_by[0]])
+                , 'DESC' if order_by[1] else 'ASC')
+            optional_clauses.append(order_clause)
+
+        unwind = params.get('unwind')
+        if unwind:
+           unwind_clause = 'UNWIND {}'.format(
+                    unwind.context_name()
+                    if isinstance(unwind, Property) else unwind)
+           optional_clauses.append(unwind_clause)
 
         if skip:
             optional_clauses.append('SKIP {}'.format(skip))
@@ -316,11 +442,155 @@ class Query(object):
 
         return optional_clauses
 
+    WhatFunction = namedtuple('what', ['max_args', 'fmt', 'expected'])
+    WhatFunctions = {
+        # TODO handle GraphElement args
+        What.Out: WhatFunction(1, 'out({})', (ArgConverter.Label,))
+        , What.In: WhatFunction(1, 'in({})', (ArgConverter.Label,))
+        , What.Both: WhatFunction(1, 'both({})', (ArgConverter.Label,))
+        , What.OutE: WhatFunction(1, 'outE({})', (ArgConverter.Label,))
+        , What.InE: WhatFunction(1, 'inE({})', (ArgConverter.Label,))
+        , What.BothE: WhatFunction(1, 'bothE({})', (ArgConverter.Label,))
+        , What.OutV: WhatFunction(0, 'outV()', tuple())
+        , What.InV: WhatFunction(0, 'inV()', tuple())
+        , What.Eval: WhatFunction(1, 'eval({})', (ArgConverter.Expression,))
+        , What.Coalesce: WhatFunction(None, 'coalesce({})'
+                                      , (ArgConverter.Field,))
+        , What.If: WhatFunction(3, 'if({})'
+                                , (ArgConverter.Boolean, ArgConverter.Value
+                                   , ArgConverter.Value))
+        , What.IfNull: WhatFunction(2, 'ifnull({})'
+                                    , (ArgConverter.Field, ArgConverter.Value))
+        , What.Expand: WhatFunction(1, 'expand({})', (ArgConverter.Field,))
+        , What.First: WhatFunction(1, 'first({})', (ArgConverter.Field,))
+        , What.Last: WhatFunction(1, 'last({})', (ArgConverter.Field,))
+        , What.Count: WhatFunction(1, 'count({})', (ArgConverter.Field,))
+        , What.Min: WhatFunction(None, 'min({})', (ArgConverter.Field,))
+        , What.Max: WhatFunction(None, 'max({})', (ArgConverter.Field,))
+        , What.Avg: WhatFunction(1, 'avg({})', (ArgConverter.Field,))
+        , What.Mode: WhatFunction(1, 'mode({})', (ArgConverter.Field,))
+        , What.Median: WhatFunction(1, 'median({})', (ArgConverter.Field,))
+        , What.Percentile: WhatFunction(None, 'percentile({})'
+                                        , (ArgConverter.Field,))
+        , What.Variance: WhatFunction(1, 'variance({})', (ArgConverter.Field,))
+        , What.StdDev: WhatFunction(1, 'stddev({})', (ArgConverter.Field,))
+        , What.Sum: WhatFunction(1, 'sum({})', (ArgConverter.Field,))
+        , What.Date: WhatFunction(3, 'date({})'
+                                  , (ArgConverter.String, ArgConverter.String
+                                     , ArgConverter.String))
+        , What.SysDate: WhatFunction(2, 'sysdate({})'
+                                     , (ArgConverter.String
+                                        , ArgConverter.String))
+        , What.Format: WhatFunction(None, 'format({})'
+                                    , (ArgConverter.Format, ArgConverter.Field))
+        , What.Dijkstra:
+            WhatFunction(4, 'dijkstra({})'
+                         , (ArgConverter.Vertex, ArgConverter.Vertex
+                         , ArgConverter.Label, ArgConverter.Value))
+        , What.ShortestPath:
+            WhatFunction(4, 'shortestPath({})'
+                         , (ArgConverter.Vertex, ArgConverter.Vertex
+                            , ArgConverter.Value, ArgConverter.Label))
+        , What.Distance:
+            WhatFunction(4, 'distance({})'
+                         , (ArgConverter.Field, ArgConverter.Field
+                            , ArgConverter.Value, ArgConverter.Value))
+        , What.Distinct: WhatFunction(1, 'distinct({})', (ArgConverter.Field,))
+        , What.UnionAll: WhatFunction(None, 'unionall({})'
+                                      , (ArgConverter.Field,))
+        , What.Intersect: WhatFunction(None, 'intersect({})'
+                                       , (ArgConverter.Field,))
+        , What.Difference: WhatFunction(None, 'difference({})'
+                                        , (ArgConverter.Field,))
+        , What.SymmetricDifference:
+            WhatFunction(None, 'symmetricDifference({})', (ArgConverter.Field,))
+        # FIXME Don't understand usage of these, yet.
+        , What.Set: WhatFunction(1, 'set({})', (ArgConverter.Field,))
+        , What.List: WhatFunction(1, 'list({})', (ArgConverter.Field,))
+        , What.Map: WhatFunction(2, 'map({})', (ArgConverter.Field
+                                                , ArgConverter.Field))
+        , What.TraversedElement:
+            WhatFunction(2, 'traversedElement({})'
+                         , (ArgConverter.Value, ArgConverter.Value))
+        , What.TraversedEdge:
+            WhatFunction(2, 'traversedEdge({})'
+                         , (ArgConverter.Value, ArgConverter.Value))
+        , What.TraversedVertex:
+            WhatFunction(2, 'traversedVertex({})'
+                         , (ArgConverter.Value, ArgConverter.Value))
+    }
+
+    def build_what(self, what, prop_names=None):
+        if isinstance(what, Property):
+            prop_name = what.context_name()
+            if prop_names is not None:
+                prop_names.append(prop_name)
+            return prop_name
+
+        name_override = what.name_override
+        as_str = ' AS {}'.format(name_override) if name_override else ''
+
+        if isinstance(what, FunctionWhat):
+            what_function = Query.WhatFunctions[what.func]
+
+            if prop_names is not None:
+                # Projections not allowed with Expand
+                counted = what.func is not What.Expand
+                if counted:
+                    prop_names.append(
+                        Query.parse_prop_name(what_function.fmt, name_override))
+
+            return '{}{}'.format(
+                what_function.fmt.format(
+                    ','.join(self.what_args(what_function.expected,
+                                            what.args))), as_str)
+        elif isinstance(what, ChainableWhat):
+            chain = []
+            for func_args in what.chain:
+                what_function = Query.WhatFunctions[func_args[0]]
+                max_args = what_function.max_args
+                if max_args > 0 or max_args is None:
+                    chain.append(
+                        what_function.fmt.format(
+                            ','.join(self.what_args(what_function.expected,
+                                                    func_args[1]))))
+                else:
+                    chain.append(what_function.fmt)
+            chain.extend(what.props)
+
+            if prop_names is not None:
+                prop_names.append(
+                    Query.parse_prop_name(chain[0], name_override))
+            return '{}{}'.format('.'.join(chain), as_str)
+
+    @staticmethod
+    def parse_prop_name(from_str, override):
+        return override if override else from_str[:from_str.index('(')]
+
+    def what_args(self, expected, args):
+        if args:
+            return [ArgConverter.convert_to(conversion, arg, self)
+                    for arg, conversion in
+                        zip_longest(args, expected
+                                    , fillvalue=expected[-1])
+                        if arg is not None]
+        else:
+            return []
+
     def build_select(self, props, optional_clauses):
-        return 'SELECT {0} FROM {1} {2}'.format(
-                    ','.join(props)
-                    , self._element_class.registry_name
-                    , ' '.join(optional_clauses))
+        # This 'is not None' is important; don't want to implicitly call
+        # __len__ (which invokes count()) on subquery.
+        if self._subquery is not None:
+            src = '({})'.format(self._subquery)
+        else:
+            src = self.source_name
+
+        optional_string = ' '.join(optional_clauses)
+        if props:
+            return 'SELECT {} FROM {} {}'.format(
+                ','.join(props), src, optional_string)
+        else:
+            return 'SELECT FROM {} {}'.format(src, optional_string)
 
 class TempParams(object):
     def __init__(self, params, **kwargs):

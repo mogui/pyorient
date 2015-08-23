@@ -1,6 +1,9 @@
 from .element import GraphElement
+from .broker import EdgeBroker
 
 class Edge(GraphElement):
+    Broker = EdgeBroker
+
     def __init__(self, **kwargs):
         super(Edge, self).__init__(**kwargs)
 
