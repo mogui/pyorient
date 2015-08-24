@@ -156,13 +156,13 @@ def list(field):
 def map(key, value):
     return FunctionWhat(What.Map, (key, value))
 
-def traversedElement(index, items=1):
+def traversed_element(index, items=1):
     return FunctionWhat(What.TraversedElement, (index, items))
 
-def traversedEdge(index, items=1):
+def traversed_edge(index, items=1):
     return FunctionWhat(What.TraversedEdge, (index, items))
 
-def traversedVertex(index, items=1):
+def traversed_vertex(index, items=1):
     return FunctionWhat(What.TraversedVertex, (index, items))
 
 def any():
