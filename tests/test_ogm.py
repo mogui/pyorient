@@ -160,7 +160,15 @@ class OGMMoneyTestCase(unittest.TestCase):
         valerius = g.people.create(full_name='Valerius Burgstaller')
         oliver = g.people.create(full_name='Oliver Girard')
 
-        assert Person.objects.query().what(distinct(Person.uuid)).count() == 2
+        if g.client._connection.cluster_map.version_info['major'] == 2 \
+                and g.client._connection.cluster_map.version_info['minor'] < 1:
+            # OrientDB version < 2.1.0 does not count null
+            assert Person.objects.query().what(
+                distinct(Person.uuid)).count() == 1
+        else:
+            assert Person.objects.query().what(
+                distinct(Person.uuid)).count() == 2
+
 
         original_inheritance = decimal.Decimal('1520841.74309871919')
 
