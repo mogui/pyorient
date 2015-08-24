@@ -1,9 +1,9 @@
-from .operators import Conditional
+from .operators import Operand, ArithmeticMixin
 
 import json
 import decimal
 
-class Property(Conditional):
+class Property(Operand):
     num_instances = 0 # Basis for ordering property instances
 
     def __init__(self, name=None, nullable=True
@@ -53,28 +53,36 @@ class Property(Conditional):
         else:
             raise NameError('Somehow this property\'s context is broken.')
 
-class PropertyEncoder(json.JSONEncoder):
-    def default(self, o):
-        if isinstance(o, decimal.Decimal):
-            return str(o)
-        return super(PropertyEncoder, self).default(o)
+    def __format__(self, format_spec):
+        return repr(self.context_name())
+
+class UUID:
+    def __str__(self):
+        return 'UUID()'
+
+class PropertyEncoder:
+    @staticmethod
+    def encode(value):
+        if isinstance(value, decimal.Decimal):
+            return repr(str(value))
+        return repr(value) if isinstance(value, str) else value
 
 class Boolean(Property):
     pass
 
-class Integer(Property):
+class Integer(Property, ArithmeticMixin):
     pass
 
-class Short(Property):
+class Short(Property, ArithmeticMixin):
     pass
 
-class Long(Property):
+class Long(Property, ArithmeticMixin):
     pass
 
-class Float(Property):
+class Float(Property, ArithmeticMixin):
     pass
 
-class Double(Property):
+class Double(Property, ArithmeticMixin):
     pass
 
 class DateTime(Property):
@@ -92,7 +100,7 @@ class Byte(Property):
 class Date(Property):
     pass
 
-class Decimal(Property):
+class Decimal(Property, ArithmeticMixin):
     pass
 
 class Embedded(Property):

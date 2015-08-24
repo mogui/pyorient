@@ -40,16 +40,6 @@ class Scripts(object):
         if not function:
             return None
 
-        class ParamDefault(tuple):
-            def __new__(self, pair):
-                l = len(pair)
-                if l > 2:
-                    raise ValueError('Only a name, and (optionally) a '
-                        'default value is valid for a parameter.')
-                return tuple.__new__(self, (pair[0].strip(),) +
-                                            ((pair[1],) if l > 1 else tuple()))
-
-        split_body = re.split(r'([\"\'])', function.body)
         param_string = re.search(r'\(([\w=\'", ]+)\)', function.signature)
         params = [ParamDefault(param.split('=')) for param in
                     param_string.group(1).split(',')] if param_string else None
@@ -81,12 +71,23 @@ class Scripts(object):
             else:
                 args = {}
 
+        split_body = re.split(r'([\"\'])', function.body)
         for i, s in enumerate(split_body):
             if i % 4 == 0:
                 for k,v in args.items():
-                    if k in s:
-                        split_body[i] = \
-                            s.replace(k, repr(v)
-                                if isinstance(v, str) else str(v))
+                    split_body[i] = re.sub(
+                        r'\b{}\b'.format(k)
+                        , '{}'.format(repr(v) if isinstance(v, str) else v)
+                        , s)
+
         return ''.join(split_body)
+
+class ParamDefault(tuple):
+    def __new__(self, pair):
+        l = len(pair)
+        if l > 2:
+            raise ValueError('Only a name, and (optionally) a '
+                'default value is valid for a parameter.')
+        return tuple.__new__(self, (pair[0].strip(),) +
+                                    ((pair[1],) if l > 1 else tuple()))
 

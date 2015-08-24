@@ -20,11 +20,16 @@ class DeclarativeMeta(type):
             if cls.decl_type is DeclarativeType.Vertex:
                 cls.registry_name = attrs.get('element_type'
                                               , cls.__name__.lower())
-                cls.registry_plural = attrs.get('element_plural'
-                                                , cls.__name__.lower())
+
+                plural = attrs.get('element_plural')
+                if plural:
+                    cls.registry_plural = plural
             else:
-                cls.registry_name = cls.registry_plural = \
-                    attrs.get('label', cls.__name__.lower())
+                label = attrs.get('label')
+                if label:
+                    cls.registry_name = cls.registry_plural = label
+                else:
+                    cls.registry_name = cls.__name__.lower()
 
             # See also __setattr__ for properties added after class definition
             for prop in cls.__dict__.values():
@@ -45,7 +50,7 @@ class DeclarativeMeta(type):
             value.context = self
         return super(DeclarativeMeta, self).__setattr__(name, value)
 
-    def __str__(self):
+    def __format__(self, format_spec):
         """Quoted class-name for specifying class as string argument.
 
         Use 'registry_name' when it is possible to refer to schema entities
@@ -60,7 +65,7 @@ class DeclarativeType(object):
     Vertex = 0
     Edge = 1
 
-def declarative_base(decl_type, name, cls, metaclass):
+def declarative_base(decl_type, name, cls, metaclass, **kwargs):
     """Create base class for defining new database classes.
 
     :param decl_type: DeclarativeType enum value.
@@ -70,15 +75,24 @@ def declarative_base(decl_type, name, cls, metaclass):
     """
     bases = cls if isinstance(cls, tuple) else (cls, )
     class_dict = dict(decl_type=decl_type)
+    class_dict.update(kwargs)
 
     return metaclass(name, bases, class_dict)
 
-def declarative_node(name='Node', cls=Vertex, metaclass=DeclarativeMeta):
+def declarative_node(name='Node', cls=Vertex, metaclass=DeclarativeMeta
+                     , **kwargs):
     """Create base class for graph nodes/vertices"""
-    return declarative_base(DeclarativeType.Vertex, name, cls, metaclass)
+    return declarative_base(DeclarativeType.Vertex, name, cls, metaclass
+                            , **kwargs)
 
 def declarative_relationship(name='Relationship', cls=Edge
-                             , metaclass=DeclarativeMeta):
-    """Create base class for graph relationships/edges"""
-    return declarative_base(DeclarativeType.Edge, name, cls, metaclass)
+                             , metaclass=DeclarativeMeta
+                             , **kwargs):
+    """Create base class for graph relationships/edges
+
+    If no_graph_broker=True is supplied as a keyword argument, the Graph
+    will not attach labelled subclass's Broker instances.
+    """
+    return declarative_base(DeclarativeType.Edge, name, cls, metaclass
+                            , **kwargs)
 

@@ -6,7 +6,9 @@ from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
-from pyorient.ogm.property import String, Decimal, Float
+from pyorient.ogm.property import String, Decimal, Float, UUID
+
+from pyorient.ogm.what import expand, in_, out, distinct
 
 AnimalsNode = declarative_node()
 AnimalsRelationship = declarative_relationship()
@@ -47,10 +49,14 @@ class OGMAnimalsTestCase(unittest.TestCase):
         g = self.g
 
         rat = g.animals.create(name='rat', specie='rodent')
+        mouse = g.animals.create(name='mouse', specie='rodent')
         queried_rat = g.query(Animal).filter(
-            Animal.name.endswith('at') | (Animal.name == 'mouse')).one()
+            Animal.name.endswith('at') | (Animal.name == 'tiger')).one()
 
         assert rat == queried_rat
+
+        queried_mouse = g.query(mouse).one()
+        assert mouse == queried_mouse
 
         try:
             rat2 = g.animals.create(name='rat', specie='rodent')
@@ -60,17 +66,37 @@ class OGMAnimalsTestCase(unittest.TestCase):
             assert False and 'Uniqueness not enforced correctly'
 
         pea = g.foods.create(name='pea', color='green')
-        queried_pea = g.query(Food).filter_by(color='green', name='pea').one()
+        queried_pea = g.foods.query(color='green', name='pea').one()
+
+        cheese = g.foods.create(name='cheese', color='yellow')
 
         assert queried_pea == pea
 
         rat_eats_pea = g.eats.create(queried_rat, queried_pea)
+        mouse_eats_pea = g.eats.create(mouse, pea)
+        mouse_eats_cheese = Eats.objects.create(mouse, cheese)
 
-        eaters = g.inV(Food, Eats)
+        eaters = g.in_(Food, Eats)
         assert rat in eaters
 
+        # Who eats the peas?
+        pea_eaters = g.foods.query(name='pea').what(expand(in_(Eats)))
+        for animal in pea_eaters:
+            print(animal.name, animal.specie)
+
+        # Which animals eat each food
+        # FIXME Currently calling all() here, as iteration over expand()
+        # results is currently broken.
+        animal_foods = \
+            g.animals.query().what(expand(distinct(out(Eats)))).all()
+        for food in animal_foods:
+            print(food.name, food.color,
+                  g.query(
+                      g.foods.query(name=food.name).what(expand(in_(Eats)))) \
+                             .what(Animal.name).all())
+
         for food_name, food_color in g.query(Food.name, Food.color):
-            print(food_name, food_color) # 'pea green'
+            print(food_name, food_color) # 'pea green' # 'cheese yellow'
 
         # FIXME While it is nicer to use files, parser should be more
         # permissive with whitespace
@@ -87,7 +113,7 @@ def get_foods_eaten_by(animal) {
 
         pea_eaters = g.gremlin('get_eaters_of', 'pea')
         for animal in pea_eaters:
-            print(animal.name, animal.specie) # 'rat rodent'
+            print(animal.name, animal.specie) # 'rat rodent' # 'mouse rodent'
 
         rat_cuisine = g.gremlin('get_foods_eaten_by', (rat,))
         for food in rat_cuisine:
@@ -100,6 +126,7 @@ class Person(MoneyNode):
     element_plural = 'people'
 
     full_name = String(nullable=False)
+    uuid = String(nullable=False)
 
 class Wallet(MoneyNode):
     element_plural = 'wallets'
@@ -108,6 +135,7 @@ class Wallet(MoneyNode):
     amount_imprecise = Float()
 
 class Carries(MoneyRelationship):
+    # No label set on relationship; Broker will not be attached to graph.
     pass
 
 class OGMMoneyTestCase(unittest.TestCase):
@@ -128,9 +156,11 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         g = self.g
 
-        costanzo = g.people.create(full_name='Costanzo Veronesi')
+        costanzo = g.people.create(full_name='Costanzo Veronesi', uuid=UUID())
         valerius = g.people.create(full_name='Valerius Burgstaller')
         oliver = g.people.create(full_name='Oliver Girard')
+
+        assert Person.objects.query().what(distinct(Person.uuid)).count() == 2
 
         original_inheritance = decimal.Decimal('1520841.74309871919')
 
@@ -149,9 +179,10 @@ class OGMMoneyTestCase(unittest.TestCase):
         assert poor_pouch.amount_precise == pittance
         assert poor_pouch.amount_precise != poor_pouch.amount_imprecise
 
-        costanzo_claim = g.carries.create(costanzo, inheritance)
-        valerius_claim = g.carries.create(valerius, inheritance)
-        oliver_carries = g.carries.create(oliver, poor_pouch)
+        # Django-style creation
+        costanzo_claim = Carries.objects.create(costanzo, inheritance)
+        valerius_claim = Carries.objects.create(valerius, inheritance)
+        oliver_carries = Carries.objects.create(oliver, poor_pouch)
 
         g.scripts.add(GroovyScripts.from_file(
             os.path.join(
@@ -172,6 +203,7 @@ class OGMMoneyTestCase(unittest.TestCase):
         assert smallerwallet_query.first() == poor_pouch
 
         for i, wallet in enumerate(g.query(Wallet)):
-            print(decimal.Decimal(wallet.amount_imprecise) - wallet.amount_precise)
+            print(decimal.Decimal(wallet.amount_imprecise) -
+                    wallet.amount_precise)
             assert i < 2
 

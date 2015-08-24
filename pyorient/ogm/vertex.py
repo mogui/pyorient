@@ -1,6 +1,9 @@
 from .element import GraphElement
+from .broker import VertexBroker
 
 class Vertex(GraphElement):
+    Broker = VertexBroker
+
     def outE(self, *edge_classes):
         g = self._graph
         return g.outE(self._id, *edge_classes) if g else None

@@ -18,6 +18,11 @@ class Operator(object):
     Like = 12
     Matches = 13
     StartsWith = 14
+    Add = 15
+    Sub = 16
+    Mul = 17
+    Div = 18
+    Mod = 19
 
 class LogicalConnective(object):
     def __init__(self, operator, operands):
@@ -49,7 +54,7 @@ def or_(a, b):
         raise TypeError('Both operands to disjunction must be LogicalConnective '
                         'objects; got {0} | {1}'.format(type(a), type(b)))
 
-class Conditional(object):
+class RelativeOperand(object):
     def __eq__(self, value):
         return LogicalConnective(Operator.Equal, (self, value))
 
@@ -71,6 +76,7 @@ class Conditional(object):
     def between(self, left, right):
         return LogicalConnective(Operator.Between, (self, left, right))
 
+class Operand(RelativeOperand):
     def contains(self, contained):
         return LogicalConnective(Operator.Contains, (self, contained))
 
@@ -92,4 +98,44 @@ class Conditional(object):
 
     def startswith(self, leading):
         return LogicalConnective(Operator.StartsWith, (self, leading))
+
+class ArithmeticMixin(object):
+    def __add__(self, other):
+        return ArithmeticOperation(Operator.Add, (self, other))
+    def __radd__(self, left):
+        return ArithmeticOperation(Operator.Add, (left, self))
+
+    def __sub__(self, other):
+        return ArithmeticOperation(Operator.Sub, (self, other))
+    def __rsub__(self, left):
+        return ArithmeticOperation(Operator.Sub, (left, self))
+
+    def __mul__(self, other):
+        return ArithmeticOperation(Operator.Mul, (self, other))
+    def __rmul__(self, left):
+        return ArithmeticOperation(Operator.Mul, (left, self))
+
+    def __div__(self, other):
+        return ArithmeticOperation(Operator.Div, (self, other))
+    def __rdiv__(self, left):
+        return ArithmeticOperation(Operator.Div, (left, self))
+
+    def __mod__(self, other):
+        return ArithmeticOperation(Operator.Mod, (self, other))
+    def __rmod__(self, left):
+        return ArithmeticOperation(Operator.Mod, (left, self))
+
+class ArithmeticOperation(ArithmeticMixin, RelativeOperand):
+    def __init__(self, operator, operands):
+        self.operator = operator
+        self.operands = operands
+        self.paren = False
+
+    def __getitem__(self, key):
+        """Provide syntax to parenthesise an operation
+
+        Do not see any reason to enforce a key type.
+        """
+        self.paren = True
+        return self
 
