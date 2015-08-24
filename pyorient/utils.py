@@ -1,6 +1,7 @@
 __author__ = 'Ostico <ostico@gmail.com>'
 
 import os
+import sys
 from pyorient.exceptions import PyOrientConnectionException, \
     PyOrientDatabaseException
 from pyorient.types import OrientRecordLink
@@ -103,3 +104,12 @@ def parse_cluster_position(_cluster_position):
         # so treat it as one param
         _position = _cluster_position
     return _position
+
+if sys.version < '3':
+    import codecs
+    def u(x):
+        return codecs.unicode_escape_decode(x)[0]
+else:
+    def u(x):
+        return x
+
