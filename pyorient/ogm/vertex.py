@@ -16,15 +16,15 @@ class Vertex(GraphElement):
         g = self._graph
         return g.bothE(self._id, *edge_classes) if g else None
 
-    def outV(self, *edge_classes):
+    def out(self, *edge_classes):
         g = self._graph
-        return g.outV(self._id, *edge_classes) if g else None
+        return g.out(self._id, *edge_classes) if g else None
 
-    def inV(self, *edge_classes):
+    def in_(self, *edge_classes):
         g = self._graph
-        return g.inV(self._id, *edge_classes) if g else None
+        return g.in_(self._id, *edge_classes) if g else None
 
-    def bothV(self, *edge_classes):
+    def both(self, *edge_classes):
         g = self._graph
-        return g.bothV(self._id, *edge_classes) if g else None
+        return g.both(self._id, *edge_classes) if g else None
 

@@ -12,6 +12,9 @@ from .query import Query
 
 import pyorient
 import json
+from collections import namedtuple
+
+ServerVersion = namedtuple('orientdb_version', ['major', 'minor', 'build'])
 
 class Graph(object):
     def __init__(self, config, user=None, cred=None):
@@ -66,7 +69,13 @@ class Graph(object):
         self._last_cred = cred
         self._last_db = db_name
 
-        return self.client.db_open(db_name, user, cred)
+        cluster_map = self.client.db_open(db_name, user, cred)
+
+        version = cluster_map.version_info
+        self.server_version = ServerVersion(
+            version['major'], version['minor'], version['build'])
+
+        return cluster_map
 
     def drop(self, db_name=None, storage=None):
         """Drop entire database."""
@@ -182,16 +191,13 @@ class Graph(object):
                 # Property already exists
                 pass
 
-            try:
+            if self.server_version >= (2,1,0):
                 self.client.command(
                     'ALTER PROPERTY {0} DEFAULT {1}'
                         .format(class_prop, prop_value.default))
-            except pyorient.PyOrientSQLParsingException:
-                # FIXME Query server version instead?
-                pass
 
-            # FIXME Should nullable correspond to 'MANDATORY' instead?
-            # Or should there be a separate property
+            # FIXME Should nullable correspond to 'MANDATORY' instead/as well?
+            # Or should there be a separate property?
             self.client.command(
                     'ALTER PROPERTY {0} NOTNULL {1}'
                         .format(class_prop
@@ -302,11 +308,15 @@ class Graph(object):
                 raise KeyError(
                     'Class \'{}\' not registered with graph.'.format(name))
 
-        result = self.client.command(
-            'UPDATE {0} CONTENT {1}'.format(
-                elem_id
-                , json.dumps(self.props_to_db(element_class, props)
-                             , cls=PropertyEncoder)))
+        if props:
+            db_props = self.props_to_db(element_class, props)
+            set_clause = ' SET {}'.format(
+                ','.join('{}={}'.format(k,PropertyEncoder.encode(v))
+                         for k,v in db_props.items()))
+        else:
+            set_clause = ''
+
+        result = self.client.command('UPDATE {}{}'.format(elem_id, set_clause))
         return result and result[0] == b'1'
 
     def query(self, first_entity, *entities):

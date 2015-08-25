@@ -156,22 +156,20 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         g = self.g
 
-        if g.client._connection.cluster_map.version_info['major'] == 1:
+        if g.server_version.major == 1:
             self.skipTest( 'UUID method does not exists in OrientDB version < 2' )
 
         costanzo = g.people.create(full_name='Costanzo Veronesi', uuid=UUID())
         valerius = g.people.create(full_name='Valerius Burgstaller')
         oliver = g.people.create(full_name='Oliver Girard')
 
-        if g.client._connection.cluster_map.version_info['major'] == 2 \
-                and g.client._connection.cluster_map.version_info['minor'] < 1:
+        if g.server_version >= (2,1,0):
+            assert Person.objects.query().what(
+                distinct(Person.uuid)).count() == 2
+        else:
             # OrientDB version < 2.1.0 does not count null
             assert Person.objects.query().what(
                 distinct(Person.uuid)).count() == 1
-        else:
-            assert Person.objects.query().what(
-                distinct(Person.uuid)).count() == 2
-
 
         original_inheritance = decimal.Decimal('1520841.74309871919')
 
