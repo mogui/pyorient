@@ -1,4 +1,8 @@
 # -*- coding: utf-8 -*-
+"""
+@author: Ostico <ostico@gmail.com>
+"""
+
 from __future__ import print_function
 
 __author__ = 'Ostico <ostico@gmail.com>'
@@ -18,7 +22,9 @@ from .utils import dlog
 
 
 class OrientSocket(object):
-    """docstring for OrientSocket"""
+    """
+    Socket object
+    """
 
     def __init__(self, host, port):
 
@@ -137,10 +143,10 @@ def ByteToHex( byte_str ):
     return ''.join( [ "%02X " % ord( x ) for x in byte_str ] ).strip()
 
 
-#
-# OrientDB Message Factory
-#
 class OrientDB(object):
+    """
+    Main object representing an Orient client
+    """
     _connection  = None
     _auth_token  = None
 
@@ -226,10 +232,26 @@ class OrientDB(object):
             .prepare(args).send().fetch_response()
 
     def db_open(self, db_name, user, password, db_type=DB_TYPE_DOCUMENT, client_id=''):
-        """
-        :param args:
-        :rtype: pyorient.Information
-        """
+        '''
+         Opens a database on the remote OrientDB Server.
+         Returns the Session-Id to being reused for all the next calls and the list of configured clusters
+
+        :param db_name: database name as string. Example: "demo"
+        :param user: username as string
+        :param password: password as string
+        :param db_type: string, can be DB_TYPE_DOCUMENT or DB_TYPE_GRAPH
+        :param client_id: Can be null for clients. In clustered configuration is the distributed node
+        :return: a :class:`Information <Information>` object
+
+        Usage::
+
+          >>> import pyorient
+          >>> orient = pyorient.OrientDB('localhost', 2424)
+          >>> orient.db_open('asd', 'admin', 'admin')
+
+          <PreparedRequest [GET]>
+
+        '''
         return self.get_message("DbOpenMessage") \
             .prepare((db_name, user, password, db_type, client_id)).send().fetch_response()
 
