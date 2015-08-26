@@ -13,7 +13,7 @@ from .exceptions import PyOrientBadMethodCallException, \
 
 from .constants import FIELD_SHORT, \
     QUERY_ASYNC, QUERY_CMD, QUERY_GREMLIN, QUERY_SYNC, QUERY_SCRIPT, \
-    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL
+    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, DB_TYPE_DOCUMENT
 from .utils import dlog
 
 
@@ -225,13 +225,13 @@ class OrientDB(object):
         return self.get_message("DbExistsMessage") \
             .prepare(args).send().fetch_response()
 
-    def db_open(self, *args):
+    def db_open(self, db_name, user, password, db_type=DB_TYPE_DOCUMENT, client_id=''):
         """
         :param args:
         :rtype: pyorient.Information
         """
         return self.get_message("DbOpenMessage") \
-            .prepare(args).send().fetch_response()
+            .prepare((db_name, user, password, db_type, client_id)).send().fetch_response()
 
     def db_reload(self, *args):
         return self.get_message("DbReloadMessage") \
