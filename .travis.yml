@@ -1,36 +1,47 @@
 sudo: false
-
 language: python
-
 python:
-  - "2.7"
-  - "3.4"
-
+- '2.7'
+- '3.4'
 install:
-  - pip install coveralls
-  - ./ci/start-ci.sh $ORIENTDB_VERSION
-
+- pip install coveralls
+- "./ci/start-ci.sh $ORIENTDB_VERSION"
 cache:
   directories:
-  - ./ci/environment/
-
+  - "./ci/environment/"
 script:
-  - nosetests -vv --with-coverage --cover-xml --cover-erase --cover-package=pyorient
-
+- nosetests -vv --with-coverage --cover-xml --cover-erase --cover-package=pyorient
 before_cache:
-  - ls -la ./ci/environment/
-  - rm -f ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log/*
-  - rm -rf ./ci/environment/orientdb-community-$ORIENTDB_VERSION/databases/*
-
+- ls -la ./ci/environment/
+- rm -f ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log/*
+- rm -rf ./ci/environment/orientdb-community-$ORIENTDB_VERSION/databases/*
 after_success:
-  - coveralls
-
+- coveralls
+deploy:
+  provider: pypi
+  user: mogui
+  password:
+    secure: GHzcZeqsKwHMUOKdJ9t3WEqzF1P3mTZOtHwFt8bvz37z0+jKMei2CjD5S1QRSLnhwmHSmauQJig4d3IELiTTdvEtdddcN45REuAkUj1AzuPl04JWdUovCrOmvd5BklcZ2qNanJtZFROPlx8tiJbeGGFWO5kH65P8cuLege6h5jg=
+  on:
+    tags: false
+    branch: develop
 env:
-  - ORIENTDB_VERSION=2.1.0
-  - ORIENTDB_VERSION=2.0.13
-  - ORIENTDB_VERSION=2.0.12
-  - ORIENTDB_VERSION=2.0.11
-#  - ORIENTDB_VERSION=2.0.10
+- ORIENTDB_VERSION=2.1.0
+- ORIENTDB_VERSION=2.0.13
+- ORIENTDB_VERSION=2.0.12
+- ORIENTDB_VERSION=2.0.11
+- ORIENTDB_VERSION=2.0.9
+- ORIENTDB_VERSION=2.0.8
+- ORIENTDB_VERSION=2.0.7
+- ORIENTDB_VERSION=2.0.6
+- ORIENTDB_VERSION=2.0.5
+- ORIENTDB_VERSION=2.0.4
+- ORIENTDB_VERSION=2.0.3
+- ORIENTDB_VERSION=2.0.2
+- ORIENTDB_VERSION=2.0.1
+- ORIENTDB_VERSION=1.7.10
+matrix:
+  allow_failures:
   - ORIENTDB_VERSION=2.0.9
   - ORIENTDB_VERSION=2.0.8
   - ORIENTDB_VERSION=2.0.7
@@ -41,18 +52,3 @@ env:
   - ORIENTDB_VERSION=2.0.2
   - ORIENTDB_VERSION=2.0.1
   - ORIENTDB_VERSION=1.7.10
-
-matrix:
-  allow_failures:
-#    - ORIENTDB_VERSION=2.0.10
-    - ORIENTDB_VERSION=2.0.9
-    - ORIENTDB_VERSION=2.0.8
-    - ORIENTDB_VERSION=2.0.7
-    - ORIENTDB_VERSION=2.0.6
-    - ORIENTDB_VERSION=2.0.5
-    - ORIENTDB_VERSION=2.0.4
-    - ORIENTDB_VERSION=2.0.3
-    - ORIENTDB_VERSION=2.0.2
-    - ORIENTDB_VERSION=2.0.1
-    - ORIENTDB_VERSION=1.7.10
-
