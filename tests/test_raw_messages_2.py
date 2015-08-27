@@ -377,7 +377,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             value = datarange.prepare(32767).send().fetch_response()
         except PyOrientCommandException as e:
             print(repr(str(e)))
-            assert "java.lang.ArrayIndexOutOfBoundsException" in str(e)
+            assert "IndexOutOfBoundsException" in str(e)
 
     def test_data_range(self):
         connection = OrientSocket( 'localhost', 2424 )

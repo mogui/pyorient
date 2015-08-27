@@ -25,7 +25,6 @@ class OrientSocket(object):
         self.connected = False
         self.host = host
         self.port = port
-        self.node_listeners = {}
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         """:type : socket.socket"""
         self.protocol = -1
@@ -46,7 +45,7 @@ class OrientSocket(object):
         dlog("Trying to connect...")
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._socket.settimeout( SOCK_CONN_TIMEOUT )  # 30 secs of timeout
+            self._socket.settimeout(30)  # 30 secs of timeout
             self._socket.connect( (self.host, self.port) )
             _value = self._socket.recv( FIELD_SHORT['bytes'] )
 
@@ -243,6 +242,10 @@ class OrientDB(object):
             .prepare(args).send().fetch_response()
 
     # DATABASE COMMANDS
+
+    def gremlin(self, *args):
+        return self.get_message("CommandMessage") \
+            .prepare(( QUERY_GREMLIN, ) + args).send().fetch_response()
 
     def command(self, *args):
         return self.get_message("CommandMessage") \

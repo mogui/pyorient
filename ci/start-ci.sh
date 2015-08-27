@@ -3,8 +3,7 @@ set -e
 
 PARENT_DIR=$(dirname $(cd "$(dirname "$0")"; pwd))
 CI_DIR="$PARENT_DIR/ci/environment"
-#DEFAULT_ORIENT_VERSION="2.0-SNAPSHOT"
-DEFAULT_ORIENT_VERSION="2.0"
+DEFAULT_ORIENT_VERSION="2.1.0"
 
 # launch simple instance in debug mode with shell hang up
 while [ $# -ne 0 ]; do
@@ -36,7 +35,8 @@ cd "$PARENT_DIR"
 
 . "$PARENT_DIR/ci/_bash_utils.sh"
 
-if [ ! -d "$ODB_DIR" ]; then
+if [ ! -d "$ODB_DIR/bin" ]; then
+
   # Download and extract OrientDB server
   echo "--- Downloading OrientDB v${ODB_VERSION} ---"
   build ${ODB_VERSION} ${CI_DIR}
@@ -48,6 +48,8 @@ if [ ! -d "$ODB_DIR" ]; then
 
   if [[ "${ODB_VERSION}" == "1.7.10" ]]; then
     cp ${PARENT_DIR}/ci/orientdb-server-config_1.7.10.xml "${ODB_DIR}/config/orientdb-server-config.xml"
+  elif [[ "${ODB_VERSION}" == *"2.1"* ]]; then
+    cp ${PARENT_DIR}/ci/orientdb-server-config_2.0.xml "${ODB_DIR}/config/orientdb-server-config.xml"
   elif [[ "${ODB_VERSION}" != *"2.0"* ]]; then
     cp ${PARENT_DIR}/ci/orientdb-server-config.xml "${ODB_DIR}/config/orientdb-server-config.xml"
   else
@@ -60,11 +62,16 @@ if [ ! -d "$ODB_DIR" ]; then
     mkdir ${ODB_DIR}/databases
   fi
 
-  cp -a ${PARENT_DIR}/test/default_databases/GratefulDeadConcerts "${ODB_DIR}/databases/"
-  cp -a ${PARENT_DIR}/test/default_databases/VehicleHistoryGraph "${ODB_DIR}/databases/"
 else
   echo "!!! Found OrientDB v${ODB_VERSION} in ${ODB_DIR} !!!"
 fi
+
+echo "Installing databases: "
+echo "cp -a ${PARENT_DIR}/tests/default_databases/GratefulDeadConcerts \"${ODB_DIR}/databases/\""
+cp -a ${PARENT_DIR}/tests/default_databases/GratefulDeadConcerts "${ODB_DIR}/databases/"
+
+echo "cp -a ${PARENT_DIR}/tests/default_databases/VehicleHistoryGraph \"${ODB_DIR}/databases/\""
+cp -a ${PARENT_DIR}/tests/default_databases/VehicleHistoryGraph "${ODB_DIR}/databases/"
 
 # Start OrientDB in background.
 echo "--- Starting an instance of OrientDB ---"

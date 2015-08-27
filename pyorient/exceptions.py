@@ -10,7 +10,9 @@ class PyOrientException(Exception):
             "OConfigurationException": PyOrientDatabaseException,
             "OCommandExecutorNotFoundException": PyOrientCommandException,
             "OSecurityAccessException": PyOrientSecurityAccessException,
-            "ORecordDuplicatedException": PyOrientORecordDuplicatedException
+            "ORecordDuplicatedException": PyOrientORecordDuplicatedException,
+            "OSchemaException": PyOrientSchemaException,
+            "OIndexException": PyOrientIndexException
         }
 
         # Override the exception Type with OrientDB exception map
@@ -52,6 +54,11 @@ class PyOrientSQLParsingException(PyOrientException):
 class PyOrientCommandException(PyOrientException):
     pass
 
+class PyOrientSchemaException(PyOrientException):
+    pass
+
+class PyOrientIndexException(PyOrientException):
+    pass
 
 class PyOrientORecordDuplicatedException(PyOrientException):
     pass
