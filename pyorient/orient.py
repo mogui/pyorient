@@ -12,7 +12,7 @@ from .exceptions import PyOrientBadMethodCallException, \
     PyOrientConnectionPoolException
 
 from .constants import FIELD_SHORT, \
-    QUERY_ASYNC, QUERY_CMD, QUERY_SYNC, QUERY_SCRIPT, \
+    QUERY_ASYNC, QUERY_CMD, QUERY_GREMLIN, QUERY_SYNC, QUERY_SCRIPT, \
     SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, SOCK_CONN_TIMEOUT
 from .utils import dlog
 
@@ -31,7 +31,8 @@ class OrientSocket(object):
         self.session_id = -1
         self.auth_token = b''
         self.db_opened = None
-        self.cluster_map = None
+        from .messages.cluster import Information
+        self.cluster_map = Information( [{}, [ "", "0.0.0" ]] )
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
         self.in_transaction = False
 
@@ -45,7 +46,7 @@ class OrientSocket(object):
         dlog("Trying to connect...")
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._socket.settimeout(30)  # 30 secs of timeout
+            self._socket.settimeout( SOCK_CONN_TIMEOUT )  # 30 secs of timeout
             self._socket.connect( (self.host, self.port) )
             _value = self._socket.recv( FIELD_SHORT['bytes'] )
 

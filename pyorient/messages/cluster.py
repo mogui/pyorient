@@ -279,7 +279,7 @@ class Information(object):
         self.set_hi_availability_list( params[1][0] )
         self._parse_version( params[1][1] )
 
-    def set_hi_availability_list(self, params ):
+    def set_hi_availability_list( self, params ):
         if isinstance( params, ORecordDecoder ):
             self.hiAvailabilityList = params
         else:

@@ -192,13 +192,15 @@ class BaseMessage(object):
             )  # JSON WITH THE NEW CLUSTER CFG
 
             end_flag = self._decode_field( FIELD_BYTE )
+
+            # this flag can be set more than once
             while end_flag == 3:
                 self._decode_field( FIELD_INT )  # FAKE SESSION ID = 2^-31
                 self._decode_field( FIELD_BYTE )  # 80: 0x50 Request Push
-
                 self._cluster_map.set_hi_availability_list(
-                    self._decode_field( FIELD_STRING ) # JSON
-                )
+                    self._decode_field( FIELD_STRING )
+                )  # JSON WITH THE NEW CLUSTER CFG
+
                 """
                 :type: self._cluster_map pyorient.messages.cluster.Information
                 """
