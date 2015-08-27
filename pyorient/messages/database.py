@@ -142,7 +142,7 @@ class DbOpenMessage(BaseMessage):
         self._orientSocket.serialization_type = self._serialization_type
 
         self._cluster_map = self._orientSocket.cluster_map = \
-            Information( [ clusters, response ] )
+            Information( [ clusters, response, self._orientSocket ] )
 
         return self._cluster_map
 

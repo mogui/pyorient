@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
+
 __author__ = 'Ostico <ostico@gmail.com>'
 
 from pyorient.exceptions import PyOrientBadMethodCallException
 
+from .base import BaseMessage
 from ..constants import CLUSTER_TYPE_PHYSICAL, DATA_CLUSTER_ADD_OP, \
     DATA_CLUSTER_COUNT_OP, FIELD_BOOLEAN, FIELD_BYTE, FIELD_LONG, FIELD_SHORT, \
     FIELD_STRING, DATA_CLUSTER_DATA_RANGE_OP, DATA_CLUSTER_DROP_OP, CLUSTER_TYPES
+from ..types import OrientNodeList
 from ..utils import need_db_opened
-from .base import BaseMessage
 from ..serialization import ORecordDecoder
 
 #
@@ -258,6 +260,9 @@ class Information(object):
 
     def __init__( self, params ):
 
+        self.__host = params[2].host
+        self.__port = params[2].port
+
         self._indexPosition = 0
         self._reverseMap    = {}
         self._reverseIDMap  = {}
@@ -281,9 +286,17 @@ class Information(object):
 
     def set_hi_availability_list( self, params ):
         if isinstance( params, ORecordDecoder ):
-            self.hiAvailabilityList = params
+            self.hiAvailabilityList = OrientNodeList(
+                params,
+                self.__host,
+                self.__port
+            )
         else:
-            self.hiAvailabilityList = ORecordDecoder( params )
+            self.hiAvailabilityList = OrientNodeList(
+                ORecordDecoder( params ),
+                self.__host,
+                self.__port
+            )
 
     def _parse_version( self, param ):
 

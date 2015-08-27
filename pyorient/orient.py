@@ -32,7 +32,7 @@ class OrientSocket(object):
         self.auth_token = b''
         self.db_opened = None
         from .messages.cluster import Information
-        self.cluster_map = Information( [{}, [ "", "0.0.0" ]] )
+        self.cluster_map = Information( [{}, [ "", "0.0.0" ], self] )
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
         self.in_transaction = False
 
@@ -107,6 +107,10 @@ class OrientSocket(object):
                     n_bytes = self._socket.recv_into(view, _len_to_read)
                     if not n_bytes:
                         self._socket.close()
+                        # TODO Implement re-connection to another listener
+                        # from the Hi availability list
+                        # ( self.cluster_map.hiAvailabilityList.listeners )
+
                         # Additional cleanup
                         raise PyOrientConnectionException(
                             "Server seems to have went down", [])
