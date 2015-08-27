@@ -18,14 +18,11 @@
 
 from setuptools import setup
 
-with open('README.rst', 'r', 'utf-8') as f:
-    readme = f.read()
-
 setup(name='pyorient',
     version='1.4.4',
     author='Niko Usai <mogui83@gmail.com>, Domenico Lupinetti <ostico@gmail.com>',
     description='OrientDB native client library',
-    long_description=readme,
+    long_description=open('README.rst').read(),
     license='LICENSE',
     packages = [
         'pyorient',
