@@ -29,6 +29,7 @@ pip-log.txt
 *.swp
 *.so
 build/*
+docs/build
 .DS_Store
 ._.DS_Store
 single.py
@@ -36,6 +37,5 @@ singletest.py
 wiki
 .builddev
 .idea
-localTest/*
 /ci/environment
 *.zip

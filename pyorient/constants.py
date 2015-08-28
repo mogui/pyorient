@@ -102,7 +102,9 @@ DB_LIST_OP                 = chr(74)
 # Orient Primitives
 #
 
+#: Document type
 DB_TYPE_DOCUMENT    = 'document'
+#: Graph type
 DB_TYPE_GRAPH       = 'graph'
 DB_TYPES            = (
     DB_TYPE_DOCUMENT,

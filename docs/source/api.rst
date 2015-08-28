@@ -3,8 +3,14 @@ developer api
 
 Main client class
 *****************
+.. automodule:: pyorient.constants
+    :members:
+
 .. autoclass:: pyorient.OrientDB
-   :inherited-members:
+    :inherited-members:
+
+.. autoclass:: pyorient.messages.cluster.Information
+
 
 Objects
 *******
@@ -13,7 +19,7 @@ Objects
     just a note
 
 .. warning::
-    bewaaaare
+    bewaaaare teh tests
 
 .. versionadded:: 1.2.3
 

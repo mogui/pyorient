@@ -17,22 +17,27 @@ from .exceptions import PyOrientBadMethodCallException, \
 
 from .constants import FIELD_SHORT, \
     QUERY_ASYNC, QUERY_CMD, QUERY_GREMLIN, QUERY_SYNC, QUERY_SCRIPT, \
-    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, DB_TYPE_DOCUMENT
+    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL
 from .utils import dlog
 
 
 class OrientSocket(object):
-    """
-    Socket object
-    """
+    '''Class representing the binary connection to the database, it does all the low level comunication
+    And holds information on server version and cluster map
 
+    .. DANGER::
+      Should not be used directly
+
+    :param host: hostname of the server to connect
+    :param port: integer port of the server
+
+    '''
     def __init__(self, host, port):
 
         self.connected = False
         self.host = host
         self.port = port
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-        """:type : socket.socket"""
         self.protocol = -1
         self.session_id = -1
         self.auth_token = b''
@@ -48,6 +53,9 @@ class OrientSocket(object):
         return self._socket
 
     def connect(self):
+        '''Connects to the inner socket
+        could raise :class:`PyOrientConnectionPoolException`
+        '''
         dlog("Trying to connect...")
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -73,6 +81,8 @@ class OrientSocket(object):
             raise PyOrientConnectionException( "Socket Error: %s" % e, [] )
 
     def close(self):
+        '''Close the inner connection
+        '''
         self.host = ''
         self.port = 0
         self.protocol = -1
@@ -126,26 +136,22 @@ class OrientSocket(object):
                     "Socket error", [])
 
 
-def ByteToHex( byte_str ):
-    """
-    Convert a byte string to it's hex string representation e.g. for output.
-    """
-
-    # Uses list comprehension which is a fractionally faster implementation than
-    # the alternative, more readable, implementation below
-    #
-    #    hex = []
-    #    for aChar in byteStr:
-    #        hex.append( "%02X " % ord( aChar ) )
-    #
-    #    return ''.join( hex ).strip()
-
-    return ''.join( [ "%02X " % ord( x ) for x in byte_str ] ).strip()
-
 
 class OrientDB(object):
-    """
-    Main object representing an Orient client
+    """OrientDB client object
+
+    Point of entrance to use the basic commands you can issue to the server
+
+    :param host: hostname of the server to connect  defaults to localhost
+    :param port: integer port of the server         defaults to 2424
+
+    Usage::
+
+        >>> from pyorient import OrientDB
+        >>> client = OrientDB("localhost", 2424)
+        >>> client.db_open('MyDatabase', 'admin', 'admin')
+
+
     """
     _connection  = None
     _auth_token  = None
@@ -181,12 +187,12 @@ class OrientDB(object):
     )
 
     def __init__(self, host='localhost', port=2424):
-
         if not isinstance(host, OrientSocket):
             connection = OrientSocket(host, port)
         else:
             connection = host
 
+        #: inner :class:`OrientSocket <OrientSocket>`
         self._connection = connection
 
     def __getattr__(self, item):
@@ -203,33 +209,92 @@ class OrientDB(object):
         return self
 
     def get_session_token( self ):
-        """
-        Retrieve the session token to reuse after
-        :return:
+        """Returns the auth token of the session
         """
         return self._connection.auth_token
 
     # SERVER COMMANDS
 
-    def connect(self, *args):
+    def connect(self, user, password, client_id='', serialization_type=SERIALIZATION_DOCUMENT2CSV):
+        '''Connect to the server without opening any database
+
+        :param user: the username of the user on the server. Example: "root"
+        :param password: the password of the user on the server. Example: "37aed6392"
+        :param client_id: client's id - can be null for clients. In clustered configurations it's the distributed node ID as TCP host:port
+        :param serialization_type: the serialization format required by the client, now it can be just SERIALIZATION_DOCUMENT2CSV
+
+        Usage to open a connection as root::
+
+            >>> from pyorient import OrientDB
+            >>> client = OrientDB("localhost", 2424)
+            >>> client.connect('root', 'root')
+
+        '''
         return self.get_message("ConnectMessage") \
-            .prepare(args).send().fetch_response()
+            .prepare((user, password, client_id, serialization_type)).send().fetch_response()
 
-    def db_count_records(self, *args):
+    def db_count_records(self):
+        '''Returns the number of records in the currently open database.
+
+        :return: long
+
+        Usage::
+
+            >>> from pyorient import OrientDB
+            >>> client = OrientDB("localhost", 2424)
+            >>> client.db_open('MyDatabase', 'admin', 'admin')
+            >>> client.db_count_records()
+            7872
+        '''
         return self.get_message("DbCountRecordsMessage") \
-            .prepare(args).send().fetch_response()
+            .prepare(()).send().fetch_response()
 
-    def db_create(self, *args):
-        return self.get_message("DbCreateMessage") \
-            .prepare(args).send().fetch_response()
+    def db_create(self, name, type=DB_TYPE_DOCUMENT, storage=STORAGE_TYPE_PLOCAL):
+        '''Creates a database in the remote OrientDB server instance.
 
-    def db_drop(self, *args):
-        return self.get_message("DbDropMessage") \
-            .prepare(args).send().fetch_response()
+        :param name: the name of the database to create. Example: "MyDatabase".
+        :param type: the type of the database to create. Can be either document or graph. [default: DB_TYPE_DOCUMENT]
+        :param storage:  specifies the storage type of the database to create. It can be one of the supported types [default: STORAGE_TYPE_PLOCAL]:
 
-    def db_exists(self, *args):
+            - STORAGE_TYPE_PLOCAL - persistent database
+            - STORAGE_TYPE_MEMORY - volatile database
+
+        :return: None
+
+        Usage::
+
+            >>> from pyorient import OrientDB
+            >>> client = OrientDB("localhost", 2424)
+            >>> client.connect('root', 'root')
+            >>> client.db_create('test')
+        '''
+        self.get_message("DbCreateMessage") \
+            .prepare((name, type, storage)).send().fetch_response()
+        return None
+
+    def db_drop(self, name, type=STORAGE_TYPE_PLOCAL):
+        '''Removes a database from the OrientDB server instance. This operation returns a successful response if the database is deleted successfully. Otherwise, if the database doesn't exist on the server, it returns an Exception
+
+        :param name: the name of the database to create. Example: "MyDatabase".
+        :param type: the type of the database to create. Can be either document or graph. [default: DB_TYPE_DOCUMENT]
+
+        :return: None
+        '''
+        self.get_message("DbDropMessage") \
+            .prepare((name, type)).send().fetch_response()
+        return None
+
+    def db_exists(self, name, type=STORAGE_TYPE_PLOCAL):
+        '''Asks if a database exists in the OrientDB server instance.
+
+        :param name: the name of the database to create. Example: "MyDatabase".
+        :param type: the type of the database to create. Can be either document or graph. [default: DB_TYPE_DOCUMENT]
+
+        :return: bool
+        '''
+
         return self.get_message("DbExistsMessage") \
-            .prepare(args).send().fetch_response()
+            .prepare((name, type)).send().fetch_response()
 
     def db_open(self, db_name, user, password, db_type=DB_TYPE_DOCUMENT, client_id=''):
         '''
@@ -241,15 +306,13 @@ class OrientDB(object):
         :param password: password as string
         :param db_type: string, can be DB_TYPE_DOCUMENT or DB_TYPE_GRAPH
         :param client_id: Can be null for clients. In clustered configuration is the distributed node
-        :return: a :class:`Information <Information>` object
+        :return: a :class:`Information <pyorient.messages.cluster.Information>` object
 
         Usage::
 
           >>> import pyorient
           >>> orient = pyorient.OrientDB('localhost', 2424)
           >>> orient.db_open('asd', 'admin', 'admin')
-
-          <PreparedRequest [GET]>
 
         '''
         return self.get_message("DbOpenMessage") \

@@ -305,7 +305,7 @@ class DbCreateMessage(BaseMessage):
         super( DbCreateMessage, self ).__init__(_orient_socket)
 
         self._db_name = ''
-        self._db_type = ''
+        self._db_type = DB_TYPE_DOCUMENT
         self._storage_type = ''
 
         if self.get_protocol() > 16:  # 1.5-SNAPSHOT
