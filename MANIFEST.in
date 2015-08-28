@@ -1,4 +1,0 @@
-include pyorient/*
-include test/*
-include tests.cfg
-include README.md

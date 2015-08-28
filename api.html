@@ -1,0 +1,446 @@
+
+
+<!DOCTYPE html>
+<!--[if IE 8]><html class="no-js lt-ie9" lang="en" > <![endif]-->
+<!--[if gt IE 8]><!--> <html class="no-js" lang="en" > <!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  
+  <title>developer api &mdash; pyorient 1.4.3 documentation</title>
+  
+
+  
+  
+
+  
+
+  
+  
+    
+
+  
+
+  
+  
+    <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  
+
+  
+
+  
+    <link rel="top" title="pyorient 1.4.3 documentation" href="index.html"/>
+        <link rel="prev" title="pyorient Documentation" href="index.html"/> 
+
+  
+  <script src="_static/js/modernizr.min.js"></script>
+
+</head>
+
+<body class="wy-body-for-nav" role="document">
+
+  <div class="wy-grid-for-nav">
+
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-nav-search">
+        
+
+        
+          <a href="index.html" class="icon icon-home"> pyorient
+        
+
+        
+        </a>
+
+        
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+        
+      </div>
+
+      <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+        
+          
+          
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="">developer api</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-pyorient.constants">Main client class</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#objects">Objects</a></li>
+</ul>
+</li>
+</ul>
+
+          
+        
+      </div>
+      &nbsp;
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" role="navigation" aria-label="top navigation">
+        <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+        <a href="index.html">pyorient</a>
+      </nav>
+
+
+      
+      <div class="wy-nav-content">
+        <div class="rst-content">
+          <div role="navigation" aria-label="breadcrumbs navigation">
+  <ul class="wy-breadcrumbs">
+    <li><a href="index.html">Docs</a> &raquo;</li>
+      
+    <li>developer api</li>
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/api.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+  </ul>
+  <hr/>
+</div>
+          <div role="main" class="document">
+            
+  <div class="section" id="developer-api">
+<h1>developer api<a class="headerlink" href="#developer-api" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-pyorient.constants">
+<span id="main-client-class"></span><h2>Main client class<a class="headerlink" href="#module-pyorient.constants" title="Permalink to this headline">¶</a></h2>
+<dl class="data">
+<dt id="pyorient.constants.DB_TYPE_DOCUMENT">
+<code class="descclassname">pyorient.constants.</code><code class="descname">DB_TYPE_DOCUMENT</code><em class="property"> = 'document'</em><a class="headerlink" href="#pyorient.constants.DB_TYPE_DOCUMENT" title="Permalink to this definition">¶</a></dt>
+<dd><p>Document type</p>
+</dd></dl>
+
+<dl class="data">
+<dt id="pyorient.constants.DB_TYPE_GRAPH">
+<code class="descclassname">pyorient.constants.</code><code class="descname">DB_TYPE_GRAPH</code><em class="property"> = 'graph'</em><a class="headerlink" href="#pyorient.constants.DB_TYPE_GRAPH" title="Permalink to this definition">¶</a></dt>
+<dd><p>Graph type</p>
+</dd></dl>
+
+<dl class="class">
+<dt id="pyorient.OrientDB">
+<em class="property">class </em><code class="descclassname">pyorient.</code><code class="descname">OrientDB</code><span class="sig-paren">(</span><em>host='localhost'</em>, <em>port=2424</em><span class="sig-paren">)</span><a class="headerlink" href="#pyorient.OrientDB" title="Permalink to this definition">¶</a></dt>
+<dd><p>OrientDB client object</p>
+<p>Point of entrance to use the basic commands you can issue to the server</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>host</strong> &#8211; hostname of the server to connect  defaults to localhost</li>
+<li><strong>port</strong> &#8211; integer port of the server         defaults to 2424</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyorient</span> <span class="kn">import</span> <span class="n">OrientDB</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span> <span class="o">=</span> <span class="n">OrientDB</span><span class="p">(</span><span class="s">&quot;localhost&quot;</span><span class="p">,</span> <span class="mi">2424</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span><span class="o">.</span><span class="n">db_open</span><span class="p">(</span><span class="s">&#39;MyDatabase&#39;</span><span class="p">,</span> <span class="s">&#39;admin&#39;</span><span class="p">,</span> <span class="s">&#39;admin&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+<dl class="method">
+<dt id="pyorient.OrientDB.connect">
+<code class="descname">connect</code><span class="sig-paren">(</span><em>user</em>, <em>password</em>, <em>client_id=''</em>, <em>serialization_type='ORecordDocument2csv'</em><span class="sig-paren">)</span><a class="headerlink" href="#pyorient.OrientDB.connect" title="Permalink to this definition">¶</a></dt>
+<dd><p>Connect to the server without opening any database</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first last simple">
+<li><strong>user</strong> &#8211; the username of the user on the server. Example: &#8220;root&#8221;</li>
+<li><strong>password</strong> &#8211; the password of the user on the server. Example: &#8220;37aed6392&#8221;</li>
+<li><strong>client_id</strong> &#8211; client&#8217;s id - can be null for clients. In clustered configurations it&#8217;s the distributed node ID as TCP host:port</li>
+<li><strong>serialization_type</strong> &#8211; the serialization format required by the client, now it can be just SERIALIZATION_DOCUMENT2CSV</li>
+</ul>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage to open a connection as root:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyorient</span> <span class="kn">import</span> <span class="n">OrientDB</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span> <span class="o">=</span> <span class="n">OrientDB</span><span class="p">(</span><span class="s">&quot;localhost&quot;</span><span class="p">,</span> <span class="mi">2424</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;root&#39;</span><span class="p">,</span> <span class="s">&#39;root&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyorient.OrientDB.db_count_records">
+<code class="descname">db_count_records</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyorient.OrientDB.db_count_records" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the number of records in the currently open database.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Returns:</th><td class="field-body">long</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyorient</span> <span class="kn">import</span> <span class="n">OrientDB</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span> <span class="o">=</span> <span class="n">OrientDB</span><span class="p">(</span><span class="s">&quot;localhost&quot;</span><span class="p">,</span> <span class="mi">2424</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span><span class="o">.</span><span class="n">db_open</span><span class="p">(</span><span class="s">&#39;MyDatabase&#39;</span><span class="p">,</span> <span class="s">&#39;admin&#39;</span><span class="p">,</span> <span class="s">&#39;admin&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span><span class="o">.</span><span class="n">db_count_records</span><span class="p">()</span>
+<span class="go">7872</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyorient.OrientDB.db_create">
+<code class="descname">db_create</code><span class="sig-paren">(</span><em>name</em>, <em>type='document'</em>, <em>storage='plocal'</em><span class="sig-paren">)</span><a class="headerlink" href="#pyorient.OrientDB.db_create" title="Permalink to this definition">¶</a></dt>
+<dd><p>Creates a database in the remote OrientDB server instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> &#8211; the name of the database to create. Example: &#8220;MyDatabase&#8221;.</li>
+<li><strong>type</strong> &#8211; the type of the database to create. Can be either document or graph. [default: DB_TYPE_DOCUMENT]</li>
+<li><strong>storage</strong> &#8211; <p>specifies the storage type of the database to create. It can be one of the supported types [default: STORAGE_TYPE_PLOCAL]:</p>
+<ul>
+<li>STORAGE_TYPE_PLOCAL - persistent database</li>
+<li>STORAGE_TYPE_MEMORY - volatile database</li>
+</ul>
+</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">from</span> <span class="nn">pyorient</span> <span class="kn">import</span> <span class="n">OrientDB</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span> <span class="o">=</span> <span class="n">OrientDB</span><span class="p">(</span><span class="s">&quot;localhost&quot;</span><span class="p">,</span> <span class="mi">2424</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="s">&#39;root&#39;</span><span class="p">,</span> <span class="s">&#39;root&#39;</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">client</span><span class="o">.</span><span class="n">db_create</span><span class="p">(</span><span class="s">&#39;test&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyorient.OrientDB.db_drop">
+<code class="descname">db_drop</code><span class="sig-paren">(</span><em>name</em>, <em>type='plocal'</em><span class="sig-paren">)</span><a class="headerlink" href="#pyorient.OrientDB.db_drop" title="Permalink to this definition">¶</a></dt>
+<dd><p>Removes a database from the OrientDB server instance. This operation returns a successful response if the database is deleted successfully. Otherwise, if the database doesn&#8217;t exist on the server, it returns an Exception</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> &#8211; the name of the database to create. Example: &#8220;MyDatabase&#8221;.</li>
+<li><strong>type</strong> &#8211; the type of the database to create. Can be either document or graph. [default: DB_TYPE_DOCUMENT]</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">None</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyorient.OrientDB.db_exists">
+<code class="descname">db_exists</code><span class="sig-paren">(</span><em>name</em>, <em>type='plocal'</em><span class="sig-paren">)</span><a class="headerlink" href="#pyorient.OrientDB.db_exists" title="Permalink to this definition">¶</a></dt>
+<dd><p>Asks if a database exists in the OrientDB server instance.</p>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>name</strong> &#8211; the name of the database to create. Example: &#8220;MyDatabase&#8221;.</li>
+<li><strong>type</strong> &#8211; the type of the database to create. Can be either document or graph. [default: DB_TYPE_DOCUMENT]</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">bool</p>
+</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyorient.OrientDB.db_open">
+<code class="descname">db_open</code><span class="sig-paren">(</span><em>db_name</em>, <em>user</em>, <em>password</em>, <em>db_type='document'</em>, <em>client_id=''</em><span class="sig-paren">)</span><a class="headerlink" href="#pyorient.OrientDB.db_open" title="Permalink to this definition">¶</a></dt>
+<dd><blockquote>
+<div>Opens a database on the remote OrientDB Server.
+Returns the Session-Id to being reused for all the next calls and the list of configured clusters</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><ul class="first simple">
+<li><strong>db_name</strong> &#8211; database name as string. Example: &#8220;demo&#8221;</li>
+<li><strong>user</strong> &#8211; username as string</li>
+<li><strong>password</strong> &#8211; password as string</li>
+<li><strong>db_type</strong> &#8211; string, can be DB_TYPE_DOCUMENT or DB_TYPE_GRAPH</li>
+<li><strong>client_id</strong> &#8211; Can be null for clients. In clustered configuration is the distributed node</li>
+</ul>
+</td>
+</tr>
+<tr class="field-even field"><th class="field-name">Returns:</th><td class="field-body"><p class="first last">a <a class="reference internal" href="#pyorient.messages.cluster.Information" title="pyorient.messages.cluster.Information"><code class="xref py py-class docutils literal"><span class="pre">Information</span></code></a> object</p>
+</td>
+</tr>
+</tbody>
+</table>
+<p>Usage:</p>
+<div class="highlight-python"><div class="highlight"><pre><span class="gp">&gt;&gt;&gt; </span><span class="kn">import</span> <span class="nn">pyorient</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">orient</span> <span class="o">=</span> <span class="n">pyorient</span><span class="o">.</span><span class="n">OrientDB</span><span class="p">(</span><span class="s">&#39;localhost&#39;</span><span class="p">,</span> <span class="mi">2424</span><span class="p">)</span>
+<span class="gp">&gt;&gt;&gt; </span><span class="n">orient</span><span class="o">.</span><span class="n">db_open</span><span class="p">(</span><span class="s">&#39;asd&#39;</span><span class="p">,</span> <span class="s">&#39;admin&#39;</span><span class="p">,</span> <span class="s">&#39;admin&#39;</span><span class="p">)</span>
+</pre></div>
+</div>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyorient.OrientDB.get_message">
+<code class="descname">get_message</code><span class="sig-paren">(</span><em>command=None</em><span class="sig-paren">)</span><a class="headerlink" href="#pyorient.OrientDB.get_message" title="Permalink to this definition">¶</a></dt>
+<dd><p>Message Factory
+:rtype : pyorient.messages.ConnectMessage,</p>
+<blockquote>
+<div>pyorient.messages.DbOpenMessage,
+pyorient.messages.DbExistsMessage,
+pyorient.messages.DbCreateMessage,
+pyorient.messages.DbDropMessage,
+pyorient.messages.DbCountRecordsMessage,
+pyorient.messages.DbReloadMessage,
+pyorient.messages.ShutdownMessage,
+pyorient.messages.DataClusterAddMessage,
+pyorient.messages.DataClusterCountMessage,
+pyorient.messages.DataClusterDataRangeMessage,
+pyorient.messages.DataClusterDropMessage,
+pyorient.messages.DbCloseMessage,
+pyorient.messages.DbSizeMessage,
+pyorient.messages.DbListMessage,
+pyorient.messages.RecordCreateMessage,
+pyorient.messages.RecordDeleteMessage,
+pyorient.messages.RecordLoadMessage,
+pyorient.messages.RecordUpdateMessage,
+pyorient.messages.CommandMessage,
+pyorient.messages.TXCommitMessage,</div></blockquote>
+<table class="docutils field-list" frame="void" rules="none">
+<col class="field-name" />
+<col class="field-body" />
+<tbody valign="top">
+<tr class="field-odd field"><th class="field-name">Parameters:</th><td class="field-body"><strong>command</strong> &#8211; str</td>
+</tr>
+</tbody>
+</table>
+</dd></dl>
+
+<dl class="method">
+<dt id="pyorient.OrientDB.get_session_token">
+<code class="descname">get_session_token</code><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#pyorient.OrientDB.get_session_token" title="Permalink to this definition">¶</a></dt>
+<dd><p>Returns the auth token of the session</p>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="class">
+<dt id="pyorient.messages.cluster.Information">
+<em class="property">class </em><code class="descclassname">pyorient.messages.cluster.</code><code class="descname">Information</code><span class="sig-paren">(</span><em>params</em><span class="sig-paren">)</span><a class="headerlink" href="#pyorient.messages.cluster.Information" title="Permalink to this definition">¶</a></dt>
+<dd><p>Asd</p>
+</dd></dl>
+
+</div>
+<div class="section" id="objects">
+<h2>Objects<a class="headerlink" href="#objects" title="Permalink to this headline">¶</a></h2>
+<div class="admonition note">
+<p class="first admonition-title">Note</p>
+<p class="last">just a note</p>
+</div>
+<div class="admonition warning">
+<p class="first admonition-title">Warning</p>
+<p class="last">bewaaaare</p>
+</div>
+<div class="versionadded">
+<p><span class="versionmodified">New in version 1.2.3.</span></p>
+</div>
+<p>gne gne:</p>
+<div class="highlight-python"><div class="highlight"><pre>./fuck
+</pre></div>
+</div>
+</div>
+</div>
+
+
+          </div>
+          <footer>
+  
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+      
+      
+        <a href="index.html" class="btn btn-neutral" title="pyorient Documentation" accesskey="p"><span class="fa fa-arrow-circle-left"></span> Previous</a>
+      
+    </div>
+  
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &copy; Copyright 2015 mogui, ostico.
+    </p>
+  </div>
+  Built with <a href="http://sphinx-doc.org/">Sphinx</a> using a <a href="https://github.com/snide/sphinx_rtd_theme">theme</a> provided by <a href="https://readthedocs.org">Read the Docs</a>.
+
+</footer>
+
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+
+  
+
+    <script type="text/javascript">
+        var DOCUMENTATION_OPTIONS = {
+            URL_ROOT:'./',
+            VERSION:'1.4.3',
+            COLLAPSE_INDEX:false,
+            FILE_SUFFIX:'.html',
+            HAS_SOURCE:  true
+        };
+    </script>
+      <script type="text/javascript" src="_static/jquery.js"></script>
+      <script type="text/javascript" src="_static/underscore.js"></script>
+      <script type="text/javascript" src="_static/doctools.js"></script>
+
+  
+
+  
+  
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+  
+
+  
+  
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.StickyNav.enable();
+      });
+  </script>
+   
+
+</body>
+</html>
