@@ -508,7 +508,8 @@ class DbReloadMessage(BaseMessage):
         self._cluster_map = Information([
             clusters,
             [self._cluster_map.hiAvailabilityList,
-             self._cluster_map.orientRelease]
+             self._cluster_map.orientRelease],
+             self._orientSocket
         ])
         """ :type: Information """
 
