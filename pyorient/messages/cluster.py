@@ -285,12 +285,8 @@ class Information(object):
         self._parse_version( params[1][1] )
 
     def set_hi_availability_list( self, params ):
-        if isinstance( params, ORecordDecoder ):
-            self.hiAvailabilityList = OrientNodeList(
-                params,
-                self.__host,
-                self.__port
-            )
+        if isinstance( params, OrientNodeList ):
+            self.hiAvailabilityList = params
         else:
             self.hiAvailabilityList = OrientNodeList(
                 ORecordDecoder( params ),
