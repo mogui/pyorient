@@ -126,7 +126,7 @@ class Person(MoneyNode):
     element_plural = 'people'
 
     full_name = String(nullable=False)
-    uuid = String(nullable=False)
+    uuid = String(nullable=False, default=UUID())
 
 class Wallet(MoneyNode):
     element_plural = 'wallets'
@@ -163,7 +163,7 @@ class OGMMoneyTestCase(unittest.TestCase):
         costanzo = g.people.create(full_name='Costanzo Veronesi', uuid=UUID())
         valerius = g.people.create(full_name='Valerius Burgstaller'
                                    , uuid=UUID())
-        oliver = g.people.create(full_name='Oliver Girard', uuid=UUID())
+        oliver = g.people.create(full_name='Oliver Girard')
 
         # If you override nullable properties to be not-mandatory, be aware that
         # OrientDB version < 2.1.0 does not count null
@@ -214,6 +214,10 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         assert len(pouch.outE()) == len(pouch.out())
         assert pouch.in_() == pouch.both() and pouch.inE() == pouch.bothE()
+
+        first_inE = pouch.inE()[0]
+        assert first_inE == oliver_carries
+        assert first_inE.outV() == oliver and first_inE.inV() == poor_pouch
 
         for i, wallet in enumerate(g.query(Wallet)):
             print(decimal.Decimal(wallet.amount_imprecise) -
