@@ -157,21 +157,17 @@ class OGMMoneyTestCase(unittest.TestCase):
         g = self.g
 
         if g.server_version.major == 1:
-            self.skipTest( 'UUID method does not exists in OrientDB version < 2' )
+            self.skipTest(
+                'UUID method does not exists in OrientDB version < 2')
 
         costanzo = g.people.create(full_name='Costanzo Veronesi', uuid=UUID())
-        # FIXME 'uuid' is a mandatory property; these should fail,
-        # but do not (with OrientDB 2.1):
-        valerius = g.people.create(full_name='Valerius Burgstaller')
-        oliver = g.people.create(full_name='Oliver Girard')
+        valerius = g.people.create(full_name='Valerius Burgstaller'
+                                   , uuid=UUID())
+        oliver = g.people.create(full_name='Oliver Girard', uuid=UUID())
 
-        if g.server_version >= (2,1,0):
-            assert Person.objects.query().what(
-                distinct(Person.uuid)).count() == 2
-        else:
-            # OrientDB version < 2.1.0 does not count null
-            assert Person.objects.query().what(
-                distinct(Person.uuid)).count() == 1
+        # If you override nullable properties to be not-mandatory, be aware that
+        # OrientDB version < 2.1.0 does not count null
+        assert Person.objects.query().what(distinct(Person.uuid)).count() == 3
 
         original_inheritance = decimal.Decimal('1520841.74309871919')
 

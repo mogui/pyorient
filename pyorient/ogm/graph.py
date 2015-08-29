@@ -201,9 +201,7 @@ class Graph(object):
                         .format(class_prop
                                 , str(not prop_value.nullable).lower()))
 
-            # FIXME With OrientDB 2.1, it is possible to create vertexes
-            # with supposedly MANDATORY properties without a SET clause
-            # for those properties.
+            # NOTE MANDATORY is broken with OrientDB 2.1.0
             self.client.command(
                     'ALTER PROPERTY {} MANDATORY {}'
                         .format(class_prop
