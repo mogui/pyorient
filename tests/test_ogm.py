@@ -203,11 +203,17 @@ class OGMMoneyTestCase(unittest.TestCase):
         smallerwallet_query = g.query(Wallet).filter(
             Wallet.amount_precise < 100000)
 
-        assert len(bigwallet_query) == 1
+        # Basic query slicing
+        assert len(bigwallet_query[:]) == 1
         assert len(smallerwallet_query) == 1
 
         assert bigwallet_query.first() == inheritance
-        assert smallerwallet_query.first() == poor_pouch
+
+        pouch = smallerwallet_query[0]
+        assert pouch == poor_pouch
+
+        assert len(pouch.outE()) == len(pouch.out())
+        assert pouch.in_() == pouch.both() and pouch.inE() == pouch.bothE()
 
         for i, wallet in enumerate(g.query(Wallet)):
             print(decimal.Decimal(wallet.amount_imprecise) -

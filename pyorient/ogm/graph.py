@@ -478,13 +478,6 @@ class Graph(object):
             return false
 
     @staticmethod
-    def createable(cls):
-        try:
-            return cls.registry[cls.registry_name] is cls
-        except KeyError:
-            return False
-
-    @staticmethod
     def guard_reserved_words(word, cls):
         reserved_words = [[],['in', 'out']][cls.decl_type]
         if word in reserved_words:
