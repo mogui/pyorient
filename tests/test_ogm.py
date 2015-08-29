@@ -160,6 +160,8 @@ class OGMMoneyTestCase(unittest.TestCase):
             self.skipTest( 'UUID method does not exists in OrientDB version < 2' )
 
         costanzo = g.people.create(full_name='Costanzo Veronesi', uuid=UUID())
+        # FIXME 'uuid' is a mandatory property; these should fail,
+        # but do not (with OrientDB 2.1):
         valerius = g.people.create(full_name='Valerius Burgstaller')
         oliver = g.people.create(full_name='Oliver Girard')
 

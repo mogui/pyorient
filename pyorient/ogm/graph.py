@@ -196,12 +196,23 @@ class Graph(object):
                     'ALTER PROPERTY {0} DEFAULT {1}'
                         .format(class_prop, prop_value.default))
 
-            # FIXME Should nullable correspond to 'MANDATORY' instead/as well?
-            # Or should there be a separate property?
             self.client.command(
                     'ALTER PROPERTY {0} NOTNULL {1}'
                         .format(class_prop
                                 , str(not prop_value.nullable).lower()))
+
+            # FIXME With OrientDB 2.1, it is possible to create vertexes
+            # with supposedly MANDATORY properties without a SET clause
+            # for those properties.
+            self.client.command(
+                    'ALTER PROPERTY {} MANDATORY {}'
+                        .format(class_prop
+                                , str(prop_value.mandatory).lower()))
+
+            self.client.command(
+                    'ALTER PROPERTY {} READONLY {}'
+                        .format(class_prop
+                                , str(prop_value.readonly).lower()))
 
             # TODO Add support for composite indexes
             if prop_value.indexed:
@@ -264,7 +275,7 @@ class Graph(object):
             set_clause = ''
 
         result = self.client.command(
-            'INSERT INTO {}{}'.format(class_name, set_clause))[0]
+            'CREATE VERTEX {}{}'.format(class_name, set_clause))[0]
 
         props = result.oRecordData
         return vertex_cls.from_graph(self, result._rid,

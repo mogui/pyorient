@@ -7,7 +7,8 @@ class Property(Operand):
     num_instances = 0 # Basis for ordering property instances
 
     def __init__(self, name=None, nullable=True
-                 , default=None, indexed=False, unique=False):
+                 , default=None, indexed=False, unique=False
+                 , mandatory=False, readonly=False):
         """Create a database class property.
 
         :param name: Overrides name of class attribute used for property
@@ -18,13 +19,25 @@ class Property(Operand):
         otherwise
         :param unique: Uniqueness of property value enforced when True; create
         index
+        :param mandatory: Value must be provided for property. Property will
+        automatically become mandatory if not nullable.
+        :param readonly: Property value can not be changed after first
+        assignment.
         """
 
         self.name = name
-        self.nullable = nullable
+
+        if nullable:
+            self.nullable = True
+            self.mandatory = mandatory
+        else:
+            self.nullable = False
+            self.mandatory = True
+
         self.default = default
         self.indexed = indexed or unique
         self.unique = unique
+        self.readonly = readonly
 
         self._context = None
 
@@ -65,7 +78,8 @@ class PropertyEncoder:
     def encode(value):
         if isinstance(value, decimal.Decimal):
             return repr(str(value))
-        return repr(value) if isinstance(value, str) else value
+        return repr(value) if isinstance(value, str) else \
+            value if value is not None else 'null'
 
 class Boolean(Property):
     pass
