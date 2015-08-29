@@ -191,17 +191,18 @@ class Graph(object):
                 # Property already exists
                 pass
 
-            if self.server_version >= (2,1,0):
-                self.client.command(
-                    'ALTER PROPERTY {0} DEFAULT {1}'
-                        .format(class_prop, prop_value.default))
+            if prop_value.default is not None:
+                if self.server_version >= (2,1,0):
+                    self.client.command(
+                        'ALTER PROPERTY {0} DEFAULT {1}'
+                            .format(class_prop,
+                                    PropertyEncoder.encode(prop_value.default)))
 
             self.client.command(
                     'ALTER PROPERTY {0} NOTNULL {1}'
                         .format(class_prop
                                 , str(not prop_value.nullable).lower()))
 
-            # NOTE MANDATORY is broken with OrientDB 2.1.0
             self.client.command(
                     'ALTER PROPERTY {} MANDATORY {}'
                         .format(class_prop
