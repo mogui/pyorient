@@ -163,7 +163,11 @@ class OGMMoneyTestCase(unittest.TestCase):
         costanzo = g.people.create(full_name='Costanzo Veronesi', uuid=UUID())
         valerius = g.people.create(full_name='Valerius Burgstaller'
                                    , uuid=UUID())
-        oliver = g.people.create(full_name='Oliver Girard')
+        if g.server_version >= (2,1,0):
+            # Default values supported
+            oliver = g.people.create(full_name='Oliver Girard')
+        else:
+            oliver = g.people.create(full_name='Oliver Girard', uuid=UUID())
 
         # If you override nullable properties to be not-mandatory, be aware that
         # OrientDB version < 2.1.0 does not count null
@@ -180,8 +184,8 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         pittance = decimal.Decimal('0.1')
         poor_pouch = g.wallets.create(
-            amount_precise = pittance
-            , amount_imprecise= pittance)
+            amount_precise=pittance
+            , amount_imprecise=pittance)
 
         assert poor_pouch.amount_precise == pittance
         assert poor_pouch.amount_precise != poor_pouch.amount_imprecise
