@@ -12,6 +12,9 @@ from .query import Query
 
 import pyorient
 import json
+from collections import namedtuple
+
+ServerVersion = namedtuple('orientdb_version', ['major', 'minor', 'build'])
 
 class Graph(object):
     def __init__(self, config, user=None, cred=None):
@@ -66,7 +69,13 @@ class Graph(object):
         self._last_cred = cred
         self._last_db = db_name
 
-        return self.client.db_open(db_name, user, cred)
+        cluster_map = self.client.db_open(db_name, user, cred)
+
+        version = cluster_map.version_info
+        self.server_version = ServerVersion(
+            version['major'], version['minor'], version['build'])
+
+        return cluster_map
 
     def drop(self, db_name=None, storage=None):
         """Drop entire database."""
@@ -182,20 +191,27 @@ class Graph(object):
                 # Property already exists
                 pass
 
-            try:
-                self.client.command(
-                    'ALTER PROPERTY {0} DEFAULT {1}'
-                        .format(class_prop, prop_value.default))
-            except pyorient.PyOrientSQLParsingException:
-                # FIXME Query server version instead?
-                pass
+            if prop_value.default is not None:
+                if self.server_version >= (2,1,0):
+                    self.client.command(
+                        'ALTER PROPERTY {0} DEFAULT {1}'
+                            .format(class_prop,
+                                    PropertyEncoder.encode(prop_value.default)))
 
-            # FIXME Should nullable correspond to 'MANDATORY' instead?
-            # Or should there be a separate property
             self.client.command(
                     'ALTER PROPERTY {0} NOTNULL {1}'
                         .format(class_prop
                                 , str(not prop_value.nullable).lower()))
+
+            self.client.command(
+                    'ALTER PROPERTY {} MANDATORY {}'
+                        .format(class_prop
+                                , str(prop_value.mandatory).lower()))
+
+            self.client.command(
+                    'ALTER PROPERTY {} READONLY {}'
+                        .format(class_prop
+                                , str(prop_value.readonly).lower()))
 
             # TODO Add support for composite indexes
             if prop_value.indexed:
@@ -258,7 +274,7 @@ class Graph(object):
             set_clause = ''
 
         result = self.client.command(
-            'INSERT INTO {}{}'.format(class_name, set_clause))[0]
+            'CREATE VERTEX {}{}'.format(class_name, set_clause))[0]
 
         props = result.oRecordData
         return vertex_cls.from_graph(self, result._rid,
@@ -302,11 +318,15 @@ class Graph(object):
                 raise KeyError(
                     'Class \'{}\' not registered with graph.'.format(name))
 
-        result = self.client.command(
-            'UPDATE {0} CONTENT {1}'.format(
-                elem_id
-                , json.dumps(self.props_to_db(element_class, props)
-                             , cls=PropertyEncoder)))
+        if props:
+            db_props = self.props_to_db(element_class, props)
+            set_clause = ' SET {}'.format(
+                ','.join('{}={}'.format(k,PropertyEncoder.encode(v))
+                         for k,v in db_props.items()))
+        else:
+            set_clause = ''
+
+        result = self.client.command('UPDATE {}{}'.format(elem_id, set_clause))
         return result and result[0] == b'1'
 
     def query(self, first_entity, *entities):
@@ -457,13 +477,6 @@ class Graph(object):
             return cls.decl_root is not None and cls.decl_type is not None
         except KeyError:
             return false
-
-    @staticmethod
-    def createable(cls):
-        try:
-            return cls.registry[cls.registry_name] is cls
-        except KeyError:
-            return False
 
     @staticmethod
     def guard_reserved_words(word, cls):

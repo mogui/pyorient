@@ -111,6 +111,13 @@ class Query(object):
     def __getitem__(self, key):
         """Set query slice, or just get result by index."""
         if isinstance(key, slice):
+            if key.stop is None:
+                if key.start is not None:
+                    self._params['skip'] = key.start
+                return self
+            elif key.start is None:
+                key.start = 0
+
             return self.slice(key.start, key.stop)
 
         with TempParams(self._params, skip=key, limit=1):
