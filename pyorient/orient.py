@@ -21,7 +21,6 @@ from .constants import FIELD_SHORT, \
     STORAGE_TYPE_PLOCAL, SOCK_CONN_TIMEOUT
 
 from .utils import dlog
-from .types import Information
 
 class OrientSocket(object):
     '''Class representing the binary connection to the database, it does all the low level comunication
@@ -44,7 +43,6 @@ class OrientSocket(object):
         self.session_id = -1
         self.auth_token = b''
         self.db_opened = None
-        self.cluster_map = Information( [{}, [ "", "0.0.0" ], self] )
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
         self.in_transaction = False
 
@@ -198,7 +196,18 @@ class OrientDB(object):
         else:
             connection = host
 
-        #: inner :class:`OrientSocket <OrientSocket>`
+        #: an :class:`OrientVersion <OrientVersion>` object representing connected server version, None if
+        #: not connected
+        self.version = None
+
+        #: array of :class:`OrientCluser <OrientCluser>` representing the connected database clusters
+        self.clusters = []
+
+        #: array of :class:`OrientNode <OrientNode>` if the connected server is in a distributed cluster config
+        self.nodes = []
+
+        self._cluster_map = None
+        self._cluster_reverse_map = None
         self._connection = connection
 
     def __getattr__(self, item):
@@ -210,7 +219,31 @@ class OrientDB(object):
             return _Message.prepare( args ).send().fetch_response()
         return wrapper
 
+    def _reload_clusters(self):
+        self._cluster_map = dict([(cluster.name, cluster.id) for cluster in self.clusters])
+        self._cluster_reverse_map = dict([(cluster.id, cluster.name) for cluster in self.clusters])
+
+    def get_class_position(self, cluster_name):
+        """
+        Get the cluster position (id) given a cluster name
+        :param cluster_name: cluster name
+        :return: int cluster id
+        """
+        return self._cluster_map[cluster_name.lower()]
+
+    def get_class_name(self, position):
+        """
+        Get cluster name given a cluster position (id)
+        :param position: cluster id
+        :return: string cluster name
+        """
+        return self._cluster_reverse_map[position]
+
     def set_session_token( self, token ):
+        """
+        Set true if you want to use token authentication
+        :param token: bool
+        """
         self._auth_token = token
         return self
 
@@ -218,6 +251,9 @@ class OrientDB(object):
         """Returns the auth token of the session
         """
         return self._connection.auth_token
+
+
+
 
     # SERVER COMMANDS
 
@@ -312,7 +348,7 @@ class OrientDB(object):
         :param password: password as string
         :param db_type: string, can be DB_TYPE_DOCUMENT or DB_TYPE_GRAPH
         :param client_id: Can be null for clients. In clustered configuration is the distributed node
-        :return: a :class:`Information <pyorient.messages.cluster.Information>` object
+        :return: an array of :class:`OrientCluster <pyorient.types.OrientCluster>` object
 
         Usage::
 
@@ -325,14 +361,23 @@ class OrientDB(object):
         info, clusters, nodes = self.get_message("DbOpenMessage") \
             .prepare((db_name, user, password, db_type, client_id)).send().fetch_response()
 
-        # TODO: store theese thing in a nice way in thius main object
-        #  do it also for db reload
+        self.version = info
+        self.clusters = clusters
+        self._reload_clusters()
+        self.nodes = nodes
 
-        return
+        return self.clusters
 
-    def db_reload(self, *args):
-        return self.get_message("DbReloadMessage") \
-            .prepare(args).send().fetch_response()
+    def db_reload(self):
+        """
+        Reloads current connected database
+
+        :return: renewed array of :class:`OrientCluster <pyorient.types.OrientCluster>`
+        """
+        self.clusters = self.get_message("DbReloadMessage") \
+            .prepare([]).send().fetch_response()
+        self._reload_clusters()
+        return self.clusters
 
     def shutdown(self, *args):
         return self.get_message("ShutdownMessage") \
@@ -408,31 +453,6 @@ class OrientDB(object):
         return self.get_message("TxCommitMessage")
 
     def get_message(self, command=None):
-        """
-        Message Factory
-        :rtype : pyorient.messages.ConnectMessage,
-                 pyorient.messages.DbOpenMessage,
-                 pyorient.messages.DbExistsMessage,
-                 pyorient.messages.DbCreateMessage,
-                 pyorient.messages.DbDropMessage,
-                 pyorient.messages.DbCountRecordsMessage,
-                 pyorient.messages.DbReloadMessage,
-                 pyorient.messages.ShutdownMessage,
-                 pyorient.messages.DataClusterAddMessage,
-                 pyorient.messages.DataClusterCountMessage,
-                 pyorient.messages.DataClusterDataRangeMessage,
-                 pyorient.messages.DataClusterDropMessage,
-                 pyorient.messages.DbCloseMessage,
-                 pyorient.messages.DbSizeMessage,
-                 pyorient.messages.DbListMessage,
-                 pyorient.messages.RecordCreateMessage,
-                 pyorient.messages.RecordDeleteMessage,
-                 pyorient.messages.RecordLoadMessage,
-                 pyorient.messages.RecordUpdateMessage,
-                 pyorient.messages.CommandMessage,
-                 pyorient.messages.TXCommitMessage,
-        :param command: str
-        """
         try:
             if command is not None and self._Messages[command]:
                 _msg = __import__(

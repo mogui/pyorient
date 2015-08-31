@@ -71,8 +71,8 @@ class CommandTestCase(unittest.TestCase):
 
         cluster = 1
         for x in clusters:
-            if x['name'] == 'demo_class':
-                cluster = x['id']
+            if x.name == 'demo_class':
+                cluster = x.id
                 break
 
         load = ( factory.get_message(pyorient.RECORD_CREATE) )\
@@ -86,12 +86,7 @@ class CommandTestCase(unittest.TestCase):
             .prepare(['demo_db', pyorient.STORAGE_TYPE_MEMORY])\
             .send().fetch_response()
 
-        # print(clusters
-        # print(sql_insert_result
-        # print(load._rid
-        # print(drop_db_result
 
-        assert isinstance( clusters, pyorient.Information )
         assert len( clusters ) != 0
         assert isinstance( sql_insert_result, list )
         assert len( sql_insert_result ) == 1

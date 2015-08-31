@@ -10,7 +10,7 @@ from ..constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP, FIELD
     DB_CLOSE_OP, DB_EXIST_OP, STORAGE_TYPE_PLOCAL, STORAGE_TYPE_LOCAL, DB_CREATE_OP, \
     DB_DROP_OP, DB_RELOAD_OP, DB_SIZE_OP, DB_LIST_OP, STORAGE_TYPES, FIELD_LONG
 from ..utils import need_connected, need_db_opened
-from ..types import OrientRecord, ORecordDecoder, OrientCluster, OrientVersion, OrientNode, Information
+from ..types import OrientRecord, ORecordDecoder, OrientCluster, OrientVersion, OrientNode
 
 
 #
@@ -137,8 +137,9 @@ class DbOpenMessage(BaseMessage):
         # parsing Node List
         decoded = ORecordDecoder(nodes_config)
         nodes = []
-        for node_dict in decoded.data['members']:
-            nodes.append(OrientNode(node_dict))
+        if len(decoded.data) > 0:
+            for node_dict in decoded.data['members']:
+                nodes.append(OrientNode(node_dict))
 
         # set database opened
         self._orientSocket.db_opened = self._db_name
@@ -487,35 +488,24 @@ class DbReloadMessage(BaseMessage):
         cluster_num = super(DbReloadMessage, self).fetch_response()[0]
 
         clusters = []
-        try:
-            for x in range(0, cluster_num):
-                if self.get_protocol() < 24:
-                    cluster = {
-                        "name": self._decode_field(FIELD_STRING),  # cluster_name
-                        "id": self._decode_field(FIELD_SHORT),  # cluster_id
-                        "type": self._decode_field(FIELD_STRING),  # cluster_type
-                        "segment": self._decode_field(FIELD_SHORT),  # cluster release
-                    }
-                else:
-                    cluster = {
-                        "name": self._decode_field(FIELD_STRING),  # cluster_name
-                        "id": self._decode_field(FIELD_SHORT),  # cluster_id
-                    }
-                clusters.append(cluster)
 
-        except IndexError:
-            # Should not happen because of protocol check
-            pass
+        # Parsing cluster map
+        for x in range(0, cluster_num):
+            if self.get_protocol() < 24:
+                cluster = OrientCluster(
+                    self._decode_field(FIELD_STRING),
+                    self._decode_field(FIELD_SHORT),
+                    self._decode_field(FIELD_STRING),
+                    self._decode_field(FIELD_SHORT)
+                )
+            else:
+                cluster = OrientCluster(
+                    self._decode_field(FIELD_STRING),
+                    self._decode_field(FIELD_SHORT)
+                )
+            clusters.append(cluster)
 
-        self._cluster_map = Information([
-            clusters,
-            [self._cluster_map.hiAvailabilityList,
-             self._cluster_map.orient_release],
-            self._orientSocket
-        ])
-        """ :type: Information """
-
-        return self._cluster_map
+        return clusters
 
 
 #

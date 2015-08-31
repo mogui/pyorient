@@ -104,15 +104,15 @@ class CommandTestCase(unittest.TestCase):
             assert new_cluster_id > 0
 
             new_cluster_list = client.db_reload()
-            new_cluster_list.dataClusters.sort(key=lambda cluster: cluster['id'])
+            new_cluster_list.sort(key=lambda cluster: cluster.id)
 
             _list = []
             for cluster in new_cluster_list:
                 print("Cluster Name: %s, ID: %u " \
-                      % ( cluster['name'], cluster['id'] ))
-                value = client.data_cluster_data_range(cluster['id'])
+                      % ( cluster.name, cluster.id))
+                value = client.data_cluster_data_range(cluster.id)
                 print("Value: %s " % value)
-                _list.append( cluster['id'] )
+                _list.append( cluster.id)
                 assert value is not []
                 assert value is not None
 

@@ -60,9 +60,6 @@ class BaseMessage(object):
         self._connected = self._orientSocket.connected
         self._serialization_type = self._orientSocket.serialization_type
 
-        self._cluster_map = self._orientSocket.cluster_map
-        """ :type : Information """
-
         self._output_buffer = b''
         self._input_buffer = b''
 

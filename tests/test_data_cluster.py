@@ -63,15 +63,15 @@ class DataClusterTestCase(unittest.TestCase):
         _reload = DbReloadMessage(connection)
         new_cluster_list =_reload.prepare().send().fetch_response()
 
-        new_cluster_list.dataClusters.sort(key=lambda cluster: cluster['id'])
+        new_cluster_list.sort(key=lambda cluster: cluster.id)
 
         _list = []
         for cluster in new_cluster_list:
             datarange = DataClusterDataRangeMessage(connection)
-            value = datarange.prepare(cluster['id']).send().fetch_response()
+            value = datarange.prepare(cluster.id).send().fetch_response()
             print("Cluster Name: %s, ID: %u: %s " \
-                  % ( cluster['name'], cluster['id'], value ))
-            _list.append( cluster['id'] )
+                  % (cluster.name, cluster.id, value))
+            _list.append(cluster.id)
             assert value is not []
             assert value is not None
 
@@ -96,15 +96,15 @@ class DataClusterTestCase(unittest.TestCase):
 
         _reload = DbReloadMessage(connection)
         new_cluster_list = _reload.prepare().send().fetch_response()
-        new_cluster_list.dataClusters.sort(key=lambda cluster: cluster['id'])
+        new_cluster_list.sort(key=lambda cluster: cluster.id)
 
         _list = []
         for cluster in new_cluster_list:
             datarange = DataClusterDataRangeMessage(connection)
-            value = datarange.prepare(cluster['id']).send().fetch_response()
-            print("Cluster Name: %s, ID: %u: %s " \
-                  % ( cluster['name'], cluster['id'], value ))
-            _list.append( cluster['id'] )
+            value = datarange.prepare(cluster.id).send().fetch_response()
+            print("Cluster Name: %s, ID: %u: %s "\
+                  % (cluster.name, cluster.id, value))
+            _list.append( cluster.id)
             assert value is not []
             assert value is not None
 
