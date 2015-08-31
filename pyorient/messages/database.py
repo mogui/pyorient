@@ -4,7 +4,6 @@ __author__ = 'Ostico <ostico@gmail.com>'
 from pyorient.exceptions import PyOrientBadMethodCallException
 
 from .base import BaseMessage
-from .connection import ConnectMessage
 from ..constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP, FIELD_BYTE, FIELD_INT, \
     FIELD_SHORT, FIELD_STRING, FIELD_STRINGS, FIELD_BYTES, FIELD_BOOLEAN, NAME, SUPPORTED_PROTOCOL, \
     VERSION, DB_TYPES, SERIALIZATION_SERIAL_BIN, SERIALIZATION_TYPES, \
@@ -131,8 +130,8 @@ class DbOpenMessage(BaseMessage):
             # Should not happen because of protocol check
             pass
 
-        self._append( FIELD_STRING )  # cluster config string ( -1 )
-        self._append( FIELD_STRING )  # cluster release
+        self._append( FIELD_STRING )  # orient node list | string ""
+        self._append( FIELD_STRING )  # Orient release
 
         response = super( DbOpenMessage, self ).fetch_response(True)
 
@@ -143,7 +142,7 @@ class DbOpenMessage(BaseMessage):
         self._orientSocket.serialization_type = self._serialization_type
 
         self._cluster_map = self._orientSocket.cluster_map = \
-            Information( [ clusters, response ] )
+            Information( [ clusters, response, self._orientSocket ] )
 
         return self._cluster_map
 
@@ -174,7 +173,7 @@ class DbOpenMessage(BaseMessage):
         return self
 
     def set_serialization_type(self, serialization_type):
-        #TODO Implement version 22 of the protocol
+        # TODO Implement version 22 of the protocol
         if serialization_type == SERIALIZATION_SERIAL_BIN:
             raise NotImplementedError
 
@@ -509,7 +508,8 @@ class DbReloadMessage(BaseMessage):
         self._cluster_map = Information([
             clusters,
             [self._cluster_map.hiAvailabilityList,
-             self._cluster_map.orientRelease]
+             self._cluster_map.orientRelease],
+            self._orientSocket
         ])
         """ :type: Information """
 

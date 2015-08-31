@@ -17,7 +17,9 @@ from .exceptions import PyOrientBadMethodCallException, \
 
 from .constants import FIELD_SHORT, \
     QUERY_ASYNC, QUERY_CMD, QUERY_GREMLIN, QUERY_SYNC, QUERY_SCRIPT, \
-    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL
+    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, DB_TYPE_DOCUMENT, \
+    STORAGE_TYPE_PLOCAL, SOCK_CONN_TIMEOUT
+
 from .utils import dlog
 
 
@@ -42,7 +44,8 @@ class OrientSocket(object):
         self.session_id = -1
         self.auth_token = b''
         self.db_opened = None
-        self.cluster_map = None
+        from .messages.cluster import Information
+        self.cluster_map = Information( [{}, [ "", "0.0.0" ], self] )
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
         self.in_transaction = False
 
@@ -59,7 +62,7 @@ class OrientSocket(object):
         dlog("Trying to connect...")
         try:
             self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-            self._socket.settimeout(30)  # 30 secs of timeout
+            self._socket.settimeout( SOCK_CONN_TIMEOUT )  # 30 secs of timeout
             self._socket.connect( (self.host, self.port) )
             _value = self._socket.recv( FIELD_SHORT['bytes'] )
 
@@ -122,6 +125,10 @@ class OrientSocket(object):
                     n_bytes = self._socket.recv_into(view, _len_to_read)
                     if not n_bytes:
                         self._socket.close()
+                        # TODO Implement re-connection to another listener
+                        # from the Hi availability list
+                        # ( self.cluster_map.hiAvailabilityList.listeners )
+
                         # Additional cleanup
                         raise PyOrientConnectionException(
                             "Server seems to have went down", [])

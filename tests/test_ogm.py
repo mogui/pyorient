@@ -126,7 +126,7 @@ class Person(MoneyNode):
     element_plural = 'people'
 
     full_name = String(nullable=False)
-    uuid = String(nullable=False)
+    uuid = String(nullable=False, default=UUID())
 
 class Wallet(MoneyNode):
     element_plural = 'wallets'
@@ -156,22 +156,22 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         g = self.g
 
-        if g.client._connection.cluster_map.version_info['major'] == 1:
-            self.skipTest( 'UUID method does not exists in OrientDB version < 2' )
+        if g.server_version.major == 1:
+            self.skipTest(
+                'UUID method does not exists in OrientDB version < 2')
 
         costanzo = g.people.create(full_name='Costanzo Veronesi', uuid=UUID())
-        valerius = g.people.create(full_name='Valerius Burgstaller')
-        oliver = g.people.create(full_name='Oliver Girard')
-
-        if g.client._connection.cluster_map.version_info['major'] == 2 \
-                and g.client._connection.cluster_map.version_info['minor'] < 1:
-            # OrientDB version < 2.1.0 does not count null
-            assert Person.objects.query().what(
-                distinct(Person.uuid)).count() == 1
+        valerius = g.people.create(full_name='Valerius Burgstaller'
+                                   , uuid=UUID())
+        if g.server_version >= (2,1,0):
+            # Default values supported
+            oliver = g.people.create(full_name='Oliver Girard')
         else:
-            assert Person.objects.query().what(
-                distinct(Person.uuid)).count() == 2
+            oliver = g.people.create(full_name='Oliver Girard', uuid=UUID())
 
+        # If you override nullable properties to be not-mandatory, be aware that
+        # OrientDB version < 2.1.0 does not count null
+        assert Person.objects.query().what(distinct(Person.uuid)).count() == 3
 
         original_inheritance = decimal.Decimal('1520841.74309871919')
 
@@ -184,8 +184,8 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         pittance = decimal.Decimal('0.1')
         poor_pouch = g.wallets.create(
-            amount_precise = pittance
-            , amount_imprecise= pittance)
+            amount_precise=pittance
+            , amount_imprecise=pittance)
 
         assert poor_pouch.amount_precise == pittance
         assert poor_pouch.amount_precise != poor_pouch.amount_imprecise
@@ -207,11 +207,21 @@ class OGMMoneyTestCase(unittest.TestCase):
         smallerwallet_query = g.query(Wallet).filter(
             Wallet.amount_precise < 100000)
 
-        assert len(bigwallet_query) == 1
+        # Basic query slicing
+        assert len(bigwallet_query[:]) == 1
         assert len(smallerwallet_query) == 1
 
         assert bigwallet_query.first() == inheritance
-        assert smallerwallet_query.first() == poor_pouch
+
+        pouch = smallerwallet_query[0]
+        assert pouch == poor_pouch
+
+        assert len(pouch.outE()) == len(pouch.out())
+        assert pouch.in_() == pouch.both() and pouch.inE() == pouch.bothE()
+
+        first_inE = pouch.inE()[0]
+        assert first_inE == oliver_carries
+        assert first_inE.outV() == oliver and first_inE.inV() == poor_pouch
 
         for i, wallet in enumerate(g.query(Wallet)):
             print(decimal.Decimal(wallet.amount_imprecise) -

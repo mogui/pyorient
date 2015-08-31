@@ -210,10 +210,9 @@ class CommandMessage(BaseMessage):
             cached_results = self._read_async_records()
             # cache = cached_results['cached']
         else:
+            # this should be never happen, used only to debug the protocol
             msg = b''
-            import socket
-            self._orientSocket._socket.settimeout(5)
-
+            self._orientSocket._socket.setblocking( 0 )
             m = self._orientSocket.read(1)
             while m != "":
                 msg += m

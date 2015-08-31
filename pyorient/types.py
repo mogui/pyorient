@@ -125,3 +125,28 @@ class OrientBinaryObject(object):
     def getBin(self):
         import base64
         return base64.b64decode(self.b64)
+
+
+class OrientNodeList(object):
+    def __init__(self, nodelist, host, port ):
+        self.listeners = []
+
+        _locals = [ "127.0.0.1", "localhost" ]
+        if host in _locals:
+            host = _locals[0]
+        try:
+            for member in nodelist.data['members']:
+                _lst = [ listener for listener in member['listeners']
+                         if listener['protocol'] == 'ONetworkProtocolBinary' ][0]
+                item = _lst['listen'].split( ':' )
+
+                if item[0] in _locals:
+                    item[0] = _locals[0]
+
+                # skip this address from list
+                if item[0] == host and item[1] == str(port):
+                    continue
+
+                self.listeners.append( { 'address': item[0], 'port': item[1] } )
+        except KeyError:
+            pass

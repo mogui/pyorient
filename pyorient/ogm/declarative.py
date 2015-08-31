@@ -81,7 +81,7 @@ def declarative_base(decl_type, name, cls, metaclass, **kwargs):
 
 def declarative_node(name='Node', cls=Vertex, metaclass=DeclarativeMeta
                      , **kwargs):
-    """Create base class for graph nodes/vertices"""
+    """Create base class for graph nodes/vertexes"""
     return declarative_base(DeclarativeType.Vertex, name, cls, metaclass
                             , **kwargs)
 

@@ -182,9 +182,32 @@ class BaseMessage(object):
             )
 
         elif self._header[0] == 3:
-            # TODO
-            # server push data for nodes up/down update info needed for
-            # failover on cluster requests
+            # Push notification, Node cluster changed
+
+            # FIELD_BYTE (OChannelBinaryProtocol.PUSH_DATA);  # WRITE 3
+            # FIELD_INT (Integer.MIN_VALUE);  # SESSION ID = 2^-31
+            self._decode_field( FIELD_BYTE )  # 80: \x50 Request Push
+            self._cluster_map.set_hi_availability_list(
+                self._decode_field( FIELD_STRING )
+            )  # JSON WITH THE NEW CLUSTER CFG
+
+            end_flag = self._decode_field( FIELD_BYTE )
+
+            # this flag can be set more than once
+            while end_flag == 3:
+                self._decode_field( FIELD_INT )  # FAKE SESSION ID = 2^-31
+                self._decode_field( FIELD_BYTE )  # 80: 0x50 Request Push
+                self._cluster_map.set_hi_availability_list(
+                    self._decode_field( FIELD_STRING )
+                )  # JSON WITH THE NEW CLUSTER CFG
+
+                """
+                :type: self._cluster_map pyorient.messages.cluster.Information
+                """
+                end_flag = self._decode_field( FIELD_BYTE )
+
+            # Try to set the new session id???
+            self._header[1] = self._decode_field( FIELD_INT )  # REAL SESSION ID
             pass
 
     def _decode_body(self):
