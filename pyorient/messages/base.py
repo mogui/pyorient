@@ -66,6 +66,9 @@ class BaseMessage(object):
         # callback function for async queries
         self._callback = None
 
+        # callback for push received from the server
+        self._push_callback = None
+
         global in_transaction
         in_transaction = False
 
@@ -143,6 +146,8 @@ class BaseMessage(object):
         """
         #  Token authentication handling
         #  we must recognize ConnectMessage and DbOpenMessage messages
+            TODO: change this check avoiding cross import,
+            importing a subclass in a super class is bad
         """
         if not isinstance( self, ( ConnectMessage, DbOpenMessage ) ) \
                 and self._request_token is True:
@@ -180,13 +185,20 @@ class BaseMessage(object):
 
         elif self._header[0] == 3:
             # Push notification, Node cluster changed
-
+            # TODO: UNTESTED CODE!!!
             # FIELD_BYTE (OChannelBinaryProtocol.PUSH_DATA);  # WRITE 3
             # FIELD_INT (Integer.MIN_VALUE);  # SESSION ID = 2^-31
-            self._decode_field( FIELD_BYTE )  # 80: \x50 Request Push
-            self._cluster_map.set_hi_availability_list(
-                self._decode_field( FIELD_STRING )
-            )  # JSON WITH THE NEW CLUSTER CFG
+            # 80: \x50 Request Push 1 byte: Push command id
+            push_command_id = self._decode_field(FIELD_BYTE)
+            push_message = self._decode_field( FIELD_STRING )
+
+            payload = ORecordDecoder(push_message).data
+            if self._push_callback:
+                self._push_callback(push_command_id, payload)
+
+            # self._cluster_map.set_hi_availability_list(
+            #    self._decode_field( FIELD_STRING )
+            # )  # JSON WITH THE NEW CLUSTER CFG
 
             end_flag = self._decode_field( FIELD_BYTE )
 

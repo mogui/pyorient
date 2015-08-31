@@ -110,7 +110,7 @@ class DbOpenMessage(BaseMessage):
 
         clusters = []
 
-        # Parsing cluster map
+        # Parsing cluster map TODO: this must be put in serialization interface
         for x in range(0, cluster_num):
             if self.get_protocol() < 24:
                 cluster = OrientCluster(
@@ -134,7 +134,7 @@ class DbOpenMessage(BaseMessage):
         # parsing server release version
         info = OrientVersion(release)
 
-        # parsing Node List
+        # parsing Node List TODO: this must be put in serialization interface
         decoded = ORecordDecoder(nodes_config)
         nodes = []
         if len(decoded.data) > 0:

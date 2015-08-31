@@ -468,9 +468,22 @@ class OrientDB(object):
                     token = self._connection.auth_token
                 else:
                     token = self._auth_token
-                return _Message(self._connection)\
-                    .set_session_token( token )
+
+                message_instance = _Message(self._connection)\
+                    .set_session_token(token)
+                message_instance._push_callback = self._push_received
+                return message_instance
+
         except KeyError as e:
             raise PyOrientBadMethodCallException(
                 "Unable to find command " + str(e), []
             )
+
+    def _push_received(self, command_id, payload):
+        # REQUEST_PUSH_RECORD	        79
+        # REQUEST_PUSH_DISTRIB_CONFIG	80
+        # REQUEST_PUSH_LIVE_QUERY	    81
+        # TODO: this logic must stay within Messages class here I just want to receive
+        # an object of something, like a new array of cluster.
+        if command_id == 80:
+            pass
