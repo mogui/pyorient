@@ -6,7 +6,7 @@ from ..constants import COMMAND_OP, FIELD_BOOLEAN, FIELD_BYTE, FIELD_CHAR, \
     FIELD_INT, FIELD_LONG, FIELD_SHORT, FIELD_STRING, QUERY_SYNC, FIELD_BYTES, \
     TX_COMMIT_OP, QUERY_GREMLIN, QUERY_ASYNC, QUERY_CMD, QUERY_TYPES, \
     QUERY_SCRIPT
-from ..serialization import ORecordEncoder
+from ..types import ORecordEncoder
 from ..utils import need_connected, need_db_opened, dlog
 
 

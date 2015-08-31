@@ -11,7 +11,7 @@ from ..hexdump import hexdump
 from ..constants import BOOLEAN, BYTE, BYTES, CHAR, FIELD_BOOLEAN, FIELD_BYTE, \
     FIELD_INT, FIELD_RECORD, FIELD_SHORT, FIELD_STRING, FIELD_TYPE_LINK, INT, \
     LINK, LONG, RECORD, SHORT, STRING, STRINGS
-from ..serialization import ORecordDecoder
+from ..types import ORecordDecoder
 from ..utils import is_debug_active
 from ..orient import OrientSocket
 

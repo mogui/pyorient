@@ -21,7 +21,7 @@ from .constants import FIELD_SHORT, \
     STORAGE_TYPE_PLOCAL, SOCK_CONN_TIMEOUT
 
 from .utils import dlog
-
+from .types import Information
 
 class OrientSocket(object):
     '''Class representing the binary connection to the database, it does all the low level comunication
@@ -44,7 +44,6 @@ class OrientSocket(object):
         self.session_id = -1
         self.auth_token = b''
         self.db_opened = None
-        from .messages.cluster import Information
         self.cluster_map = Information( [{}, [ "", "0.0.0" ], self] )
         self.serialization_type = SERIALIZATION_DOCUMENT2CSV
         self.in_transaction = False
@@ -322,8 +321,14 @@ class OrientDB(object):
           >>> orient.db_open('asd', 'admin', 'admin')
 
         '''
-        return self.get_message("DbOpenMessage") \
+
+        info, clusters, nodes = self.get_message("DbOpenMessage") \
             .prepare((db_name, user, password, db_type, client_id)).send().fetch_response()
+
+        # TODO: store theese thing in a nice way in thius main object
+        #  do it also for db reload
+
+        return
 
     def db_reload(self, *args):
         return self.get_message("DbReloadMessage") \
