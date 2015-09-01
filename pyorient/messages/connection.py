@@ -3,11 +3,10 @@ __author__ = 'Ostico <ostico@gmail.com>'
 from ..exceptions import PyOrientBadMethodCallException
 from .base import BaseMessage
 from ..constants import CONNECT_OP, FIELD_BYTE, FIELD_INT, FIELD_SHORT, \
-    FIELD_STRINGS, FIELD_BOOLEAN, FIELD_STRING, NAME, \
-    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, \
-    VERSION, SERIALIZATION_SERIAL_BIN, SERIALIZATION_TYPES, SHUTDOWN_OP
+    FIELD_STRINGS, FIELD_BOOLEAN, FIELD_STRING, NAME, SUPPORTED_PROTOCOL, \
+    VERSION, SHUTDOWN_OP
 from ..utils import need_connected
-
+from ..serializations import OrientSerialization
 
 #
 # Connect
@@ -20,7 +19,7 @@ class ConnectMessage(BaseMessage):
         self._user = ''
         self._pass = ''
         self._client_id = ''
-        self._serialization_type = SERIALIZATION_DOCUMENT2CSV
+        self._serialization_type = OrientSerialization.CSV
 
         self._append( ( FIELD_BYTE, CONNECT_OP ) )
 
@@ -32,7 +31,6 @@ class ConnectMessage(BaseMessage):
                 self._pass = params[1]
                 self._client_id = params[2]
 
-                self.set_serialization_type( params[3] )
             except IndexError:
                 # Use default for non existent indexes
                 pass
@@ -41,6 +39,9 @@ class ConnectMessage(BaseMessage):
         self._append( ( FIELD_SHORT, SUPPORTED_PROTOCOL ) )
 
         self._append( ( FIELD_STRING, self._client_id ) )
+
+        # Set the serialization type on the shared socket object
+        self._orientSocket.serialization_type = self._serialization_type
 
         if self.get_protocol() > 21:
             self._append( ( FIELD_STRING, self._serialization_type ) )
@@ -84,20 +85,6 @@ class ConnectMessage(BaseMessage):
         self._client_id = _cid
         return self
 
-    def set_serialization_type(self, serialization_type):
-        # TODO Implement version 22 of the protocol
-        if serialization_type == SERIALIZATION_SERIAL_BIN:
-            raise NotImplementedError
-
-        if serialization_type in SERIALIZATION_TYPES:
-            # user choice storage if present
-            self._serialization_type = serialization_type
-        else:
-            raise PyOrientBadMethodCallException(
-                serialization_type + ' is not a valid serialization type', []
-            )
-        return self
-
 
 
 #
@@ -124,9 +111,7 @@ class ShutdownMessage(BaseMessage):
             except IndexError:
                 # Use default for non existent indexes
                 pass
-
         self._append( (FIELD_STRINGS, [self._user, self._pass]) )
-
         return super( ShutdownMessage, self ).prepare()
 
     def fetch_response(self):

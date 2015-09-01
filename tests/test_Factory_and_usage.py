@@ -209,7 +209,7 @@ class CommandTestCase(unittest.TestCase):
         # open as serialize2binary
         msg = factory.get_message(pyorient.DB_OPEN)
         cluster_info = msg.prepare(
-            (db_name, "admin", "admin", pyorient.DB_TYPE_DOCUMENT, "", pyorient.SERIALIZATION_DOCUMENT2CSV)
+            (db_name, "admin", "admin", pyorient.DB_TYPE_DOCUMENT, "", pyorient.OrientSerialization.CSV)
         ).send().fetch_response()
 
         # ##################
@@ -240,8 +240,7 @@ class CommandTestCase(unittest.TestCase):
         upd_res = upd_msg5.prepare( ( rec1._rid, rec1._rid, { 'Band': 'Metallica', 'Song': 'One' } ) )\
             .send().fetch_response()
 
-        res = req_msg.prepare( [ pyorient.QUERY_SYNC, "select from c_test" ] ) \
-            .send().fetch_response()
+        res = req_msg.prepare( [ pyorient.QUERY_SYNC, "select from c_test" ] ).send().fetch_response()
 
         assert isinstance(cluster, list)
         assert rec1._rid == res[0]._rid

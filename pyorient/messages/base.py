@@ -11,27 +11,11 @@ from ..hexdump import hexdump
 from ..constants import BOOLEAN, BYTE, BYTES, CHAR, FIELD_BOOLEAN, FIELD_BYTE, \
     FIELD_INT, FIELD_RECORD, FIELD_SHORT, FIELD_STRING, FIELD_TYPE_LINK, INT, \
     LINK, LONG, RECORD, SHORT, STRING, STRINGS
-from ..types import ORecordDecoder
 from ..utils import is_debug_active
 from ..orient import OrientSocket
-
+from ..serializations import OrientSerialization
 
 class BaseMessage(object):
-
-    def get_orient_socket_instance(self):
-        return self._orientSocket
-
-    def is_connected(self):
-        return self._connected is True
-
-    def database_opened(self):
-        return self._db_opened
-
-    def get_cluster_map(self):
-        """
-        :type self._cluster_map: Information
-        """
-        return self._cluster_map
 
     def __init__(self, sock=OrientSocket):
         """
@@ -58,7 +42,8 @@ class BaseMessage(object):
         self._command = chr(0)
         self._db_opened = self._orientSocket.db_opened
         self._connected = self._orientSocket.connected
-        self._serialization_type = self._orientSocket.serialization_type
+
+        self._serializer = None
 
         self._output_buffer = b''
         self._input_buffer = b''
@@ -71,6 +56,29 @@ class BaseMessage(object):
 
         global in_transaction
         in_transaction = False
+
+    def get_serializer(self):
+        """
+        Lazy return of the serialization, we retrive the type from the :class: `OrientSocket <pyorient.orient.OrientSocket>` object
+        :return: an Instance of the serializer suitable for decoding or encoding
+        """
+        return OrientSerialization.get_impl(self._orientSocket.serialization_type)
+
+    def get_orient_socket_instance(self):
+        return self._orientSocket
+
+    def is_connected(self):
+        return self._connected is True
+
+    def database_opened(self):
+        return self._db_opened
+
+    def get_cluster_map(self):
+        """
+        :type self._cluster_map: Information
+        """
+        return self._cluster_map
+
 
     def set_session_token( self, token='' ):
         """
@@ -110,6 +118,7 @@ class BaseMessage(object):
         self._fields_definition = []
 
     def prepare(self, *args):
+
         # session_id
         self._fields_definition.insert( 1, ( FIELD_INT, self._session_id ) )
 
@@ -191,8 +200,7 @@ class BaseMessage(object):
             # 80: \x50 Request Push 1 byte: Push command id
             push_command_id = self._decode_field(FIELD_BYTE)
             push_message = self._decode_field( FIELD_STRING )
-
-            payload = ORecordDecoder(push_message).data
+            _, payload = self.get_serializer().decode(push_message)
             if self._push_callback:
                 self._push_callback(push_command_id, payload)
 
@@ -454,11 +462,13 @@ class BaseMessage(object):
             __res = self._decode_field( FIELD_RECORD )
 
             # bug in orientdb csv serialization in snapshot 2.0
-            _res = ORecordDecoder(__res['content'].rstrip())
+            class_name, data = self.get_serializer().decode(__res['content'].rstrip())
+
+
             res = OrientRecord(
                 dict(
-                    __o_storage=_res.data,
-                    __o_class=_res.className,
+                    __o_storage=data,
+                    __o_class=class_name,
                     __version=__res['version'],
                     __rid=__res['rid']
                 )

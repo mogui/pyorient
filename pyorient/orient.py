@@ -2,7 +2,6 @@
 """
 @author: Ostico <ostico@gmail.com>
 """
-
 from __future__ import print_function
 
 __author__ = 'Ostico <ostico@gmail.com>'
@@ -17,8 +16,10 @@ from .exceptions import PyOrientBadMethodCallException, \
 
 from .constants import FIELD_SHORT, \
     QUERY_ASYNC, QUERY_CMD, QUERY_GREMLIN, QUERY_SYNC, QUERY_SCRIPT, \
-    SERIALIZATION_DOCUMENT2CSV, SUPPORTED_PROTOCOL, DB_TYPE_DOCUMENT, \
+    SUPPORTED_PROTOCOL, DB_TYPE_DOCUMENT, \
     STORAGE_TYPE_PLOCAL, SOCK_CONN_TIMEOUT
+
+from .serializations import OrientSerialization
 
 from .utils import dlog
 
@@ -43,7 +44,7 @@ class OrientSocket(object):
         self.session_id = -1
         self.auth_token = b''
         self.db_opened = None
-        self.serialization_type = SERIALIZATION_DOCUMENT2CSV
+        self.serialization_type = OrientSerialization.CSV
         self.in_transaction = False
 
     def get_connection(self):
@@ -257,13 +258,13 @@ class OrientDB(object):
 
     # SERVER COMMANDS
 
-    def connect(self, user, password, client_id='', serialization_type=SERIALIZATION_DOCUMENT2CSV):
+    def connect(self, user, password, client_id='', serialization_type=OrientSerialization.CSV):
         '''Connect to the server without opening any database
 
         :param user: the username of the user on the server. Example: "root"
         :param password: the password of the user on the server. Example: "37aed6392"
         :param client_id: client's id - can be null for clients. In clustered configurations it's the distributed node ID as TCP host:port
-        :param serialization_type: the serialization format required by the client, now it can be just SERIALIZATION_DOCUMENT2CSV
+        :param serialization_type: the serialization format required by the client, now it can be just OrientSerialization.CSV
 
         Usage to open a connection as root::
 

@@ -6,12 +6,12 @@ from pyorient.exceptions import PyOrientBadMethodCallException
 from .base import BaseMessage
 from ..constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP, FIELD_BYTE, FIELD_INT, \
     FIELD_SHORT, FIELD_STRING, FIELD_STRINGS, FIELD_BYTES, FIELD_BOOLEAN, NAME, SUPPORTED_PROTOCOL, \
-    VERSION, DB_TYPES, SERIALIZATION_SERIAL_BIN, SERIALIZATION_TYPES, \
-    DB_CLOSE_OP, DB_EXIST_OP, STORAGE_TYPE_PLOCAL, STORAGE_TYPE_LOCAL, DB_CREATE_OP, \
+    VERSION, DB_TYPES, DB_CLOSE_OP, DB_EXIST_OP, STORAGE_TYPE_PLOCAL, \
+    STORAGE_TYPE_LOCAL, DB_CREATE_OP, \
     DB_DROP_OP, DB_RELOAD_OP, DB_SIZE_OP, DB_LIST_OP, STORAGE_TYPES, FIELD_LONG
 from ..utils import need_connected, need_db_opened
-from ..types import OrientRecord, ORecordDecoder, OrientCluster, OrientVersion, OrientNode
-
+from ..types import OrientRecord, OrientCluster, OrientVersion, OrientNode
+from ..serializations import OrientSerialization
 
 #
 # DB OPEN
@@ -51,7 +51,7 @@ class DbOpenMessage(BaseMessage):
         self._client_id = ''
         self._db_name = ''
         self._db_type = DB_TYPE_DOCUMENT
-
+        self._serialization_type = OrientSerialization.CSV
         self._append(( FIELD_BYTE, DB_OPEN_OP ))
 
     def prepare(self, params=None):
@@ -61,12 +61,9 @@ class DbOpenMessage(BaseMessage):
                 self._db_name = params[0]
                 self._user = params[1]
                 self._pass = params[2]
-
                 self.set_db_type(params[3])
-
                 self._client_id = params[4]
-
-                self.set_serialization_type(params[5])
+                self._serialization_type = params[5]
 
             except IndexError:
                 # Use default for non existent indexes
@@ -75,6 +72,9 @@ class DbOpenMessage(BaseMessage):
         self._append(( FIELD_STRINGS, [NAME, VERSION] ))
         self._append(( FIELD_SHORT, SUPPORTED_PROTOCOL ))
         self._append(( FIELD_STRING, self._client_id ))
+
+        # Set the serialization type on the shared socket object
+        self._orientSocket.serialization_type = self._serialization_type
 
         if self.get_protocol() > 21:
             self._append(( FIELD_STRING, self._serialization_type ))
@@ -134,11 +134,13 @@ class DbOpenMessage(BaseMessage):
         # parsing server release version
         info = OrientVersion(release)
 
-        # parsing Node List TODO: this must be put in serialization interface
-        decoded = ORecordDecoder(nodes_config)
         nodes = []
-        if len(decoded.data) > 0:
-            for node_dict in decoded.data['members']:
+
+        # parsing Node List TODO: this must be put in serialization interface
+        if len(nodes_config) >0:
+            _, decoded = self.get_serializer().decode(nodes_config)
+
+            for node_dict in decoded['members']:
                 nodes.append(OrientNode(node_dict))
 
         # set database opened
@@ -177,20 +179,6 @@ class DbOpenMessage(BaseMessage):
 
     def set_pass(self, _pass):
         self._pass = _pass
-        return self
-
-    def set_serialization_type(self, serialization_type):
-        # TODO Implement version 22 of the protocol
-        if serialization_type == SERIALIZATION_SERIAL_BIN:
-            raise NotImplementedError
-
-        if serialization_type in SERIALIZATION_TYPES:
-            # user choice storage if present
-            self._serialization_type = serialization_type
-        else:
-            raise PyOrientBadMethodCallException(
-                serialization_type + ' is not a valid serialization type', []
-            )
         return self
 
 
@@ -556,6 +544,6 @@ class DbListMessage(BaseMessage):
         __record = super(DbListMessage, self).fetch_response()[0]
         # bug in orientdb csv serialization in snapshot 2.0,
         # strip trailing spaces
-        _record = ORecordDecoder(__record.rstrip())
+        _, data = self.get_serializer().decode(__record.rstrip())
 
-        return OrientRecord(dict(__o_storage=_record.data))
+        return OrientRecord(dict(__o_storage=data))
