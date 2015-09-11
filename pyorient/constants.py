@@ -102,7 +102,9 @@ DB_LIST_OP                 = chr(74)
 # Orient Primitives
 #
 
+#: Document type
 DB_TYPE_DOCUMENT    = 'document'
+#: Graph type
 DB_TYPE_GRAPH       = 'graph'
 DB_TYPES            = (
     DB_TYPE_DOCUMENT,
@@ -130,13 +132,6 @@ QUERY_TYPES   = (
     QUERY_CMD,
     QUERY_GREMLIN,
     QUERY_SCRIPT,
-)
-
-SERIALIZATION_DOCUMENT2CSV = "ORecordDocument2csv"
-SERIALIZATION_SERIAL_BIN   = "ORecordSerializerBinary"
-SERIALIZATION_TYPES        = (
-    SERIALIZATION_DOCUMENT2CSV,
-    SERIALIZATION_SERIAL_BIN,
 )
 
 RECORD_TYPE_BYTES    = 'b'

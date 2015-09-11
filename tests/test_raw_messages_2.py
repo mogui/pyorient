@@ -385,18 +385,18 @@ class RawMessages_2_TestCase(unittest.TestCase):
         db_name = "GratefulDeadConcerts"
 
         db = DbOpenMessage(connection)
-        cluster_info = db.prepare(
+        _, clusters, _ = db.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send().fetch_response()
 
-        cluster_info.dataClusters.sort(key=lambda cluster: cluster['id'])
+        clusters.sort(key=lambda cluster: cluster.id)
 
-        for cluster in cluster_info:
+        for cluster in clusters:
             # os.environ['DEBUG'] = '0'  # silence debug
             datarange = DataClusterDataRangeMessage(connection)
-            value = datarange.prepare(cluster['id']).send().fetch_response()
-            print("Cluster Name: %s, ID: %u: %s " \
-                  % ( cluster['name'], cluster['id'], value ))
+            value = datarange.prepare(cluster.id).send().fetch_response()
+            print("Cluster Name: %s, ID: %u: %s "\
+                  % (cluster.name, cluster.id, value))
             assert value is not []
             assert value is not None
 

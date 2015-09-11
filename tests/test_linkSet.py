@@ -23,7 +23,7 @@ class LinkSetTestCase(unittest.TestCase):
                                        pyorient.STORAGE_TYPE_MEMORY)
             pass
 
-        self.cluster_info = self.client.db_open(
+        self.client.db_open(
             db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
         )
 
@@ -164,7 +164,7 @@ class LinkSetTestCase(unittest.TestCase):
 
         rec = DB.record_create( 9, { 'test': lList, 'key1': 'row4' } )  # 9:4
 
-        if self.cluster_info.version_info['major'] > 1:
+        if self.client.version.major > 1:
             _rec = DB.record_load( "#9:4" )
             assert len( _rec.oRecordData['test'] ) == 4
             assert isinstance( _rec.oRecordData['test'][0], pyorient.OrientRecordLink )

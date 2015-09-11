@@ -112,4 +112,3 @@ if sys.version < '3':
 else:
     def u(x):
         return x
-

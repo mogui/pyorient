@@ -103,7 +103,6 @@ class RawMessages_1_TestCase(unittest.TestCase):
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send().fetch_response()
 
-        print("Cluster: %s" % cluster_info)
         assert len(cluster_info) != 0
 
         return connection, cluster_info
@@ -120,13 +119,12 @@ class RawMessages_1_TestCase(unittest.TestCase):
         msg = DbOpenMessage( connection )
 
         db_name = "GratefulDeadConcerts"
-        cluster_info = msg.prepare(
+        _, clusters, _ = msg.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send().fetch_response()
 
-        print("Cluster: %s" % cluster_info)
-        assert len(cluster_info) != 0
-        return connection, cluster_info
+        assert len(clusters) != 0
+        return connection, clusters
 
     def test_db_create_without_connect(self):
 
@@ -251,13 +249,12 @@ class RawMessages_1_TestCase(unittest.TestCase):
 
     def test_db_reload(self):
 
-        connection, cluster_info = self.test_db_open_not_connected()
+        connection, clusters = self.test_db_open_not_connected()
 
         reload_msg = DbReloadMessage( connection )
         cluster_reload = reload_msg.prepare().send().fetch_response()
 
-        print("Cluster: %s" % cluster_info)
-        assert cluster_info.dataClusters == cluster_reload.dataClusters
+        assert clusters == cluster_reload
 
     def test_db_size(self):
 

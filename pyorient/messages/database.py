@@ -6,12 +6,12 @@ from pyorient.exceptions import PyOrientBadMethodCallException
 from .base import BaseMessage
 from ..constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP, FIELD_BYTE, FIELD_INT, \
     FIELD_SHORT, FIELD_STRING, FIELD_STRINGS, FIELD_BYTES, FIELD_BOOLEAN, NAME, SUPPORTED_PROTOCOL, \
-    VERSION, DB_TYPES, SERIALIZATION_SERIAL_BIN, SERIALIZATION_TYPES, \
-    DB_CLOSE_OP, DB_EXIST_OP, STORAGE_TYPE_PLOCAL, STORAGE_TYPE_LOCAL, DB_CREATE_OP, \
+    VERSION, DB_TYPES, DB_CLOSE_OP, DB_EXIST_OP, STORAGE_TYPE_PLOCAL, \
+    STORAGE_TYPE_LOCAL, DB_CREATE_OP, \
     DB_DROP_OP, DB_RELOAD_OP, DB_SIZE_OP, DB_LIST_OP, STORAGE_TYPES, FIELD_LONG
 from ..utils import need_connected, need_db_opened
-from ..serialization import OrientRecord, ORecordDecoder
-from .cluster import Information
+from ..types import OrientRecord, OrientCluster, OrientVersion, OrientNode
+from ..serializations import OrientSerialization
 
 #
 # DB OPEN
@@ -43,65 +43,64 @@ from .cluster import Information
 #
 #
 class DbOpenMessage(BaseMessage):
-
     def __init__(self, _orient_socket):
-        super( DbOpenMessage, self ).__init__(_orient_socket)
+        super(DbOpenMessage, self).__init__(_orient_socket)
 
         self._user = ''
         self._pass = ''
         self._client_id = ''
         self._db_name = ''
         self._db_type = DB_TYPE_DOCUMENT
+        self._serialization_type = OrientSerialization.CSV
+        self._append(( FIELD_BYTE, DB_OPEN_OP ))
 
-        self._append( ( FIELD_BYTE, DB_OPEN_OP ) )
+    def prepare(self, params=None):
 
-    def prepare(self, params=None ):
-
-        if isinstance( params, tuple ) or isinstance( params, list ):
+        if isinstance(params, tuple) or isinstance(params, list):
             try:
                 self._db_name = params[0]
                 self._user = params[1]
                 self._pass = params[2]
-
-                self.set_db_type( params[3] )
-
+                self.set_db_type(params[3])
                 self._client_id = params[4]
-
-                self.set_serialization_type( params[5] )
+                self._serialization_type = params[5]
 
             except IndexError:
                 # Use default for non existent indexes
                 pass
 
-        self._append( ( FIELD_STRINGS, [NAME, VERSION] ) )
-        self._append( ( FIELD_SHORT, SUPPORTED_PROTOCOL ) )
-        self._append( ( FIELD_STRING, self._client_id ) )
+        self._append(( FIELD_STRINGS, [NAME, VERSION] ))
+        self._append(( FIELD_SHORT, SUPPORTED_PROTOCOL ))
+        self._append(( FIELD_STRING, self._client_id ))
+
+        # Set the serialization type on the shared socket object
+        self._orientSocket.serialization_type = self._serialization_type
 
         if self.get_protocol() > 21:
-            self._append( ( FIELD_STRING, self._serialization_type ) )
+            self._append(( FIELD_STRING, self._serialization_type ))
             if self.get_protocol() > 26:
-                self._append( ( FIELD_BOOLEAN, self._request_token ) )
+                self._append(( FIELD_BOOLEAN, self._request_token ))
 
-        self._append( ( FIELD_STRING, self._db_name ) )
-        self._append( ( FIELD_STRING, self._db_type ) )
+        self._append(( FIELD_STRING, self._db_name ))
+        self._append(( FIELD_STRING, self._db_type ))
 
-        self._append( ( FIELD_STRING, self._user ) )
-        self._append( ( FIELD_STRING, self._pass ) )
+        self._append(( FIELD_STRING, self._user ))
+        self._append(( FIELD_STRING, self._pass ))
 
-        return super( DbOpenMessage, self ).prepare()
+        return super(DbOpenMessage, self).prepare()
 
     def fetch_response(self):
-        self._append( FIELD_INT )  # session_id
+        self._append(FIELD_INT)  # session_id
         if self.get_protocol() > 26:
-            self._append( FIELD_STRING )  # token # if FALSE: Placeholder
+            self._append(FIELD_STRING)  # token # if FALSE: Placeholder
 
-        self._append( FIELD_SHORT )  # cluster_num
+        self._append(FIELD_SHORT)  # cluster_num
 
-        result = super( DbOpenMessage, self ).fetch_response()
+        result = super(DbOpenMessage, self).fetch_response()
         if self.get_protocol() > 26:
             self._session_id, self._auth_token, cluster_num = result
             if self._auth_token == b'':
-                self.set_session_token( False )
+                self.set_session_token(False)
             self._update_socket_token()
         else:
             self._session_id, cluster_num = result
@@ -110,30 +109,39 @@ class DbOpenMessage(BaseMessage):
         self._update_socket_id()
 
         clusters = []
-        try:
-            for x in range(0, cluster_num ):
-                if self.get_protocol() < 24:
-                    cluster = {
-                        "name": self._decode_field( FIELD_STRING ),  # cluster_name
-                        "id": self._decode_field( FIELD_SHORT ),  # cluster_id
-                        "type": self._decode_field( FIELD_STRING ),  # cluster_type
-                        "segment": self._decode_field( FIELD_SHORT ),  # cluster release
-                    }
-                else:
-                    cluster = {
-                        "name": self._decode_field( FIELD_STRING ),  # cluster_name
-                        "id": self._decode_field( FIELD_SHORT ),  # cluster_id
-                    }
-                clusters.append( cluster )
 
-        except IndexError:
-            # Should not happen because of protocol check
-            pass
+        # Parsing cluster map TODO: this must be put in serialization interface
+        for x in range(0, cluster_num):
+            if self.get_protocol() < 24:
+                cluster = OrientCluster(
+                    self._decode_field(FIELD_STRING),
+                    self._decode_field(FIELD_SHORT),
+                    self._decode_field(FIELD_STRING),
+                    self._decode_field(FIELD_SHORT)
+                )
+            else:
+                cluster = OrientCluster(
+                    self._decode_field(FIELD_STRING),
+                    self._decode_field(FIELD_SHORT)
+                )
+            clusters.append(cluster)
 
-        self._append( FIELD_STRING )  # orient node list | string ""
-        self._append( FIELD_STRING )  # Orient release
+        self._append(FIELD_STRING)  # orient node list | string ""
+        self._append(FIELD_STRING)  # Orient release
 
-        response = super( DbOpenMessage, self ).fetch_response(True)
+        nodes_config, release = super(DbOpenMessage, self).fetch_response(True)
+
+        # parsing server release version
+        info = OrientVersion(release)
+
+        nodes = []
+
+        # parsing Node List TODO: this must be put in serialization interface
+        if len(nodes_config) >0:
+            _, decoded = self.get_serializer().decode(nodes_config)
+
+            for node_dict in decoded['members']:
+                nodes.append(OrientNode(node_dict))
 
         # set database opened
         self._orientSocket.db_opened = self._db_name
@@ -141,10 +149,11 @@ class DbOpenMessage(BaseMessage):
         # set serialization type, as global in the orient socket class
         self._orientSocket.serialization_type = self._serialization_type
 
-        self._cluster_map = self._orientSocket.cluster_map = \
-            Information( [ clusters, response, self._orientSocket ] )
+        return info, clusters, nodes
+        # self._cluster_map = self._orientSocket.cluster_map = \
+        #     Information([clusters, response, self._orientSocket])
 
-        return self._cluster_map
+        # return self._cluster_map
 
     def set_db_name(self, db_name):
         self._db_name = db_name
@@ -172,19 +181,6 @@ class DbOpenMessage(BaseMessage):
         self._pass = _pass
         return self
 
-    def set_serialization_type(self, serialization_type):
-        # TODO Implement version 22 of the protocol
-        if serialization_type == SERIALIZATION_SERIAL_BIN:
-            raise NotImplementedError
-
-        if serialization_type in SERIALIZATION_TYPES:
-            # user choice storage if present
-            self._serialization_type = serialization_type
-        else:
-            raise PyOrientBadMethodCallException(
-                serialization_type + ' is not a valid serialization type', []
-            )
-        return self
 
 #
 # DB CLOSE
@@ -196,23 +192,21 @@ class DbOpenMessage(BaseMessage):
 # Response: no response, the socket is just closed at server side
 #
 class DbCloseMessage(BaseMessage):
-
-    def __init__(self, _orient_socket ):
-        super( DbCloseMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(DbCloseMessage, self).__init__(_orient_socket)
 
         # order matters
-        self._append( ( FIELD_BYTE, DB_CLOSE_OP ) )
+        self._append(( FIELD_BYTE, DB_CLOSE_OP ))
 
     @need_connected
     def prepare(self, params=None):
-        return super( DbCloseMessage, self ).prepare()
+        return super(DbCloseMessage, self).prepare()
 
     def fetch_response(self):
         # set database closed
         self._orientSocket.db_opened = None
-        super( DbCloseMessage, self ).close()
+        super(DbCloseMessage, self).close()
         return 0
-
 
 
 #
@@ -228,9 +222,8 @@ class DbCloseMessage(BaseMessage):
 # memory, as a volatile database
 #
 class DbExistsMessage(BaseMessage):
-
-    def __init__(self, _orient_socket ):
-        super( DbExistsMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(DbExistsMessage, self).__init__(_orient_socket)
 
         self._db_name = ''
         self._storage_type = ''
@@ -241,34 +234,34 @@ class DbExistsMessage(BaseMessage):
             self._storage_type = STORAGE_TYPE_LOCAL
 
         # order matters
-        self._append( ( FIELD_BYTE, DB_EXIST_OP ) )
+        self._append(( FIELD_BYTE, DB_EXIST_OP ))
 
     @need_connected
     def prepare(self, params=None):
 
-        if isinstance( params, tuple ) or isinstance( params, list ):
+        if isinstance(params, tuple) or isinstance(params, list):
             try:
                 self._db_name = params[0]
                 # user choice storage if present
-                self.set_storage_type( params[1] )
+                self.set_storage_type(params[1])
 
             except IndexError:
                 # Use default for non existent indexes
                 pass
 
         if self.get_protocol() >= 6:
-            self._append( ( FIELD_STRING, self._db_name ) )  # db_name
+            self._append(( FIELD_STRING, self._db_name ))  # db_name
 
         if self.get_protocol() >= 16:
             # > 16 1.5-snapshot
             # custom choice server_storage_type
-            self._append( ( FIELD_STRING, self._storage_type ) )
+            self._append(( FIELD_STRING, self._storage_type ))
 
-        return super( DbExistsMessage, self ).prepare()
+        return super(DbExistsMessage, self).prepare()
 
     def fetch_response(self):
-        self._append( FIELD_BOOLEAN )
-        return super( DbExistsMessage, self ).fetch_response()[0]
+        self._append(FIELD_BOOLEAN)
+        return super(DbExistsMessage, self).fetch_response()[0]
 
     def set_db_name(self, db_name):
         self._db_name = db_name
@@ -283,6 +276,7 @@ class DbExistsMessage(BaseMessage):
                 storage_type + ' is not a valid storage type', []
             )
         return self
+
 
 #
 # DB CREATE
@@ -299,12 +293,11 @@ class DbExistsMessage(BaseMessage):
 # - memory, as a volatile database
 #
 class DbCreateMessage(BaseMessage):
-
     def __init__(self, _orient_socket):
-        super( DbCreateMessage, self ).__init__(_orient_socket)
+        super(DbCreateMessage, self).__init__(_orient_socket)
 
         self._db_name = ''
-        self._db_type = ''
+        self._db_type = DB_TYPE_DOCUMENT
         self._storage_type = ''
 
         if self.get_protocol() > 16:  # 1.5-SNAPSHOT
@@ -313,26 +306,26 @@ class DbCreateMessage(BaseMessage):
             self._storage_type = STORAGE_TYPE_LOCAL
 
         # order matters
-        self._append( ( FIELD_BYTE, DB_CREATE_OP ) )
+        self._append(( FIELD_BYTE, DB_CREATE_OP ))
 
     @need_connected
-    def prepare(self, params=None ):
+    def prepare(self, params=None):
 
-        if isinstance( params, tuple ) or isinstance( params, list ):
+        if isinstance(params, tuple) or isinstance(params, list):
             try:
                 self._db_name = params[0]
-                self.set_db_type( params[1] )
-                self.set_storage_type( params[2] )
+                self.set_db_type(params[1])
+                self.set_storage_type(params[2])
             except IndexError:
                 pass
 
         self._append(
             (FIELD_STRINGS, [self._db_name, self._db_type, self._storage_type])
         )
-        return super( DbCreateMessage, self ).prepare()
+        return super(DbCreateMessage, self).prepare()
 
     def fetch_response(self):
-        super( DbCreateMessage, self ).fetch_response()
+        super(DbCreateMessage, self).fetch_response()
         # set database opened
         self._orientSocket.db_opened = self._db_name
         return
@@ -361,6 +354,7 @@ class DbCreateMessage(BaseMessage):
             )
         return self
 
+
 #
 # DB DROP
 #
@@ -376,9 +370,8 @@ class DbCreateMessage(BaseMessage):
 # - memory, as a volatile database
 #
 class DbDropMessage(BaseMessage):
-
-    def __init__(self, _orient_socket ):
-        super( DbDropMessage, self ).\
+    def __init__(self, _orient_socket):
+        super(DbDropMessage, self). \
             __init__(_orient_socket)
 
         self._db_name = ''
@@ -390,29 +383,29 @@ class DbDropMessage(BaseMessage):
             self._storage_type = STORAGE_TYPE_LOCAL
 
         # order matters
-        self._append( ( FIELD_BYTE, DB_DROP_OP ) )
+        self._append(( FIELD_BYTE, DB_DROP_OP ))
 
     @need_connected
     def prepare(self, params=None):
 
-        if isinstance( params, tuple ) or isinstance( params, list ):
+        if isinstance(params, tuple) or isinstance(params, list):
             try:
                 self._db_name = params[0]
-                self.set_storage_type( params[1] )
+                self.set_storage_type(params[1])
             except IndexError:
                 # Use default for non existent indexes
                 pass
 
-        self._append( ( FIELD_STRING, self._db_name ) )  # db_name
+        self._append(( FIELD_STRING, self._db_name ))  # db_name
 
         if self.get_protocol() >= 16:  # > 16 1.5-snapshot
             # custom choice server_storage_type
-            self._append( ( FIELD_STRING, self._storage_type ) )
+            self._append(( FIELD_STRING, self._storage_type ))
 
-        return super( DbDropMessage, self ).prepare()
+        return super(DbDropMessage, self).prepare()
 
     def fetch_response(self):
-        return super( DbDropMessage, self ).fetch_response()
+        return super(DbDropMessage, self).fetch_response()
 
     def set_db_name(self, db_name):
         self._db_name = db_name
@@ -439,23 +432,22 @@ class DbDropMessage(BaseMessage):
 # Response: (count:long)
 #
 class DbCountRecordsMessage(BaseMessage):
-
-    def __init__(self, _orient_socket ):
-        super( DbCountRecordsMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(DbCountRecordsMessage, self).__init__(_orient_socket)
 
         self._user = ''
         self._pass = ''
 
         # order matters
-        self._append( ( FIELD_BYTE, DB_COUNT_RECORDS_OP ) )
+        self._append(( FIELD_BYTE, DB_COUNT_RECORDS_OP ))
 
     @need_db_opened
     def prepare(self, params=None):
-        return super( DbCountRecordsMessage, self ).prepare()
+        return super(DbCountRecordsMessage, self).prepare()
 
     def fetch_response(self):
-        self._append( FIELD_LONG )
-        return super( DbCountRecordsMessage, self ).fetch_response()[0]
+        self._append(FIELD_LONG)
+        return super(DbCountRecordsMessage, self).fetch_response()[0]
 
 
 #
@@ -467,53 +459,42 @@ class DbCountRecordsMessage(BaseMessage):
 # Response:(num-of-clusters:short)[(cluster-name:string)(cluster-id:short)]
 #
 class DbReloadMessage(BaseMessage):
-
-    def __init__(self, _orient_socket ):
-        super( DbReloadMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(DbReloadMessage, self).__init__(_orient_socket)
 
         # order matters
-        self._append( ( FIELD_BYTE, DB_RELOAD_OP ) )
+        self._append(( FIELD_BYTE, DB_RELOAD_OP ))
 
     @need_connected
     def prepare(self, params=None):
-        return super( DbReloadMessage, self ).prepare()
+        return super(DbReloadMessage, self).prepare()
 
     def fetch_response(self):
 
-        self._append( FIELD_SHORT )  # cluster_num
+        self._append(FIELD_SHORT)  # cluster_num
 
-        cluster_num = super( DbReloadMessage, self ).fetch_response()[0]
+        cluster_num = super(DbReloadMessage, self).fetch_response()[0]
 
         clusters = []
-        try:
-            for x in range(0, cluster_num ):
-                if self.get_protocol() < 24:
-                    cluster = {
-                        "name": self._decode_field( FIELD_STRING ),  # cluster_name
-                        "id": self._decode_field( FIELD_SHORT ),  # cluster_id
-                        "type": self._decode_field( FIELD_STRING ),  # cluster_type
-                        "segment": self._decode_field( FIELD_SHORT ),  # cluster release
-                    }
-                else:
-                    cluster = {
-                        "name": self._decode_field( FIELD_STRING ),  # cluster_name
-                        "id": self._decode_field( FIELD_SHORT ),  # cluster_id
-                    }
-                clusters.append( cluster )
 
-        except IndexError:
-            # Should not happen because of protocol check
-            pass
+        # Parsing cluster map
+        for x in range(0, cluster_num):
+            if self.get_protocol() < 24:
+                cluster = OrientCluster(
+                    self._decode_field(FIELD_STRING),
+                    self._decode_field(FIELD_SHORT),
+                    self._decode_field(FIELD_STRING),
+                    self._decode_field(FIELD_SHORT)
+                )
+            else:
+                cluster = OrientCluster(
+                    self._decode_field(FIELD_STRING),
+                    self._decode_field(FIELD_SHORT)
+                )
+            clusters.append(cluster)
 
-        self._cluster_map = Information([
-            clusters,
-            [self._cluster_map.hiAvailabilityList,
-             self._cluster_map.orientRelease],
-            self._orientSocket
-        ])
-        """ :type: Information """
+        return clusters
 
-        return self._cluster_map
 
 #
 # DB SIZE
@@ -524,20 +505,19 @@ class DbReloadMessage(BaseMessage):
 # Response: (size:long)
 #
 class DbSizeMessage(BaseMessage):
-
-    def __init__(self, _orient_socket ):
-        super( DbSizeMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(DbSizeMessage, self).__init__(_orient_socket)
 
         # order matters
-        self._append( ( FIELD_BYTE, DB_SIZE_OP ) )
+        self._append(( FIELD_BYTE, DB_SIZE_OP ))
 
     @need_db_opened
     def prepare(self, params=None):
-        return super( DbSizeMessage, self ).prepare()
+        return super(DbSizeMessage, self).prepare()
 
     def fetch_response(self):
-        self._append( FIELD_LONG )
-        return super( DbSizeMessage, self ).fetch_response()[0]
+        self._append(FIELD_LONG)
+        return super(DbSizeMessage, self).fetch_response()[0]
 
 
 #
@@ -549,22 +529,21 @@ class DbSizeMessage(BaseMessage):
 # Response: (size:long)
 #
 class DbListMessage(BaseMessage):
-
-    def __init__(self, _orient_socket ):
-        super( DbListMessage, self ).__init__(_orient_socket)
+    def __init__(self, _orient_socket):
+        super(DbListMessage, self).__init__(_orient_socket)
 
         # order matters
-        self._append( ( FIELD_BYTE, DB_LIST_OP ) )
+        self._append(( FIELD_BYTE, DB_LIST_OP ))
 
     @need_connected
     def prepare(self, params=None):
-        return super( DbListMessage, self ).prepare()
+        return super(DbListMessage, self).prepare()
 
     def fetch_response(self):
-        self._append( FIELD_BYTES )
-        __record = super( DbListMessage, self ).fetch_response()[0]
+        self._append(FIELD_BYTES)
+        __record = super(DbListMessage, self).fetch_response()[0]
         # bug in orientdb csv serialization in snapshot 2.0,
         # strip trailing spaces
-        _record = ORecordDecoder( __record.rstrip() )
+        _, data = self.get_serializer().decode(__record.rstrip())
 
-        return OrientRecord( dict( __o_storage=_record.data ) )
+        return OrientRecord(dict(__o_storage=data))
