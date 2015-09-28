@@ -92,7 +92,7 @@ class LinkSetTestCase(unittest.TestCase):
         )[0].oRecordData
 
         assert 'embMap' in x
-        assert x['embMap'] == '[it, en, ru]'
+        assert 'it' in x['embMap'] and 'ru' in x['embMap'] and 'en' in x['embMap']
 
     def testEmbedNum(self):
 
@@ -116,7 +116,7 @@ class LinkSetTestCase(unittest.TestCase):
         )[0].oRecordData
 
         assert 'embMap' in x
-        assert x['embMap'] == '[2, 1, 3]'
+        assert ('2' in x['embMap'] and '1' in x['embMap'] and '3' in x['embMap'])
 
     def testEmbeddedMapsInList(self):
         class_id1 = self.client.command("CREATE VERTEX V SET mapInList = "

@@ -1,7 +1,10 @@
 # pyorient
 
-[![Build Status](https://travis-ci.org/Ostico/pyorient.svg?branch=master)]
-(https://travis-ci.org/Ostico/pyorient) [![Coverage Status](https://coveralls.io/repos/Ostico/pyorient/badge.svg?branch=master)](https://coveralls.io/r/Ostico/pyorient?branch=master)
+**master**   
+[![Build Status](https://travis-ci.org/mogui/pyorient.svg?branch=master)](https://travis-ci.org/mogui/pyorient) [![Coverage Status](https://coveralls.io/repos/mogui/pyorient/badge.svg?branch=master&service=github)](https://coveralls.io/github/mogui/pyorient?branch=master)
+
+**develop**   
+[![Build Status](https://travis-ci.org/mogui/pyorient.svg?branch=develop)](https://travis-ci.org/mogui/pyorient) [![Coverage Status](https://coveralls.io/repos/mogui/pyorient/badge.svg?branch=develop&service=github)](https://coveralls.io/github/mogui/pyorient?branch=develop)
 
 
 [Orientdb](http://www.orientechnologies.com/) driver for python that uses the binary protocol.
@@ -10,25 +13,29 @@ Pyorient works with orientdb version 1.7 and later.
 > **Warning** Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
 
 
-### Installation
+## Installation
 
 	pip install pyorient
 
+## How to contribute
 
-## Testing
+- Fork the project
+- work on **develop** branch 
+- Make your changes
+- Add tests for it. This is important so I don't break it in a future version unintentionally
+- Send me a pull request *(pull request to master will be rejected)*
+- ???
+- PROFIT
 
-To run the tests you need `nose`
+## How to run tests
 
-	pip install nose
-	
-then you can run tests with:
-
-	nosetests 
-
+- ensure you have `ant` and `nose` installed properly
+- bootsrap orient by running `./ci/ci-start.sh` from project directory   
+  *it will download latest orient and make some change on config and database for the tests*
+- run with `nosetests` 
 
 ## Usage
-
-A full range of commands will be available soon, for now you have to read the tests.
+> A proper documentation will be available soon, for now you have to read the tests.
 
 ### Init the client
 ```python
@@ -164,21 +171,21 @@ client.shutdown( "root", "a_super_secret_password" )
 
 ### Transactions
 ```python
-# use a cluster
+### use a cluster
 cluster_id = 3
 
-# execute real create to get some info
+### execute real create to get some info
 rec = { 'accommodation': 'mountain hut', 'work': 'not!', 'holiday': 'lake' }
 rec_position = client.record_create( cluster_id, rec )
 	
 tx = client.tx_commit()
 tx.begin()
 	
-# create a new record
+### create a new record
 rec1 = { 'accommodation': 'home', 'work': 'some work', 'holiday': 'surf' }
 rec_position1 = client.record_create( -1, rec1 )
 	
-# prepare for an update
+### prepare for an update
 rec2 = { 'accommodation': 'hotel', 'work': 'office', 'holiday': 'mountain' }
 update_record = client.record_update( cluster_id, rec_position._rid, rec2, rec_position._version )
 
@@ -192,7 +199,7 @@ assert res["#3:2"].holiday == 'surf'
 assert res["#3:3"].holiday == 'surf'
 ```
 
-## Execute OrientDB SQL Batch
+### Execute OrientDB SQL Batch
 ```python
 cmd = ("begin;"
     "let a = create vertex set script = true;"
@@ -217,22 +224,22 @@ client.set_session_token( True )  # set true to enable the token based
 authentication
 client.db_open( "GratefulDeadConcerts", "admin", "admin" )
 
-# store this token somewhere
+### store this token somewhere
 sessionToken = client.get_session_token()
 
-#destroy the old client, equals to another user/socket/ip ecc.
+### destroy the old client, equals to another user/socket/ip ecc.
 del client
 
-# create a new client
+### create a new client
 client = pyorient.OrientDB("localhost", 2424)
 
-# set the previous obtained token to re-attach to the old session
+### set the previous obtained token to re-attach to the old session
 client.set_session_token( sessionToken ) 
 
-#now the dbOpen is not needed to perform database operations
+### now the dbOpen is not needed to perform database operations
 record = client.query( 'select from V where @rid = #9:1' )
 
-#set the flag again to true if you want to renew the token
+### set the flag again to true if you want to renew the token
 client.set_session_token( True )  # set true
 client.db_open( "GratefulDeadConcerts", "admin", "admin" )
 new_sessionToken = client.get_session_token()
@@ -240,7 +247,7 @@ new_sessionToken = client.get_session_token()
 assert sessionToken != new_sessionToken
 ```
 
-## A GRAPH Example
+### A GRAPH Example
 
 The GRAPH representation of animals and its food 
 
@@ -249,34 +256,34 @@ The GRAPH representation of animals and its food
 import pyorient
 client = pyorient.OrientDB("localhost", 2424)  # host, port
 
-# open a connection (username and password)
+### open a connection (username and password)
 client.connect("admin", "admin")
 
-# create a database
+### create a database
 client.db_create("animals", pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
 
-# select to use that database
+### select to use that database
 client.db_open("animals", "admin", "admin")
 
-# Create the Vertex Animal
+### Create the Vertex Animal
 client.command("create class Animal extends V")
 
-# Insert a new value
+### Insert a new value
 client.command("insert into Animal set name = 'rat', specie = 'rodent'")
 
-# query the values 
+### query the values 
 client.query("select * from Animal")
 [<OrientRecord at 0x7f>..., ...]
 
-# Create the vertex and insert the food values
+### Create the vertex and insert the food values
 
 client.command('create class Food extends V')
 client.command("insert into Food set name = 'pea', color = 'green'")
 
-# Create the edge for the Eat action
+### Create the edge for the Eat action
 client.command('create class Eat extends E')
 
-# Lets the rat likes to eat pea
+### Lets the rat likes to eat pea
 eat_edges = client.command(
     "create edge Eat from ("
     "select from Animal where name = 'rat'"
@@ -285,14 +292,14 @@ eat_edges = client.command(
     ")"
 )
  
-# Who eats the peas?
+### Who eats the peas?
 pea_eaters = client.command("select expand( in( Eat )) from Food where name = 'pea'")
 for animal in pea_eaters:
     print(animal.name, animal.specie)
 'rat rodent'
 ...
 
-# What each animal eats?
+### What each animal eats?
 animal_foods = client.command("select expand( out( Eat )) from Animal")
 for food in animal_foods:
     animal = client.query(
@@ -301,17 +308,6 @@ for food in animal_foods:
     print(food.name, food.color, animal.name)
 'pea green rat'
 ```
-
-
-
-## Contributions
-
-- Fork the project.
-- Make your changes.
-- Add tests for it. This is important so I don't break it in a future version unintentionally.
-- Send me a pull request.
-- ???
-- PROFIT
 
 ## Authors
 - [mogui](https://github.com/mogui/)
