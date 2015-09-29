@@ -475,8 +475,8 @@ class Graph(object):
     def valid_element_base(cls):
         try:
             return cls.decl_root is not None and cls.decl_type is not None
-        except KeyError:
-            return false
+        except AttributeError:
+            return False
 
     @staticmethod
     def guard_reserved_words(word, cls):
