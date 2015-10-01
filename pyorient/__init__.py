@@ -5,4 +5,4 @@ from .exceptions import *
 from .types import *
 from .constants import *
 from .scripts import Scripts
-from serializations import OrientSerialization
+from .serializations import OrientSerialization
