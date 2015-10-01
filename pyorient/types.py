@@ -246,7 +246,12 @@ class OrientNode(object):
         self.id = node_dict['id']
         self.name = node_dict['name']
         self.started_on = node_dict['startedOn']
-        listener = reduce(lambda acc, l: l if l['protocol'] == 'ONetworkProtocolBinary' else acc, node_dict['listeners'])
+        listener = None
+        for l in node_dict['listeners']:
+            if l['protocol'] == 'ONetworkProtocolBinary':
+                listener = l
+                break
+
         if listener:
             listen = listener['listen'].split(':')
             self.host = listen[0]
