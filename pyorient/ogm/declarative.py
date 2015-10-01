@@ -17,6 +17,15 @@ class DeclarativeMeta(type):
             cls.registry = OrderedDict()
             cls.decl_root = cls
         else:
+            decl_bases = set(
+                base.decl_root for base in bases
+                    if hasattr(base, 'decl_root') and base is not base.decl_root)
+            if len(decl_bases) > 1:
+                raise TypeError(
+                    'When multiply-inheriting graph elements, they must share '
+                    'the same declarative base class. '
+                    'Note: Each call to declarative_*() returns a new base class.')
+
             if cls.decl_type is DeclarativeType.Vertex:
                 cls.registry_name = attrs.get('element_type'
                                               , cls.__name__.lower())

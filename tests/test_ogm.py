@@ -228,3 +228,33 @@ class OGMMoneyTestCase(unittest.TestCase):
                     wallet.amount_precise)
             assert i < 2
 
+
+class OGMClassTestCase(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMClassTestCase, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('classes', 'root', 'root'
+                                           , initial_drop=True))
+
+    def testGraph(self):
+        g = self.g
+
+        try:
+            # The WRONG way to do multiple inheritance
+            # Here, Foo.registry and Bar.registry reference different classes,
+            # and therefore g.create_all() can not work.
+            class Foo(declarative_node()):
+                pass
+
+            class Bar(declarative_node()):
+                pass
+
+            class Fubar(Foo, Bar):
+                pass
+        except TypeError:
+            pass
+        else:
+            assert False and 'Failed to enforce correct vertex base classes.'
+
