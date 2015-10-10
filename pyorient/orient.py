@@ -92,7 +92,10 @@ class OrientSocket(object):
         self.connected = False
 
     def write(self, buff):
-        return self._socket.send(buff)
+        count = 0
+        while count < len(buff):
+            count += self._socket.send(buff[count:])
+        return count
 
     # The man page for recv says: The receive calls normally return
     #   any data available, up to the requested amount, rather than waiting
