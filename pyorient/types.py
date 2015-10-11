@@ -23,6 +23,14 @@ class OrientRecord(object):
             rep = rep + ",'rid':'" + str(self.__rid) + "'"
         return '{' + rep + '}'
 
+    @staticmethod
+    def addslashes(string):
+        l = [ "\\", '"', "'", "\0", ]
+        for i in l:
+            if i in string:
+                string = string.replace( i, '\\' + i )
+        return string
+
     def __init__(self, content=None):
 
         self.__rid = None
@@ -45,7 +53,7 @@ class OrientRecord(object):
                 # { '@my_class': { 'accommodation': 'hotel' } }
                 self.__o_class = key[1:]
                 for _key, _value in content[key].items():
-                    self.__o_storage[_key] = _value
+                    self.__o_storage[_key] = self.addslashes( _value )
             elif key == '__o_storage':
                 self.__o_storage = content[key]
             else:

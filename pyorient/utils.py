@@ -75,6 +75,8 @@ def parse_cluster_id(cluster_id):
             cluster_id = cluster_id.decode("utf-8")
         elif isinstance( cluster_id, OrientRecordLink ):
             cluster_id = cluster_id.get()
+        elif sys.version_info[0] < 3 and isinstance( cluster_id, unicode ):
+            cluster_id = cluster_id.encode('utf-8')
 
         _cluster_id, _position = cluster_id.split( ':' )
         if _cluster_id[0] is '#':
