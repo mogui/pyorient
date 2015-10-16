@@ -2,6 +2,7 @@ from .operators import Operand, ArithmeticMixin
 
 import json
 import decimal
+from datetime import datetime
 
 class Property(Operand):
     num_instances = 0 # Basis for ordering property instances
@@ -78,6 +79,8 @@ class PropertyEncoder:
     def encode(value):
         if isinstance(value, decimal.Decimal):
             return repr(str(value))
+        if isinstance(value, datetime):
+            return '"{}"'.format(value)
         return repr(value) if isinstance(value, str) else \
             value if value is not None else 'null'
 
