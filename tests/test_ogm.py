@@ -110,6 +110,10 @@ def get_eaters_of(food_type) {
 def get_foods_eaten_by(animal) {
     return g.v(animal).outE('eats').inV()
 }
+
+def get_colored_eaten_foods(animal, color) {
+    return g.v(animal).outE('eats').inV().has('color', T.eq, color)
+}
 """))
 
         pea_eaters = g.gremlin('get_eaters_of', 'pea')
@@ -119,6 +123,12 @@ def get_foods_eaten_by(animal) {
         rat_cuisine = g.gremlin('get_foods_eaten_by', (rat,))
         for food in rat_cuisine:
             print(food.name, food.color) # 'pea green'
+
+        yellow_mouse_foods = g.gremlin('get_colored_eaten_foods',
+                                       (mouse, 'yellow'))
+        for food in yellow_mouse_foods:
+            print(food.name, food.color)  # 'cheese green'
+
 
 MoneyNode = declarative_node()
 MoneyRelationship = declarative_relationship()
