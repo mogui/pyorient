@@ -1,12 +1,13 @@
 import unittest
 import decimal
 import os.path
+from datetime import datetime
 
 from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
-from pyorient.ogm.property import String, Decimal, Float, UUID
+from pyorient.ogm.property import String, DateTime, Decimal, Float, UUID
 
 from pyorient.ogm.what import expand, in_, out, distinct
 
@@ -258,3 +259,33 @@ class OGMClassTestCase(unittest.TestCase):
         else:
             assert False and 'Failed to enforce correct vertex base classes.'
 
+
+DateTimeNode = declarative_node()
+
+
+class OGMDateTimeTestCase(unittest.TestCase):
+    class DateTimeV(DateTimeNode):
+        element_type = 'datetime'
+        element_plural = 'datetime'
+
+        name = String(nullable=False, unique=True)
+        at = DateTime(nullable=False)
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('test_datetime', 'root', 'root',
+                                           initial_drop=True))
+
+        g.create_all(DateTimeNode.registry)
+
+    def testDateTime(self):
+        g = self.g
+
+        # orientdb does not store microseconds
+        # so make sure the generated datetime has none
+        at = datetime.now().replace(microsecond=0)
+
+        g.datetime.create(name='now', at=at)
+
+        returned_dt = g.datetime.query(name='now').one()
+
+        assert returned_dt.at == at
