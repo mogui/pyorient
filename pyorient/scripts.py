@@ -1,6 +1,7 @@
 from collections import namedtuple, OrderedDict
 from ast import literal_eval
 import re
+from datetime import datetime
 
 ScriptFunction = \
     namedtuple('Method', ['definition', 'signature', 'body', 'sha1'])
@@ -72,13 +73,19 @@ class Scripts(object):
                 args = {}
 
         split_body = re.split(r'([\"\'])', function.body)
+
+        replacements = {}
+        for k, v in args.items():
+            if isinstance(v, str) or isinstance(v, datetime):
+                replacements[k] = "'{}'".format(v)
+            else:
+                replacements[k] = '{}'.format(v)
+
         for i, s in enumerate(split_body):
             if i % 4 == 0:
-                for k,v in args.items():
-                    split_body[i] = re.sub(
-                        r'\b{}\b'.format(k)
-                        , '{}'.format(repr(v) if isinstance(v, str) else v)
-                        , s)
+                for k, v in replacements.items():
+                    split_body[i] = re.sub(r'\b{}\b'.format(k),
+                                           v, split_body[i])
 
         return ''.join(split_body)
 
