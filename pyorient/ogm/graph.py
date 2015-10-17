@@ -123,9 +123,6 @@ class Graph(object):
 
         :param vertex: Base class for vertexes
         :param edge: Base class for edges
-        :param class_names: If None, will build mapping for all vertexes and
-        edges. Otherwise, will build mappings only for classes named in this
-        list (and their children),
         :param auto_plural: If True, will automatically set registry_plural
         on classes. For convenience when include() should set brokers.
         """
