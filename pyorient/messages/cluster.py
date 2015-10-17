@@ -1,13 +1,15 @@
 # -*- coding: utf-8 -*-
+
 __author__ = 'Ostico <ostico@gmail.com>'
 
 from pyorient.exceptions import PyOrientBadMethodCallException
 
+from .base import BaseMessage
 from ..constants import CLUSTER_TYPE_PHYSICAL, DATA_CLUSTER_ADD_OP, \
     DATA_CLUSTER_COUNT_OP, FIELD_BOOLEAN, FIELD_BYTE, FIELD_LONG, FIELD_SHORT, \
     FIELD_STRING, DATA_CLUSTER_DATA_RANGE_OP, DATA_CLUSTER_DROP_OP, CLUSTER_TYPES
 from ..utils import need_db_opened
-from .base import BaseMessage
+
 
 #
 # DATACLUSTER ADD
@@ -238,81 +240,3 @@ class DataClusterDropMessage(BaseMessage):
     def set_cluster_id(self, _cluster_id):
         self._cluster_id = _cluster_id
         return self
-
-
-class Information(object):
-
-    def __iter__(self):
-        return self
-
-    def next(self):  # Python 3: def __next__(self)
-        if self._indexPosition >= len( self.dataClusters ):
-            raise StopIteration
-        else:
-            self._indexPosition += 1
-            return self.dataClusters[ self._indexPosition -1 ]
-
-    def __next__(self):
-        return self.next()
-
-    def __init__( self, params ):
-
-        self._indexPosition = 0
-        self._reverseMap    = {}
-        self._reverseIDMap  = {}
-        self.orientRelease = None
-        self.version_info = {
-            'major': None,
-            'minor': None,
-            'build': None
-        }
-
-        self.dataClusters  = params[0]
-        for ( position, cluster ) in enumerate( self.dataClusters ):
-            if not isinstance( cluster[ 'name' ], str ):
-                cluster[ 'name' ] = cluster[ 'name' ].decode()
-            self._reverseMap[ str( cluster[ 'name' ] ) ] = [ position, cluster[ 'id' ] ]
-            self._reverseIDMap[ cluster[ 'id' ] ] = [ position, str( cluster[ 'name' ] ) ]
-
-        self.hiAvailabilityList = params[1][0]
-        self._parse_version( params[1][1] )
-
-    def _parse_version( self, param ):
-
-        if not isinstance(param, str):
-            param = param.decode()
-
-        self.orientRelease = param
-
-        try:
-            version_info = self.orientRelease.split( "." )
-            self.version_info[ 'major' ] = int( version_info[0] )
-            self.version_info[ 'minor' ] = version_info[1]
-            self.version_info[ 'build' ] = version_info[2]
-        except IndexError:
-            pass
-
-        if "-" in self.version_info[ 'minor' ]:
-            _temp = self.version_info[ 'minor' ].split( "-" )
-            self.version_info[ 'minor' ] = int( _temp[0] )
-            self.version_info[ 'build' ] = _temp[1]
-        else:
-            self.version_info[ 'minor' ] = int( self.version_info[ 'minor' ] )
-
-        build = self.version_info[ 'build' ].split( " ", 1 )[0]
-        try:
-            build = int( build )
-        except ValueError:
-            pass
-
-        self.version_info[ 'build' ] = build
-
-    def get_class_position( self, cluster_name ):
-        return self._reverseMap[ cluster_name.lower() ][1]
-
-    def get_class_name( self, position ):
-        return self._reverseIDMap[ position ][1]
-
-    def __len__( self ):
-        return len( self.dataClusters )
-

@@ -4,7 +4,7 @@ __author__ = 'mogui <mogui83@gmail.com>'
 # Driver Constants
 #
 NAME = "OrientDB Python binary client (pyorient)"
-VERSION = "1.4.5"
+VERSION = "1.4.5c"
 SUPPORTED_PROTOCOL = 32
 
 #
@@ -102,7 +102,9 @@ DB_LIST_OP                 = chr(74)
 # Orient Primitives
 #
 
+#: Document type
 DB_TYPE_DOCUMENT    = 'document'
+#: Graph type
 DB_TYPE_GRAPH       = 'graph'
 DB_TYPES            = (
     DB_TYPE_DOCUMENT,
@@ -132,13 +134,6 @@ QUERY_TYPES   = (
     QUERY_SCRIPT,
 )
 
-SERIALIZATION_DOCUMENT2CSV = "ORecordDocument2csv"
-SERIALIZATION_SERIAL_BIN   = "ORecordSerializerBinary"
-SERIALIZATION_TYPES        = (
-    SERIALIZATION_DOCUMENT2CSV,
-    SERIALIZATION_SERIAL_BIN,
-)
-
 RECORD_TYPE_BYTES    = 'b'
 RECORD_TYPE_DOCUMENT = 'd'
 RECORD_TYPE_FLAT     = 'f'
@@ -154,3 +149,7 @@ CLUSTER_TYPES         = (
     CLUSTER_TYPE_PHYSICAL,
     CLUSTER_TYPE_MEMORY
 )
+
+
+# OTHER CONFIGURATIONS
+SOCK_CONN_TIMEOUT = 30

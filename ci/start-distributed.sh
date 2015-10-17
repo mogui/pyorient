@@ -3,7 +3,7 @@ set -e
 
 PARENT_DIR=$(dirname $(cd "$(dirname "$0")"; pwd))
 CI_DIR="$PARENT_DIR/ci/environment"
-DEFAULT_ORIENT_VERSION="2.1.2"
+DEFAULT_ORIENT_VERSION="2.1.0"
 
 # launch simple instance in debug mode with shell hang up
 while [ $# -ne 0 ]; do
@@ -73,13 +73,13 @@ cp -a ${PARENT_DIR}/tests/default_databases/GratefulDeadConcerts "${ODB_DIR}/dat
 echo "cp -a ${PARENT_DIR}/tests/default_databases/VehicleHistoryGraph \"${ODB_DIR}/databases/\""
 cp -a ${PARENT_DIR}/tests/default_databases/VehicleHistoryGraph "${ODB_DIR}/databases/"
 
+echo "cp ${PARENT_DIR}/ci/orientdb-distr-hazelcast.xml \"${ODB_DIR}/config/\""
+cp ${PARENT_DIR}/ci/orientdb-distr-hazelcast.xml ${ODB_DIR}/config/
+
 # Start OrientDB in background.
-echo "--- Starting an instance of OrientDB ---"
-if [ -z "${HANG_UP}" ]; then
-    sh -c ${ODB_LAUNCHER} </dev/null &>/dev/null &
-    # Wait a bit for OrientDB to finish the initialization phase.
-    sleep 5
-    printf "\n=== The CI environment has been initialized ===\n"
-else
-    sh -c ${ODB_LAUNCHER}
-fi
+echo "--- Starting 2 instance of OrientDB ---"
+CONFIG_FILE="${PARENT_DIR}/ci/orientdb-distr-node-1.xml" ${ODB_LAUNCHER} </dev/null &>/dev/null &
+CONFIG_FILE="${PARENT_DIR}/ci/orientdb-distr-node-2.xml" ${ODB_LAUNCHER} </dev/null &>/dev/null &
+# Wait a bit for OrientDB to finish the initialization phase.
+sleep 5
+printf "\n=== The CI environment has been initialized ===\n"

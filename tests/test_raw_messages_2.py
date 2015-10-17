@@ -6,11 +6,11 @@ import unittest
 
 from pyorient.exceptions import *
 from pyorient import OrientSocket
-from pyorient import OrientRecord
 from pyorient.messages.database import *
 from pyorient.messages.commands import *
 from pyorient.messages.cluster import *
 from pyorient.messages.records import *
+from pyorient.messages.connection import *
 from pyorient.constants import DB_TYPE_DOCUMENT, QUERY_SYNC, \
     STORAGE_TYPE_PLOCAL, DB_TYPE_GRAPH, STORAGE_TYPE_MEMORY
 
@@ -385,18 +385,18 @@ class RawMessages_2_TestCase(unittest.TestCase):
         db_name = "GratefulDeadConcerts"
 
         db = DbOpenMessage(connection)
-        cluster_info = db.prepare(
+        _, clusters, _ = db.prepare(
             (db_name, "admin", "admin", DB_TYPE_DOCUMENT, "")
         ).send().fetch_response()
 
-        cluster_info.dataClusters.sort(key=lambda cluster: cluster['id'])
+        clusters.sort(key=lambda cluster: cluster.id)
 
-        for cluster in cluster_info:
+        for cluster in clusters:
             # os.environ['DEBUG'] = '0'  # silence debug
             datarange = DataClusterDataRangeMessage(connection)
-            value = datarange.prepare(cluster['id']).send().fetch_response()
-            print("Cluster Name: %s, ID: %u: %s " \
-                  % ( cluster['name'], cluster['id'], value ))
+            value = datarange.prepare(cluster.id).send().fetch_response()
+            print("Cluster Name: %s, ID: %u: %s "\
+                  % (cluster.name, cluster.id, value))
             assert value is not []
             assert value is not None
 

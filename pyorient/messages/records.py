@@ -9,7 +9,6 @@ from ..constants import FIELD_BOOLEAN, FIELD_BYTE, FIELD_BYTES, \
     FIELD_INT, FIELD_LONG, FIELD_SHORT, FIELD_STRING, RECORD_CREATE_OP, \
     RECORD_DELETE_OP, RECORD_LOAD_OP, RECORD_TYPE_DOCUMENT, RECORD_UPDATE_OP, \
     RECORD_TYPES
-from ..serialization import ORecordDecoder, ORecordEncoder
 from ..utils import need_db_opened, parse_cluster_id, \
     parse_cluster_position
 
@@ -75,13 +74,12 @@ class RecordCreateMessage(BaseMessage):
         if not isinstance( record, OrientRecord ):
             record = self._record_content = OrientRecord( record )
 
-        o_record_enc = ORecordEncoder( record )
-
+        o_record_enc = self.get_serializer().encode(record)
         if self.get_protocol() < 24:
             self._append( ( FIELD_INT, int(self._data_segment_id) ) )
 
         self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
-        self._append( ( FIELD_STRING, o_record_enc.get_raw() ) )
+        self._append( ( FIELD_STRING, o_record_enc ) )
         self._append( ( FIELD_BYTE, self._record_type ) )
         self._append( ( FIELD_BOOLEAN, self._mode_async ) )
 
@@ -352,14 +350,13 @@ class RecordLoadMessage(BaseMessage):
             __record = super( RecordLoadMessage, self ).fetch_response(True)
             # bug in orientdb csv serialization in snapshot 2.0,
             # strip trailing spaces
-            _record = ORecordDecoder( __record[ rec_position ].rstrip() )
-
+            class_name, data = self.get_serializer().decode(__record[ rec_position ].rstrip() )
             self._read_async_records()  # get cache
 
             _record = OrientRecord(
                 dict(
-                    __o_storage=_record.data,
-                    __o_class=_record.className,
+                    __o_storage=data,
+                    __o_class=class_name,
                     __version=__record[1],
                     __rid=self._record_id
                 )
@@ -481,15 +478,14 @@ class RecordUpdateMessage(BaseMessage):
         if not isinstance( record, OrientRecord ):
             record = self._record_content = OrientRecord( record )
 
-        o_record_enc = ORecordEncoder( record )
-
+        o_record_enc = self.get_serializer().encode(record)
         self._append( ( FIELD_SHORT, int(self._cluster_id) ) )
         self._append( ( FIELD_LONG, int(self._cluster_position) ) )
 
         if self.get_protocol() >= 23:
             self._append( ( FIELD_BOOLEAN, self._update_content ) )
 
-        self._append( ( FIELD_STRING, o_record_enc.get_raw() ) )
+        self._append( ( FIELD_STRING, o_record_enc ) )
         self._append( ( FIELD_INT, int(self._record_version_policy) ) )
         self._append( ( FIELD_BYTE, self._record_type ) )
         self._append( ( FIELD_BOOLEAN, self._mode_async ) )

@@ -1,3 +1,9 @@
+import sys
+import time
+from datetime import date, datetime
+from decimal import Decimal
+
+
 class OrientRecord(object):
     """
     Object that represent an Orient Document / Record
@@ -16,6 +22,14 @@ class OrientRecord(object):
         if self.__rid is not None:
             rep = rep + ",'rid':'" + str(self.__rid) + "'"
         return '{' + rep + '}'
+
+    @staticmethod
+    def addslashes(string):
+        l = [ "\\", '"', "'", "\0", ]
+        for i in l:
+            if i in string:
+                string = string.replace( i, '\\' + i )
+        return string
 
     def __init__(self, content=None):
 
@@ -39,7 +53,7 @@ class OrientRecord(object):
                 # { '@my_class': { 'accommodation': 'hotel' } }
                 self.__o_class = key[1:]
                 for _key, _value in content[key].items():
-                    self.__o_storage[_key] = _value
+                    self.__o_storage[_key] = self.addslashes( _value )
             elif key == '__o_storage':
                 self.__o_storage = content[key]
             else:
@@ -95,6 +109,7 @@ class OrientRecord(object):
             raise AttributeError( "'OrientRecord' object has no attribute "
                                   "'" + item + "'" )
 
+
 class OrientRecordLink(object):
     def __init__(self, recordlink):
         cid, rpos = recordlink.split(":")
@@ -125,3 +140,130 @@ class OrientBinaryObject(object):
     def getBin(self):
         import base64
         return base64.b64decode(self.b64)
+
+
+class OrientCluster(object):
+    def __init__(self, name, cluster_id, cluster_type=None, segment=None):
+        """
+        Information regarding a Cluster on the Orient Server
+        :param name: str name of the cluster
+        :param id: int id of the cluster
+        :param type: cluster type (only for version <24 of the protocol)
+        :param segment: cluster segment (only for version <24 of the protocol)
+        """
+        #: str name of the cluster
+        self.name = name
+        #: int idof the cluster
+        self.id = cluster_id
+        self.type = cluster_type
+        self.segment = segment
+
+    def __str__(self):
+        return "%s: %d" % (self.name, self.id)
+
+    def __eq__(self, other):
+        return self.name == other.name and self.id == other.id
+
+    def __ne__(self, other):
+        return self.name != other.name or self.id != other.id
+
+
+class OrientVersion(object):
+
+    def __init__(self, release):
+        """
+        Object representing Orient db release Version
+
+        :param release: String release
+        """
+
+        #: string full OrientDB release
+        self.release = release
+
+        #: Major version
+        self.major = None
+
+        #: Minor version
+        self.minor = None
+
+        #: build number
+        self.build = None
+
+        self._parse_version(release)
+
+    def _parse_version( self, string_release ):
+
+        if not isinstance(string_release, str):
+            string_release = string_release.decode()
+
+        try:
+            version_info = string_release.split( "." )
+            self.major = int( version_info[0] )
+            self.minor = version_info[1]
+            self.build = version_info[2]
+        except IndexError:
+            pass
+
+        if "-" in self.minor:
+            _temp = self.minor.split( "-" )
+            self.minor = int( _temp[0] )
+            self.build = _temp[1]
+        else:
+            self.minor = int( self.minor )
+
+        build = self.build.split( " ", 1 )[0]
+        try:
+            build = int( build )
+        except ValueError:
+            pass
+
+        self.build = build
+
+    def __str__(self):
+        return self.release
+
+
+class OrientNode(object):
+    def __init__(self, node_dict=None):
+        """
+        Represent a server node in a multi clusered configuration
+
+        TODO: extends this object with different listeners if we're going to support in the driver an abstarction of the HTTP protocol, for now we are not interested in that
+
+        :param node_dict: dict with starting configs (usaully from a db_open, db_reload record response)
+        """
+        #: node name
+        self.name = None
+
+        #: node is
+        self.id = None
+
+        #: datetime object the node was started
+        self.started_on = None
+
+        #: binary listener host
+        self.host = None
+
+        #: binary lister port
+        self.port = None
+
+        if node_dict is not None:
+            self._parse_dict(node_dict)
+
+    def _parse_dict(self, node_dict):
+        self.id = node_dict['id']
+        self.name = node_dict['name']
+        self.started_on = node_dict['startedOn']
+        listener = None
+        for l in node_dict['listeners']:
+            if l['protocol'] == 'ONetworkProtocolBinary':
+                listener = l
+                break
+
+        if listener:
+            listen = listener['listen'].split(':')
+            self.host = listen[0]
+            self.port = listen[1]
+
+    def __str__(self):
+        return self.name

@@ -66,9 +66,9 @@ class Graph(object):
 
         cluster_map = self.client.db_open(db_name, user, cred)
 
-        version = cluster_map.version_info
+
         self.server_version = ServerVersion(
-            version['major'], version['minor'], version['build'])
+            self.client.version.major, self.client.version.minor, self.client.version.build)
 
         return cluster_map
 

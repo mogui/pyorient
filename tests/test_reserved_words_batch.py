@@ -167,12 +167,12 @@ class CommandTestCase(unittest.TestCase):
             "commit;"
         )
 
-        assert isinstance(self.cluster_info, pyorient.Information)
+        # assert isinstance(self.cluster_info, pyorient.Information)
 
         # The preceding batch script create an exception
         # in OrientDB newest than 2.1
-        if self.cluster_info.version_info['major'] == 2 and \
-                self.cluster_info.version_info['minor'] >= 1:
+        if self.client.version.major == 2 and \
+                self.client.version.minor >= 1:
             with self.assertRaises( pyorient.PyOrientCommandException ):
                 cluster_id = self.client.batch(cmd)
         else:

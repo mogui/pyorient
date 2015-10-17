@@ -6,7 +6,6 @@ from ..constants import COMMAND_OP, FIELD_BOOLEAN, FIELD_BYTE, FIELD_CHAR, \
     FIELD_INT, FIELD_LONG, FIELD_SHORT, FIELD_STRING, QUERY_SYNC, FIELD_BYTES, \
     TX_COMMIT_OP, QUERY_GREMLIN, QUERY_ASYNC, QUERY_CMD, QUERY_TYPES, \
     QUERY_SCRIPT
-from ..serialization import ORecordEncoder
 from ..utils import need_connected, need_db_opened, dlog
 
 
@@ -210,10 +209,9 @@ class CommandMessage(BaseMessage):
             cached_results = self._read_async_records()
             # cache = cached_results['cached']
         else:
+            # this should be never happen, used only to debug the protocol
             msg = b''
-            import socket
-            self._orientSocket._socket.settimeout(5)
-
+            self._orientSocket._socket.setblocking( 0 )
             m = self._orientSocket.read(1)
             while m != "":
                 msg += m
@@ -413,14 +411,14 @@ class _TXCommitMessage(BaseMessage):
             raise AssertionError("A subclass of BaseMessage was expected")
 
         if isinstance(operation, RecordUpdateMessage):
-            o_record_enc = ORecordEncoder(getattr(operation, "_record_content"))
+            o_record_enc = self.get_serializer().encode(getattr(operation, "_record_content"))
             self._operation_stack.append((
                 ( FIELD_BYTE, chr(1) ),
                 ( FIELD_SHORT, int(getattr(operation, "_cluster_id")) ),
                 ( FIELD_LONG, int(getattr(operation, "_cluster_position")) ),
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
                 ( FIELD_INT, int(getattr(operation, "_record_version")) ),
-                ( FIELD_STRING, o_record_enc.get_raw() ),
+                ( FIELD_STRING, o_record_enc ),
             ))
 
             if self.get_protocol() >= 23:
@@ -441,13 +439,13 @@ class _TXCommitMessage(BaseMessage):
                 ( FIELD_INT, int(getattr(operation, "_record_version")) ),
             ))
         elif isinstance(operation, RecordCreateMessage):
-            o_record_enc = ORecordEncoder(getattr(operation, "_record_content"))
+            o_record_enc = self.get_serializer().encode(getattr(operation, "_record_content"))
             self._operation_stack.append((
                 ( FIELD_BYTE, chr(3) ),
                 ( FIELD_SHORT, int(-1) ),
                 ( FIELD_LONG, int(self._temp_cluster_position_seq) ),
                 ( FIELD_BYTE, getattr(operation, "_record_type") ),
-                ( FIELD_STRING, o_record_enc.get_raw() ),
+                ( FIELD_STRING, o_record_enc ),
             ))
             self._pre_operation_records[
                 str(self._temp_cluster_position_seq)
