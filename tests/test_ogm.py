@@ -119,6 +119,15 @@ def get_foods_eaten_by(animal) {
         for food in rat_cuisine:
             print(food.name, food.color) # 'pea green'
 
+        schema_registry = g.build_mapping(AnimalsNode, AnimalsRelationship, auto_plural=True)
+        assert all(c in schema_registry for c in ['animal', 'food', 'eats'])
+
+        assert type(schema_registry['animal'].specie) == String
+
+        # Plurals not communicated to schema; postprocess registry before
+        # include() if you have a better solution than auto_plural.
+        assert schema_registry['food'].registry_plural != Food.registry_plural
+
 MoneyNode = declarative_node()
 MoneyRelationship = declarative_relationship()
 
@@ -228,6 +237,21 @@ class OGMMoneyTestCase(unittest.TestCase):
                     wallet.amount_precise)
             assert i < 2
 
+
+        schema_registry = g.build_mapping(MoneyNode, MoneyRelationship)
+        assert all(c in schema_registry for c in ['person', 'wallet', 'carries'])
+
+        WalletType = schema_registry['wallet']
+
+        # Original property name, amount_precise, lost-in-translation
+        assert type(WalletType.amount) == Decimal
+        assert type(WalletType.amount_imprecise) == Float
+        g.include(schema_registry)
+
+        debt = decimal.Decimal(-42.0)
+        WalletType.objects.create(amount=debt, amount_imprecise=0)
+
+        assert g.query(Wallet)[2].amount == -42
 
 class OGMClassTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):

@@ -53,6 +53,7 @@ class Query(object):
     def __iter__(self):
         params = self._params
 
+        # TODO Don't ignore initial skip value
         with TempParams(params, skip='#-1:-1', limit=1):
             optional_clauses = self.build_optional_clauses(params, None)
 
