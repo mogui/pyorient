@@ -1,5 +1,5 @@
 from .operators import Operator, RelativeOperand, Operand, ArithmeticOperation
-from .property import Property
+from .property import Property, PropertyEncoder
 from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
 from .what import What, FunctionWhat, ChainableWhat
@@ -157,6 +157,7 @@ class Query(object):
         select = self.build_select(props, where + optional_clauses)
 
         g = self._graph
+
         response = g.client.command(select)
         if response:
             # TODO Determine which other queries always take only one iteration
@@ -310,9 +311,7 @@ class Query(object):
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, self))
             elif op is Operator.Between:
-                far_right = expression_root.operands[2]
-                if isinstance(far_right, str):
-                    far_right = repr(far_right)
+                far_right = PropertyEncoder.encode(expression_root.operands[2])
                 return '{0} BETWEEN {1} and {2}'.format(
                     left_str, right, far_right)
             elif op is Operator.Contains:
@@ -404,7 +403,7 @@ class Query(object):
     def build_wheres(self, params):
         kw_filters = params.get('kw_filters')
         kw_where = [' and '.join('{0}={1}'
-            .format(k, repr(v) if isinstance(v, str) else v)
+            .format(k, PropertyEncoder.encode(v))
                 for k,v in kw_filters.items())] if kw_filters else []
 
         filter_exp = params.get('filter')

@@ -2,6 +2,7 @@ from collections import namedtuple, OrderedDict
 from ast import literal_eval
 import re
 from datetime import datetime
+import sys
 
 ScriptFunction = \
     namedtuple('Method', ['definition', 'signature', 'body', 'sha1'])
@@ -78,6 +79,8 @@ class Scripts(object):
         for k, v in args.items():
             if isinstance(v, str) or isinstance(v, datetime):
                 replacements[k] = "'{}'".format(v)
+            elif sys.version_info[0] < 3 and isinstance(v, unicode):
+                replacements[k] = repr(v.encode('utf-8'))
             else:
                 replacements[k] = '{}'.format(v)
 

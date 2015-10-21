@@ -1,4 +1,4 @@
-from .property import Property
+from .property import Property, PropertyEncoder
 from .element import GraphElement
 
 from .what import What
@@ -16,7 +16,7 @@ class ArgConverter(object):
     @staticmethod
     def convert_to(conversion, arg, for_query):
         if conversion is ArgConverter.Label:
-            return '{}'.format(repr(arg) if isinstance(arg, str) else arg)
+            return '{}'.format(PropertyEncoder.encode(arg))
         elif conversion is ArgConverter.Expression:
             if isinstance(arg, LogicalConnective):
                 return '\'{}\''.format(for_query.filter_string(arg))
@@ -46,7 +46,7 @@ class ArgConverter(object):
             elif isinstance(arg, What):
                 return for_query.build_what(arg)
             else:
-                return repr(arg) if isinstance(arg, str) else str(arg)
+                return PropertyEncoder.encode(arg)
         elif conversion is ArgConverter.Boolean:
             if isinstance(arg, What):
                 return for_query.build_what(arg)
