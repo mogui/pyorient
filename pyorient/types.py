@@ -3,6 +3,10 @@ import time
 from datetime import date, datetime
 from decimal import Decimal
 
+try:
+    basestring
+except NameError:
+    basestring = str
 
 class OrientRecord(object):
     """
@@ -53,7 +57,10 @@ class OrientRecord(object):
                 # { '@my_class': { 'accommodation': 'hotel' } }
                 self.__o_class = key[1:]
                 for _key, _value in content[key].items():
-                    self.__o_storage[_key] = self.addslashes( _value )
+                    if isinstance(_value, basestring):
+                        self.__o_storage[_key] = self.addslashes( _value )
+                    else:
+                        self.__o_storage[_key] = _value
             elif key == '__o_storage':
                 self.__o_storage = content[key]
             else:
