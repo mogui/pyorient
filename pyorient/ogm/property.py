@@ -1,5 +1,6 @@
 from .operators import Operand, ArithmeticMixin
 
+import sys
 import json
 import decimal
 from datetime import datetime
@@ -79,10 +80,16 @@ class PropertyEncoder:
     def encode(value):
         if isinstance(value, decimal.Decimal):
             return repr(str(value))
-        if isinstance(value, datetime):
+        elif isinstance(value, datetime):
             return '"{}"'.format(value)
-        return repr(value) if isinstance(value, str) else \
-            value if value is not None else 'null'
+        elif isinstance(value, str):
+            return repr(value)
+        elif sys.version_info[0] < 3 and isinstance(value, unicode):
+            return repr(value.encode('utf-8'))
+        elif value is None:
+            return 'null'
+        else:
+            return value
 
 class Boolean(Property):
     pass
