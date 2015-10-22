@@ -4,6 +4,8 @@ from .vertex import Vertex
 from .edge import Edge
 from .broker import get_broker
 from .query import Query
+from .batch import Batch
+from .commands import CreateVertexCommand, CreateEdgeCommand
 
 import pyorient
 import json
@@ -304,6 +306,14 @@ class Graph(object):
             self.drop_class(cls, ignore_instances=True)
 
     def create_vertex(self, vertex_cls, **kwargs):
+        result = self.client.command(
+            str(self.create_vertex_command(vertex_cls, **kwargs)))[0]
+
+        props = result.oRecordData
+        return vertex_cls.from_graph(self, result._rid,
+                                     self.props_from_db[vertex_cls](props))
+
+    def create_vertex_command(self, vertex_cls, **kwargs):
         class_name = vertex_cls.registry_name
 
         if kwargs:
@@ -314,14 +324,19 @@ class Graph(object):
         else:
             set_clause = ''
 
-        result = self.client.command(
-            'CREATE VERTEX {}{}'.format(class_name, set_clause))[0]
-
-        props = result.oRecordData
-        return vertex_cls.from_graph(self, result._rid,
-                                     self.props_from_db[vertex_cls](props))
+        return CreateVertexCommand(
+            'CREATE VERTEX {}{}'.format(class_name, set_clause))
 
     def create_edge(self, edge_cls, from_vertex, to_vertex, **kwargs):
+        result = self.client.command(
+            str(self.create_edge_command(edge_cls
+                                     , from_vertex
+                                     , to_vertex
+                                     , **kwargs)))[0]
+
+        return self.edge_from_record(result, edge_cls)
+
+    def create_edge_command(self, edge_cls, from_vertex, to_vertex, **kwargs):
         class_name = edge_cls.registry_name
 
         if kwargs:
@@ -332,11 +347,10 @@ class Graph(object):
         else:
             set_clause = ''
 
-        result = self.client.command(
+        return CreateEdgeCommand(
             'CREATE EDGE {} FROM {} TO {}{}'.format(
-                class_name, from_vertex._id, to_vertex._id, set_clause))[0]
+                class_name, from_vertex._id, to_vertex._id, set_clause))
 
-        return self.edge_from_record(result, edge_cls)
 
     def get_vertex(self, vertex_id):
         record = self.client.command('SELECT FROM {}'.format(vertex_id))
@@ -372,6 +386,9 @@ class Graph(object):
 
     def query(self, first_entity, *entities):
         return Query(self, (first_entity,) + entities)
+
+    def batch(self, isolation_level=Batch.READ_COMMITTED):
+        return Batch(self)
 
     def gremlin(self, script, args=None, namespace=None):
         script_body = self.scripts.script_body(script, args, namespace)

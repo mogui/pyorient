@@ -270,6 +270,9 @@ class Query(object):
             self._params['limit'] = stop - start
         return self
 
+    def lock(self):
+        self._params['lock'] = True
+
     def filter_string(self, expression_root):
         op = expression_root.operator
 
@@ -447,6 +450,10 @@ class Query(object):
             limit = params.get('limit')
             if limit:
                 optional_clauses.append('LIMIT {}'.format(limit))
+
+        lock = params.get('lock')
+        if lock:
+            optional_clauses.append('LOCK RECORD')
 
         return optional_clauses
 

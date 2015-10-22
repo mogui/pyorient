@@ -119,6 +119,21 @@ def get_foods_eaten_by(animal) {
         for food in rat_cuisine:
             print(food.name, food.color) # 'pea green'
 
+        batch = g.batch()
+        batch['zombie'] = batch.animals.create(name='zombie',specie='undead')
+        batch['brains'] = batch.foods.create(name='brains', color='grey')
+        # Retry up to twenty times
+        batch[::20] = batch.eats.create(batch[:'zombie'], batch[:'brains'])
+
+        batch['unicorn'] = batch.animals.create(name='unicorn', specie='mythical')
+        batch['unknown'] = batch.foods.create(name='unknown', color='rainbow')
+        batch['mystery_diet'] = batch[:'unicorn'](Eats) > batch[:'unknown']
+
+        # Commits and clears batch
+        zombie = batch['$zombie']
+        assert zombie.specie == 'undead'
+
+
         schema_registry = g.build_mapping(AnimalsNode, AnimalsRelationship, auto_plural=True)
         assert all(c in schema_registry for c in ['animal', 'food', 'eats'])
 
@@ -127,6 +142,8 @@ def get_foods_eaten_by(animal) {
         # Plurals not communicated to schema; postprocess registry before
         # include() if you have a better solution than auto_plural.
         assert schema_registry['food'].registry_plural != Food.registry_plural
+
+
 
 MoneyNode = declarative_node()
 MoneyRelationship = declarative_relationship()
