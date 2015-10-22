@@ -334,3 +334,33 @@ class OGMDateTimeTestCase(unittest.TestCase):
         returned_dt = g.datetime.query(name='now').one()
 
         assert returned_dt.at == at
+
+
+UnicodeNode = declarative_node()
+
+
+class OGMUnicodeTestCase(unittest.TestCase):
+    class UnicodeV(UnicodeNode):
+        element_type = 'unicode'
+        element_plural = 'unicode'
+
+        name = String(nullable=False, unique=True)
+        value = String(nullable=False)
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('test_unicode', 'root', 'root',
+                                           initial_drop=True))
+
+        g.create_all(UnicodeNode.registry)
+
+    def testUnicode(self):
+        g = self.g
+
+        name = 'unicode test'
+        value = u'unicode value'
+
+        g.unicode.create(name=name, value=value)
+
+        returned_v = g.unicode.query(name=name).one()
+
+        assert returned_v.value == value
