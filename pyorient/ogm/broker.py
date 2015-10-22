@@ -48,13 +48,23 @@ class Broker(object):
             return self.g.query(self.element_cls, *entities).\
                         filter_by(**filter_by)
 
+    def query_command(self, *entities, **filter_by):
+        return self.query(*entities, **filter_by)
+
 class VertexBroker(Broker):
     def create(self, **kwargs):
         return self.g.create_vertex(self.element_cls, **kwargs)
 
+    def create_command(self, **kwargs):
+        return self.g.create_vertex_command(self.element_cls, **kwargs)
+
 class EdgeBroker(Broker):
     def create(self, from_vertex, to_vertex, **kwargs):
         return self.g.create_edge(
+            self.element_cls, from_vertex, to_vertex, **kwargs)
+
+    def create_command(self, from_vertex, to_vertex, **kwargs):
+        return self.g.create_edge_command(
             self.element_cls, from_vertex, to_vertex, **kwargs)
 
 def get_broker(cls):

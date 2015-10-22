@@ -134,7 +134,7 @@ class OrientBinaryObject(object):
     def __init__(self, stri):
         self.b64 = stri
 
-    def getRaw(self):
+    def get_hash(self):
         return "_" + self.b64 + "_"
 
     def getBin(self):
