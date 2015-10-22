@@ -52,6 +52,10 @@ class CommandTestCase( unittest.TestCase ):
         assert rec_value[0].qwerty is True, "qwerty expected True: '%s'" % \
                                             rec_value[0].qwerty
 
+    def test_record_create_nonstrings( self ):
+        # this should succeed with no exception
+        self.client.record_create (self.class_id1, {'@my_v_class': {'a': 1.5, 'b': 'foo'}} )
+
     def test_new_orient_dict( self ):
         import re
 
