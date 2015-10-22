@@ -141,7 +141,7 @@ class LinkedClassProperty(Property):
         :param linked_to: Entry type; optional, as per 'CREATE PROPERTY' syntax
         """
         super(LinkedClassProperty, self).__init__(
-            name, default, nullable, unique, indexed)
+            name, nullable, default, indexed, unique)
         self.linked_to = linked_to
 
 class LinkList(LinkedClassProperty):
