@@ -1,14 +1,11 @@
-from .property import (
-        Property
-        , PropertyEncoder
-        , LinkedClassProperty
-        , LinkedProperty
-    )
+from .property import *
 from .exceptions import ReservedWordError
 from .vertex import Vertex
 from .edge import Edge
 from .broker import get_broker
 from .query import Query
+from .batch import Batch
+from .commands import CreateVertexCommand, CreateEdgeCommand
 
 import pyorient
 import json
@@ -120,6 +117,52 @@ class Graph(object):
             self.props_from_db[cls] = self.create_props_mapping(db_to_element)
             self.init_broker_for_class(cls)
             self.registry[cls.registry_name] = cls
+
+    def build_mapping(self, vertex, edge, auto_plural=False):
+        """Use database schema to dynamically build mapping classes.
+
+        Returns a registry suitable for passing to include()
+
+        :param vertex: Base class for vertexes
+        :param edge: Base class for edges
+        :param auto_plural: If True, will automatically set registry_plural
+        on classes. For convenience when include() should set brokers.
+        """
+
+        mc = type(vertex)
+        registry = {}
+
+        schema = self.client.command(
+            'SELECT FROM (SELECT expand(classes) FROM metadata:schema)'
+            ' WHERE name NOT IN [\'ORole\', \'ORestricted\', \'OTriggered\','
+            ' \'ORIDs\', \'OUser\', \'OIdentity\', \'OSchedule\','
+            ' \'OFunction\'] ORDER BY defaultClusterId')
+
+        for c in schema:
+            class_def = c.oRecordData
+
+            sup = class_def['superClass']
+            if sup is not None:
+                base_names = class_def.get('superClasses', [sup])
+                bases = tuple(
+                    vertex if b == 'V' else edge if b == 'E'
+                        else registry[b] if b in registry
+                        else self.registry[b]
+                    for b in base_names
+                        if b == 'V' or b == 'E'
+                        or b in registry or b in self.registry)
+                class_name = class_def['name']
+
+                if bases:
+                    props = { p['name']:self.property_from_schema(p)
+                                for p in class_def['properties'] }
+                    props['decl_type'] = bases[0].decl_type
+
+                    if auto_plural:
+                        props['registry_plural'] = class_name
+                    registry[class_name] = mc(class_name, bases, props)
+
+        return registry
 
     def create_class(self, cls):
         """Add vertex or edge class to database.
@@ -263,6 +306,14 @@ class Graph(object):
             self.drop_class(cls, ignore_instances=True)
 
     def create_vertex(self, vertex_cls, **kwargs):
+        result = self.client.command(
+            str(self.create_vertex_command(vertex_cls, **kwargs)))[0]
+
+        props = result.oRecordData
+        return vertex_cls.from_graph(self, result._rid,
+                                     self.props_from_db[vertex_cls](props))
+
+    def create_vertex_command(self, vertex_cls, **kwargs):
         class_name = vertex_cls.registry_name
 
         if kwargs:
@@ -273,14 +324,19 @@ class Graph(object):
         else:
             set_clause = ''
 
-        result = self.client.command(
-            'CREATE VERTEX {}{}'.format(class_name, set_clause))[0]
-
-        props = result.oRecordData
-        return vertex_cls.from_graph(self, result._rid,
-                                     self.props_from_db[vertex_cls](props))
+        return CreateVertexCommand(
+            'CREATE VERTEX {}{}'.format(class_name, set_clause))
 
     def create_edge(self, edge_cls, from_vertex, to_vertex, **kwargs):
+        result = self.client.command(
+            str(self.create_edge_command(edge_cls
+                                     , from_vertex
+                                     , to_vertex
+                                     , **kwargs)))[0]
+
+        return self.edge_from_record(result, edge_cls)
+
+    def create_edge_command(self, edge_cls, from_vertex, to_vertex, **kwargs):
         class_name = edge_cls.registry_name
 
         if kwargs:
@@ -291,11 +347,10 @@ class Graph(object):
         else:
             set_clause = ''
 
-        result = self.client.command(
+        return CreateEdgeCommand(
             'CREATE EDGE {} FROM {} TO {}{}'.format(
-                class_name, from_vertex._id, to_vertex._id, set_clause))[0]
+                class_name, from_vertex._id, to_vertex._id, set_clause))
 
-        return self.edge_from_record(result, edge_cls)
 
     def get_vertex(self, vertex_id):
         record = self.client.command('SELECT FROM {}'.format(vertex_id))
@@ -331,6 +386,9 @@ class Graph(object):
 
     def query(self, first_entity, *entities):
         return Query(self, (first_entity,) + entities)
+
+    def batch(self, isolation_level=Batch.READ_COMMITTED):
+        return Batch(self)
 
     def gremlin(self, script, args=None, namespace=None):
         script_body = self.scripts.script_body(script, args, namespace)
@@ -470,6 +528,43 @@ class Graph(object):
 
     def elements_from_records(self, records):
         return [self.element_from_record(record) for record in records]
+
+    PROPERTY_TYPES = {
+        0:Boolean
+        , 1:Integer
+        , 2:Short
+        , 3:Long
+        , 4:Float
+        , 5:Double
+        , 6:DateTime
+        , 7:String
+        , 8:Binary
+        , 9:Embedded
+        , 10:EmbeddedList
+        , 11:EmbeddedSet
+        , 12:EmbeddedMap
+        , 13:Link
+        , 14:LinkList
+        , 15:LinkSet
+        , 16:LinkMap
+        , 17:Byte
+        , 19:Date
+        , 21:Decimal
+    }
+
+    @classmethod
+    def property_from_schema(cls, prop_def):
+        prop_type = cls.PROPERTY_TYPES.get(prop_def['type'], Property)
+
+        return prop_type(
+            nullable=not prop_def['notNull']
+            , default=prop_def.get('defaultValue', None)
+            , indexed=False # FIXME
+            , unique=False # FIXME
+            , mandatory=prop_def['mandatory']
+            , readonly=prop_def['readonly']
+            )
+
 
     @staticmethod
     def valid_element_base(cls):

@@ -124,10 +124,30 @@ def get_colored_eaten_foods(animal, color) {
         for food in rat_cuisine:
             print(food.name, food.color) # 'pea green'
 
-        yellow_mouse_foods = g.gremlin('get_colored_eaten_foods',
-                                       (mouse, 'yellow'))
-        for food in yellow_mouse_foods:
-            print(food.name, food.color)  # 'cheese green'
+        batch = g.batch()
+        batch['zombie'] = batch.animals.create(name='zombie',specie='undead')
+        batch['brains'] = batch.foods.create(name='brains', color='grey')
+        # Retry up to twenty times
+        batch[::20] = batch.eats.create(batch[:'zombie'], batch[:'brains'])
+
+        batch['unicorn'] = batch.animals.create(name='unicorn', specie='mythical')
+        batch['unknown'] = batch.foods.create(name='unknown', color='rainbow')
+        batch['mystery_diet'] = batch[:'unicorn'](Eats) > batch[:'unknown']
+
+        # Commits and clears batch
+        zombie = batch['$zombie']
+        assert zombie.specie == 'undead'
+
+
+        schema_registry = g.build_mapping(AnimalsNode, AnimalsRelationship, auto_plural=True)
+        assert all(c in schema_registry for c in ['animal', 'food', 'eats'])
+
+        assert type(schema_registry['animal'].specie) == String
+
+        # Plurals not communicated to schema; postprocess registry before
+        # include() if you have a better solution than auto_plural.
+        assert schema_registry['food'].registry_plural != Food.registry_plural
+
 
 
 MoneyNode = declarative_node()
@@ -240,6 +260,21 @@ class OGMMoneyTestCase(unittest.TestCase):
             assert i < 2
 
 
+        schema_registry = g.build_mapping(MoneyNode, MoneyRelationship)
+        assert all(c in schema_registry for c in ['person', 'wallet', 'carries'])
+
+        WalletType = schema_registry['wallet']
+
+        # Original property name, amount_precise, lost-in-translation
+        assert type(WalletType.amount) == Decimal
+        assert type(WalletType.amount_imprecise) == Float
+        g.include(schema_registry)
+
+        debt = decimal.Decimal(-42.0)
+        WalletType.objects.create(amount=debt, amount_imprecise=0)
+
+        assert g.query(Wallet)[2].amount == -42
+
 class OGMClassTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(OGMClassTestCase, self).__init__(*args, **kwargs)
@@ -299,3 +334,33 @@ class OGMDateTimeTestCase(unittest.TestCase):
         returned_dt = g.datetime.query(name='now').one()
 
         assert returned_dt.at == at
+
+
+UnicodeNode = declarative_node()
+
+
+class OGMUnicodeTestCase(unittest.TestCase):
+    class UnicodeV(UnicodeNode):
+        element_type = 'unicode'
+        element_plural = 'unicode'
+
+        name = String(nullable=False, unique=True)
+        value = String(nullable=False)
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('test_unicode', 'root', 'root',
+                                           initial_drop=True))
+
+        g.create_all(UnicodeNode.registry)
+
+    def testUnicode(self):
+        g = self.g
+
+        name = 'unicode test'
+        value = u'unicode value'
+
+        g.unicode.create(name=name, value=value)
+
+        returned_v = g.unicode.query(name=name).one()
+
+        assert returned_v.value == value

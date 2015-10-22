@@ -3,7 +3,7 @@ set -e
 
 PARENT_DIR=$(dirname $(cd "$(dirname "$0")"; pwd))
 CI_DIR="$PARENT_DIR/ci/environment"
-DEFAULT_ORIENT_VERSION="2.1.0"
+DEFAULT_ORIENT_VERSION="2.1.2"
 
 # launch simple instance in debug mode with shell hang up
 while [ $# -ne 0 ]; do

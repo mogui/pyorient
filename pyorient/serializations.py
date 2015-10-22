@@ -152,7 +152,7 @@ class OrientSerializationCSV(object):
         elif isinstance(value, OrientRecordLink):
             ret = value.get_hash()
         elif isinstance(value, OrientBinaryObject):
-            ret = value.getRaw()
+            ret = value.get_hash()
         else:
             ret = ''
         return ret
