@@ -4,7 +4,7 @@ __author__ = 'Ostico <ostico@gmail.com>'
 from .base import BaseMessage
 from ..exceptions import PyOrientBadMethodCallException, \
     PyOrientConnectionException
-from ..types import OrientRecord
+from ..otypes import OrientRecord
 from ..constants import FIELD_BOOLEAN, FIELD_BYTE, FIELD_BYTES, \
     FIELD_INT, FIELD_LONG, FIELD_SHORT, FIELD_STRING, RECORD_CREATE_OP, \
     RECORD_DELETE_OP, RECORD_LOAD_OP, RECORD_TYPE_DOCUMENT, RECORD_UPDATE_OP, \

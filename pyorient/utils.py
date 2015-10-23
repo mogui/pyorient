@@ -4,7 +4,7 @@ import os
 import sys
 from pyorient.exceptions import PyOrientConnectionException, \
     PyOrientDatabaseException
-from pyorient.types import OrientRecordLink
+from pyorient.otypes import OrientRecordLink
 
 
 def is_debug_active():

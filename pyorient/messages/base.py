@@ -5,7 +5,7 @@ import sys
 
 from ..exceptions import PyOrientBadMethodCallException, \
     PyOrientCommandException
-from ..types import OrientRecord, OrientRecordLink
+from ..otypes import OrientRecord, OrientRecordLink
 
 from ..hexdump import hexdump
 from ..constants import BOOLEAN, BYTE, BYTES, CHAR, FIELD_BOOLEAN, FIELD_BYTE, \
