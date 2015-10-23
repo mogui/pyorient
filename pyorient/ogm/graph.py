@@ -160,6 +160,7 @@ class Graph(object):
 
                     if auto_plural:
                         props['registry_plural'] = class_name
+                    props['element_type'] = class_name
                     registry[class_name] = mc(class_name, bases, props)
 
         return registry
