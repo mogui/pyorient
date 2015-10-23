@@ -24,7 +24,7 @@ if [[ -z "${ODB_VERSION}" ]]; then
     ODB_VERSION=${DEFAULT_ORIENT_VERSION}
 fi
 
-# ---- Start
+# ---- Start ---
 
 ODB_DIR="${CI_DIR}/orientdb-community-${ODB_VERSION}"
 ODB_LAUNCHER="${ODB_DIR}/bin/server.sh"
