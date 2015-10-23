@@ -26,18 +26,16 @@ class Config(object):
 
     @classmethod
     def from_url(cls, url, user, cred, initial_drop=False):
-        url_exp = re.compile(r'^(\w+:)(\/\/)?(.*)')
+        url_exp = re.compile(r'^(\w+:\/\/)?(.*)')
         url_match = url_exp.match(url)
-        if url_match:
-            url = url_match.group(1) + (url_match.group(2) or '//') \
-                    + url_match.group(3)
-        else:
+        if not url_match.group(1):
             if '/' in url:
                 url = 'plocal://' + url
             else:
                 url = 'memory://' + url
 
         url_parts = urlparse(url)
+
         if url_parts.path:
             db_name = os.path.basename(url_parts.path)
             return cls(url_parts.hostname, url_parts.port, user, cred, db_name
