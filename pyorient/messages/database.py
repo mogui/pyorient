@@ -53,6 +53,7 @@ class DbOpenMessage(BaseMessage):
         self._db_type = DB_TYPE_DOCUMENT
         self._serialization_type = OrientSerialization.CSV
         self._append(( FIELD_BYTE, DB_OPEN_OP ))
+        self._need_token = False
 
     def prepare(self, params=None):
 
