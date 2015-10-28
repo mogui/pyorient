@@ -2,7 +2,7 @@ import sys
 import time
 from datetime import date, datetime
 from decimal import Decimal
-from .types import OrientRecordLink, OrientRecord, OrientBinaryObject
+from .otypes import OrientRecordLink, OrientRecord, OrientBinaryObject
 from .exceptions import PyOrientBadMethodCallException
 
 

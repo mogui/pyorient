@@ -1,6 +1,6 @@
 import unittest
 from pyorient.serializations import OrientSerialization
-from pyorient.types import OrientBinaryObject, OrientRecord
+from pyorient.otypes import OrientBinaryObject, OrientRecord
 
 
 class SerializationTestCase(unittest.TestCase):
