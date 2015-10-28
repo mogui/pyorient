@@ -116,6 +116,7 @@ class OrientSocket(object):
                     select.select( [self._socket, ], [], [self._socket, ], 30 )
             except select.error as e:
                 self.connected = False
+                self._socket.close()
                 raise e
 
             if len(ready_to_read) > 0:
@@ -127,10 +128,7 @@ class OrientSocket(object):
                     if not n_bytes:
                         self._socket.close()
                         # TODO Implement re-connection to another listener
-                        # from the Hi availability list
-                        # ( self.cluster_map.hiAvailabilityList.listeners )
 
-                        # Additional cleanup
                         raise PyOrientConnectionException(
                             "Server seems to have went down", [])
 
@@ -479,6 +477,7 @@ class OrientDB(object):
                 return message_instance
 
         except KeyError as e:
+            self._connection.close()
             raise PyOrientBadMethodCallException(
                 "Unable to find command " + str(e), []
             )

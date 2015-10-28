@@ -121,7 +121,7 @@ class BaseMessage(object):
 
         # session_id
         self._fields_definition.insert( 1, ( FIELD_INT, self._session_id ) )
-
+        # TODO: refactor this I don't like it a lot to have this cross import
         from .connection import ConnectMessage
         from .database import DbOpenMessage
         """
