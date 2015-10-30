@@ -30,7 +30,7 @@ class TokenAuthTest(unittest.TestCase):
             "GratefulDeadConcerts", "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
         )
         record = self.client.query( 'select from V where @rid = #9:1' )
-        assert isinstance( record[0], pyorient.types.OrientRecord )
+        assert isinstance( record[0], pyorient.otypes.OrientRecord )
 
         old_token = self.client.get_session_token()
         assert self.client.get_session_token() not in [
@@ -42,7 +42,7 @@ class TokenAuthTest(unittest.TestCase):
         global old_token
         self.client.set_session_token( old_token )
         record = self.client.query( 'select from V where @rid = #9:1' )
-        assert isinstance( record[0], pyorient.types.OrientRecord )
+        assert isinstance( record[0], pyorient.otypes.OrientRecord )
 
     def testReconnectionFailRoot(self):
         assert self.client.get_session_token() == b''

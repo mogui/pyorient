@@ -20,7 +20,7 @@ class ConnectMessage(BaseMessage):
         self._pass = ''
         self._client_id = ''
         self._serialization_type = OrientSerialization.CSV
-
+        self._need_token = False
         self._append( ( FIELD_BYTE, CONNECT_OP ) )
 
     def prepare(self, params=None ):

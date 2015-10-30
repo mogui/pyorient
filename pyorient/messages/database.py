@@ -10,7 +10,7 @@ from ..constants import DB_OPEN_OP, DB_TYPE_DOCUMENT, DB_COUNT_RECORDS_OP, FIELD
     STORAGE_TYPE_LOCAL, DB_CREATE_OP, \
     DB_DROP_OP, DB_RELOAD_OP, DB_SIZE_OP, DB_LIST_OP, STORAGE_TYPES, FIELD_LONG
 from ..utils import need_connected, need_db_opened
-from ..types import OrientRecord, OrientCluster, OrientVersion, OrientNode
+from ..otypes import OrientRecord, OrientCluster, OrientVersion, OrientNode
 from ..serializations import OrientSerialization
 
 #
@@ -53,6 +53,7 @@ class DbOpenMessage(BaseMessage):
         self._db_type = DB_TYPE_DOCUMENT
         self._serialization_type = OrientSerialization.CSV
         self._append(( FIELD_BYTE, DB_OPEN_OP ))
+        self._need_token = False
 
     def prepare(self, params=None):
 

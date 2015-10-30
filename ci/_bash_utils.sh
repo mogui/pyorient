@@ -7,10 +7,20 @@ build(){
         build_via_mvn $1 $2
     elif [[ "$1" == *"SNAPSHOT"* ]]; then
         echo "Build by clone/pull github develop branch"
+        if command_exists "ant"; then
         build_via_git $1 $2
+        else
+            echo "Error: you must have at least ant installed"
+            exit -1
+        fi
     else
         echo "Build by download from github repository"
-        build_via_github $1 $2
+        if command_exists "ant"; then
+            build_via_github $1 $2
+        else
+            echo "Error: you must have at least ant installed"
+            exit -1
+        fi
     fi
 
 }
@@ -58,8 +68,8 @@ download () {
     elif command_exists "curl" ; then
         echo "cd ${OUTPUT_DIR}"
         cd ${OUTPUT_DIR}
-        echo "curl --silent -LO $1"
-        curl --silent -LO $1
+        echo "curl --silent -L -o "$OUTPUT_DIR/$PACKAGE_NAME" $1"
+        curl --silent -L -o "$OUTPUT_DIR/$PACKAGE_NAME" $1
     else
         echo "Cannot download $1 [missing wget or curl]"
         exit 1
