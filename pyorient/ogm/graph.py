@@ -156,10 +156,19 @@ class Graph(object):
                 if bases:
                     props = { p['name']:self.property_from_schema(p)
                                 for p in class_def['properties'] }
-                    props['decl_type'] = bases[0].decl_type
+                    props['decl_type'] = decl_type = bases[0].decl_type
 
                     if auto_plural:
-                        props['registry_plural'] = class_name
+                        if decl_type:
+                            props['label'] = class_name
+                        else:
+                            props['element_plural'] = \
+                                props['element_type'] = class_name
+                    else:
+                        if decl_type:
+                            props['registry_name'] = class_name
+                        else:
+                            props['element_type'] = class_name
                     registry[class_name] = mc(class_name, bases, props)
 
         return registry
@@ -388,7 +397,7 @@ class Graph(object):
         return Query(self, (first_entity,) + entities)
 
     def batch(self, isolation_level=Batch.READ_COMMITTED):
-        return Batch(self)
+        return Batch(self, isolation_level)
 
     def gremlin(self, script, args=None, namespace=None):
         script_body = self.scripts.script_body(script, args, namespace)
