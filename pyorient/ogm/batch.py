@@ -3,6 +3,9 @@ from .commands import CreateVertexCommand
 
 from .vertex import VertexVector
 
+import re
+import string
+
 class Batch(object):
     READ_COMMITTED = 0
     REPEATABLE_READ = 1
@@ -33,6 +36,8 @@ class Batch(object):
         if isinstance(key, slice):
             self.commands += '{}\n'.format(command)
         else:
+            key = Batch.clean_name(key) if Batch.clean_name else key
+
             self.commands += 'LET {} = {}\n'.format(key, command)
 
             VarType = BatchVariable
@@ -66,11 +71,20 @@ class Batch(object):
             if key.step:
                 if key.start:
                     returned = Batch.return_string(key.start)
-                    self.commands += 'COMMIT RETRY {}\nRETURN {}'.format(key.step, returned)
+                    self.commands += \
+                        'COMMIT RETRY {}\nRETURN {}'.format(key.step, returned)
                 else:
                     self.commands += 'COMMIT RETRY {}'.format(key.step)
             elif key.stop:
                 # No commit.
+
+                if Batch.clean_name:
+                    return self.variables[Batch.clean_name(key.stop)]
+                elif any(c in Batch.INVALID_CHARS for c in key.stop):
+                    raise ValueError(
+                        'Variable name \'{}\' contains invalid character(s).'
+                            .format(key.stop))
+
                 return self.variables[key.stop]
             else:
                 if key.start:
@@ -105,20 +119,37 @@ class Batch(object):
 
     @staticmethod
     def return_string(variables):
+        cleaned = Batch.clean_name or (lambda s:s)
+
         if isinstance(variables, (list, tuple)):
-            return '[' + ','.join('${}'.format(var) for var in variables) + ']'
+            return '[' + ','.join(
+                '${}'.format(cleaned(var)) for var in variables) + ']'
         elif isinstance(variables, dict):
-            return '{' + ','.join('{}:${}'.format(repr(k),v) for k,v in variables.items()) + '}'
+            return '{' + ','.join(
+                '{}:${}'.format(repr(k),cleaned(v))
+                    for k,v in variables.items()) + '}'
         else:
             # Since any value can be returned from a batch,
             # '$' must be used when a variable is referenced
             if isinstance(variables, str):
                 if variables[0] == '$':
-                    return '{}'.format(variables)
+                    return '{}'.format('$' + cleaned(variables[1:]))
                 else:
                     return repr(variables)
             else:
                 return '{}'.format(variables)
+
+    INVALID_CHARS = set(string.punctuation + string.whitespace)
+
+    @staticmethod
+    def default_name_cleaner(name):
+        rx = '[' + re.escape(''.join(Batch.INVALID_CHARS)) + ']'
+        return re.sub(rx, '_', name)
+
+    clean_name = None
+    @classmethod
+    def use_name_cleaner(cls, cleaner=default_name_cleaner):
+        cls.clean_name = cleaner
 
 class BatchBroker(object):
     def __init__(self, broker):
