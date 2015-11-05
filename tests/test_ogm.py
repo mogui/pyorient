@@ -364,3 +364,19 @@ class OGMUnicodeTestCase(unittest.TestCase):
         returned_v = g.unicode.query(name=name).one()
 
         assert returned_v.value == value
+
+
+class OGMTestCase(unittest.TestCase):
+    def testConfigs(self):
+        configs = [
+            'localhost:2424/test_config1',
+            'localhost/test_config2',
+            'plocal://localhost/test_config3',
+            'plocal://localhost:2424/test_config4',
+            'memory://localhost/test_config5',
+            'memory://localhost:2424/test_config6',
+        ]
+
+        for conf in configs:
+            # the following line should not raise errors
+            Graph(Config.from_url(conf, 'root', 'root', initial_drop=True))

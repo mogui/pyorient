@@ -135,13 +135,14 @@ class Link(Property):
 
 class LinkedClassProperty(Property):
     def __init__(self, linked_to=None, name=None, default=None,
-                 nullable=True, unique=False, indexed=False):
+                 nullable=True, unique=False, indexed=False,
+                 mandatory=False, readonly=False):
         """Create a property representing a collection of entries.
 
         :param linked_to: Entry type; optional, as per 'CREATE PROPERTY' syntax
         """
         super(LinkedClassProperty, self).__init__(
-            name, nullable, default, indexed, unique)
+            name, nullable, default, indexed, unique, mandatory, readonly)
         self.linked_to = linked_to
 
 class LinkList(LinkedClassProperty):
