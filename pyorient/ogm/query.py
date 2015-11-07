@@ -319,8 +319,12 @@ class Query(object):
                 return '{0} BETWEEN {1} and {2}'.format(
                     left_str, right, far_right)
             elif op is Operator.Contains:
-                return '{0} contains({1})'.format(
-                    left_str, self.filter_string(right))
+                if isinstance(right, LogicalConnective):
+                    return '{0} contains({1})'.format(
+                        left_str, self.filter_string(right))
+                else:
+                    return '{} in {}'.format(
+                        PropertyEncoder.encode(right), left_str)
             elif op is Operator.EndsWith:
                 return '{0} like \'%{1}\''.format(left_str, right)
             elif op is Operator.Is:
