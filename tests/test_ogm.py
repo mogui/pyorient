@@ -8,7 +8,7 @@ from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
-from pyorient.ogm.property import String, DateTime, Decimal, Float, UUID
+from pyorient.ogm.property import String, DateTime, Decimal, EmbeddedSet, Float, UUID
 
 from pyorient.ogm.what import expand, in_, out, distinct
 
@@ -394,3 +394,46 @@ class OGMTestCase(unittest.TestCase):
         for conf in configs:
             # the following line should not raise errors
             Graph(Config.from_url(conf, 'root', 'root', initial_drop=True))
+
+
+EmbeddedNode = declarative_node()
+
+
+class OGMEmbeddedTestCase(unittest.TestCase):
+    class EmbeddedSetV(EmbeddedNode):
+        element_type = 'emb_set'
+        element_plural = 'emb_set'
+
+        name = String(nullable=False, unique=True)
+        alias = EmbeddedSet(nullable=False)
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('test_embedded', 'root', 'root',
+                                           initial_drop=True))
+
+        g.create_all(EmbeddedNode.registry)
+
+    def testEmbeddedSetCreate(self):
+        g = self.g
+
+        # OrientDB currently has a bug that allows identical entries in EmbeddedSet:
+        # https://github.com/orientechnologies/orientdb/issues/3601
+        # This is not planned to be fixed until v3.0, so tolerate data
+        # returned as a list, and turn it to a set before the check for convenience
+
+        name = 'embed'
+        alias = ['implant', 'lodge', 'place']
+
+        g.emb_set.create(name=name, alias=alias)
+        result = g.emb_set.query(name=name).one()
+
+        self.assertSetEqual(set(alias), set(result.alias))
+
+        # now try the same operation, but pass a set instead of a list
+        name2 = 'embed2'
+        alias2 = set(alias)
+
+        g.emb_set.create(name=name2, alias=alias2)
+        result = g.emb_set.query(name=name2).one()
+
+        self.assertSetEqual(alias2, set(result.alias))

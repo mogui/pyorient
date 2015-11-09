@@ -94,6 +94,13 @@ class PropertyEncoder:
         elif value is None:
             return 'null'
         else:
+            # returning the same object will cause repr(value) to be used
+
+            if isinstance(value, set):
+                value = list(value)
+
+            # TODO: perhaps add more conversions, unclear if pyorient works for embedded maps
+
             return value
 
 class Boolean(Property):
