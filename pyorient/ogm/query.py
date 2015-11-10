@@ -1,4 +1,9 @@
-from .operators import Operator, RelativeOperand, Operand, ArithmeticOperation
+from .operators import (
+    Operator
+    , RelativeOperand, Operand
+    , ArithmeticOperation
+    , LogicalConnective
+    )
 from .property import Property, PropertyEncoder
 from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
