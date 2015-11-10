@@ -1,3 +1,4 @@
+import sys
 import unittest
 import decimal
 import os.path
@@ -373,7 +374,10 @@ class OGMUnicodeTestCase(unittest.TestCase):
 
         returned_v = g.unicode.query(name=name).one()
 
-        assert unicode(returned_v.value, encoding='utf-8') == value
+        if sys.version_info[0] < 3:
+            assert unicode(returned_v.value, encoding='utf-8') == value
+        else:
+            assert returned_v.value == value
 
 
 class OGMTestCase(unittest.TestCase):
