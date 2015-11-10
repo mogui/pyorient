@@ -1,9 +1,9 @@
 from .operators import Operand, ArithmeticMixin
 
 import sys
-import json
 import decimal
-from datetime import datetime
+import datetime
+
 
 class Property(Operand):
     num_instances = 0 # Basis for ordering property instances
@@ -80,12 +80,17 @@ class PropertyEncoder:
     def encode(value):
         if isinstance(value, decimal.Decimal):
             return repr(str(value))
-        elif isinstance(value, datetime):
+        elif isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
             return '"{}"'.format(value)
         elif isinstance(value, str):
             return repr(value)
         elif sys.version_info[0] < 3 and isinstance(value, unicode):
-            return repr(value.encode('utf-8'))
+            # repr will generate a value like u'...'
+            # that has Unicode escape sequences (\u...) rather than binary escapes (\x...)
+            #
+            # OrientDB doesn't seem to support binary escapes, so we want the Unicode escapes
+            # but we want to ignore the leading 'u' that repr returns
+            return repr(value)[1:]
         elif value is None:
             return 'null'
         else:

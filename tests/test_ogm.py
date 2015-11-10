@@ -1,7 +1,7 @@
 import unittest
 import decimal
 import os.path
-from datetime import datetime
+from datetime import date, datetime
 
 from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
@@ -335,6 +335,16 @@ class OGMDateTimeTestCase(unittest.TestCase):
 
         assert returned_dt.at == at
 
+    def testDate(self):
+        g = self.g
+
+        at = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+        g.datetime.create(name='today', at=at.date())
+
+        returned_dt = g.datetime.query(name='today').one()
+
+        assert returned_dt.at == at
+
 
 UnicodeNode = declarative_node()
 
@@ -357,13 +367,13 @@ class OGMUnicodeTestCase(unittest.TestCase):
         g = self.g
 
         name = 'unicode test'
-        value = u'unicode value'
+        value = u'unicode value\u2017'
 
         g.unicode.create(name=name, value=value)
 
         returned_v = g.unicode.query(name=name).one()
 
-        assert returned_v.value == value
+        assert unicode(returned_v.value, encoding='utf-8') == value
 
 
 class OGMTestCase(unittest.TestCase):
