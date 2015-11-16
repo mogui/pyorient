@@ -308,7 +308,7 @@ class Graph(object):
 
     def create_vertex(self, vertex_cls, **kwargs):
         result = self.client.command(
-            str(self.create_vertex_command(vertex_cls, **kwargs)))[0]
+            unicode(self.create_vertex_command(vertex_cls, **kwargs)))[0]
 
         props = result.oRecordData
         return vertex_cls.from_graph(self, result._rid,
