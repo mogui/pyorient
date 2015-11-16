@@ -406,7 +406,7 @@ class Query(object):
 
     def build_wheres(self, params):
         kw_filters = params.get('kw_filters')
-        kw_where = [u' and '.join('{0}={1}'
+        kw_where = [u' and '.join(u'{0}={1}'
             .format(k, PropertyEncoder.encode(v))
                 for k,v in kw_filters.items())] if kw_filters else []
 
@@ -595,16 +595,16 @@ class Query(object):
         # This 'is not None' is important; don't want to implicitly call
         # __len__ (which invokes count()) on subquery.
         if self._subquery is not None:
-            src = '({})'.format(self._subquery)
+            src = u'({})'.format(self._subquery)
         else:
             src = self.source_name
 
         optional_string = ' '.join(optional_clauses)
         if props:
-            return 'SELECT {} FROM {} {}'.format(
+            return u'SELECT {} FROM {} {}'.format(
                 ','.join(props), src, optional_string)
         else:
-            return 'SELECT FROM {} {}'.format(src, optional_string)
+            return u'SELECT FROM {} {}'.format(src, optional_string)
 
 class TempParams(object):
     def __init__(self, params, **kwargs):
