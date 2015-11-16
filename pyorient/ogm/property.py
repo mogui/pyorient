@@ -85,12 +85,7 @@ class PropertyEncoder:
         elif isinstance(value, str):
             return repr(value)
         elif sys.version_info[0] < 3 and isinstance(value, unicode):
-            # repr will generate a value like u'...'
-            # that has Unicode escape sequences (\u...) rather than binary escapes (\x...)
-            #
-            # OrientDB doesn't seem to support binary escapes, so we want the Unicode escapes
-            # but we want to ignore the leading 'u' that repr returns
-            return repr(value)[1:]
+            return u'"{}"'.format(value.replace('"', '\\"'))
         elif value is None:
             return 'null'
         else:

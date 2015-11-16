@@ -319,18 +319,18 @@ class Graph(object):
 
         if kwargs:
             db_props = self.props_to_db(vertex_cls, kwargs)
-            set_clause = ' SET {}'.format(
-                ','.join('{}={}'.format(k,PropertyEncoder.encode(v))
+            set_clause = u' SET {}'.format(
+                u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
                          for k,v in db_props.items()))
         else:
-            set_clause = ''
+            set_clause = u''
 
         return CreateVertexCommand(
-            'CREATE VERTEX {}{}'.format(class_name, set_clause))
+            u'CREATE VERTEX {}{}'.format(class_name, set_clause))
 
     def create_edge(self, edge_cls, from_vertex, to_vertex, **kwargs):
         result = self.client.command(
-            str(self.create_edge_command(edge_cls
+            unicode(self.create_edge_command(edge_cls
                                      , from_vertex
                                      , to_vertex
                                      , **kwargs)))[0]
@@ -342,14 +342,14 @@ class Graph(object):
 
         if kwargs:
             db_props = self.props_to_db(vertex_cls, kwargs)
-            set_clause = ' SET {}'.format(
-                ','.join('{}={}'.format(k,PropertyEncoder.encode(v))
+            set_clause = u' SET {}'.format(
+                u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
                          for k,v in db_props.items()))
         else:
             set_clause = ''
 
         return CreateEdgeCommand(
-            'CREATE EDGE {} FROM {} TO {}{}'.format(
+            u'CREATE EDGE {} FROM {} TO {}{}'.format(
                 class_name, from_vertex._id, to_vertex._id, set_clause))
 
 
@@ -376,13 +376,13 @@ class Graph(object):
 
         if props:
             db_props = self.props_to_db(element_class, props)
-            set_clause = ' SET {}'.format(
-                ','.join('{}={}'.format(k,PropertyEncoder.encode(v))
+            set_clause = u' SET {}'.format(
+                u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
                          for k,v in db_props.items()))
         else:
             set_clause = ''
 
-        result = self.client.command('UPDATE {}{}'.format(elem_id, set_clause))
+        result = self.client.command(u'UPDATE {}{}'.format(elem_id, set_clause))
         return result and result[0] == b'1'
 
     def query(self, first_entity, *entities):
