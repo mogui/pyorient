@@ -88,6 +88,8 @@ class PropertyEncoder:
             return u'"{}"'.format(value.replace('"', '\\"'))
         elif value is None:
             return 'null'
+        elif isinstance(value, list):
+            return u'[{}]'.format(u','.join([PropertyEncoder.encode(v) for v in value]))
         else:
             # returning the same object will cause repr(value) to be used
 

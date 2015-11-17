@@ -9,7 +9,6 @@ from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import String, DateTime, Decimal, EmbeddedSet, Float, UUID
-
 from pyorient.ogm.what import expand, in_, out, distinct
 
 AnimalsNode = declarative_node()
@@ -349,15 +348,15 @@ class OGMDateTimeTestCase(unittest.TestCase):
 
 UnicodeNode = declarative_node()
 
+class UnicodeV(UnicodeNode):
+    element_type = 'unicode'
+    element_plural = 'unicode'
+
+    name = String(nullable=False, unique=True)
+    value = String(nullable=False)
+    alias = EmbeddedSet(linked_to=String(), nullable=True)
 
 class OGMUnicodeTestCase(unittest.TestCase):
-    class UnicodeV(UnicodeNode):
-        element_type = 'unicode'
-        element_plural = 'unicode'
-
-        name = String(nullable=False, unique=True)
-        value = String(nullable=False)
-
     def setUp(self):
         g = self.g = Graph(Config.from_url('test_unicode', 'root', 'root',
                                            initial_drop=True))
@@ -378,6 +377,18 @@ class OGMUnicodeTestCase(unittest.TestCase):
             assert unicode(returned_v.value, encoding='utf-8') == value
         else:
             assert returned_v.value == value
+
+    def testCommandEncoding(self):
+        g = self.g
+        name = u'unicode value\u2017'
+        aliases = [u'alias\u2017', u'alias\u2017 2']
+        cmd = g.create_vertex_command(UnicodeV, name=name, alias=aliases)
+        assert unicode(cmd) == (u'CREATE VERTEX unicode SET alias=["alias\u2017",'
+                                u'"alias\u2017 2"],name="unicode value\u2017"')
+        g.unicode.create(name=name, value=u'a', alias=aliases)
+
+        returned_v = g.unicode.query(name=name).one()
+        assert aliases == [a.decode('utf8') for a in returned_v.alias]
 
 
 class OGMTestCase(unittest.TestCase):
