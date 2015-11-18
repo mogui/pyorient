@@ -81,7 +81,7 @@ class PropertyEncoder:
         if isinstance(value, decimal.Decimal):
             return repr(str(value))
         elif isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
-            return '"{}"'.format(value)
+            return u'"{}"'.format(value)
         elif isinstance(value, str):
             return repr(value)
         elif sys.version_info[0] < 3 and isinstance(value, unicode):

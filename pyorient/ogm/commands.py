@@ -1,9 +1,12 @@
+from ..utils import to_str
+
+
 class CreateVertexCommand(object):
     def __init__(self, command_text):
         self.command_text = command_text
 
     def __str__(self):
-        return unicode(self).encode('utf8')
+        return to_str(self.__unicode__())
 
     def __unicode__(self):
         return u'{}'.format(self.command_text)
@@ -15,7 +18,7 @@ class CreateEdgeCommand(object):
         self.retries = None
 
     def __str__(self):
-        return unicode(self).encode('utf8')
+        return to_str(self.__unicode__())
 
     def __unicode__(self):
         if self.retries:

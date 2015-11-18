@@ -6,9 +6,9 @@ from .broker import get_broker
 from .query import Query
 from .batch import Batch
 from .commands import CreateVertexCommand, CreateEdgeCommand
+from ..utils import to_unicode
 
 import pyorient
-import json
 from collections import namedtuple
 
 ServerVersion = namedtuple('orientdb_version', ['major', 'minor', 'build'])
@@ -308,7 +308,7 @@ class Graph(object):
 
     def create_vertex(self, vertex_cls, **kwargs):
         result = self.client.command(
-            unicode(self.create_vertex_command(vertex_cls, **kwargs)))[0]
+            to_unicode(self.create_vertex_command(vertex_cls, **kwargs)))[0]
 
         props = result.oRecordData
         return vertex_cls.from_graph(self, result._rid,
@@ -330,7 +330,7 @@ class Graph(object):
 
     def create_edge(self, edge_cls, from_vertex, to_vertex, **kwargs):
         result = self.client.command(
-            unicode(self.create_edge_command(edge_cls
+            to_unicode(self.create_edge_command(edge_cls
                                      , from_vertex
                                      , to_vertex
                                      , **kwargs)))[0]

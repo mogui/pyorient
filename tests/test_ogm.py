@@ -2,7 +2,7 @@ import sys
 import unittest
 import decimal
 import os.path
-from datetime import date, datetime
+from datetime import datetime
 
 from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
@@ -459,4 +459,4 @@ if sys.version_info[0] < 3:
         return x.decode('utf-8')
 else:
     def to_unicode(x):
-        return x
+        return str(x)
