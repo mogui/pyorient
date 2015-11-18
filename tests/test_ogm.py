@@ -377,23 +377,22 @@ class OGMUnicodeTestCase(unittest.TestCase):
         g.unicode.create(name=name, value=value)
 
         returned_v = g.unicode.query(name=name).one()
-
-        if sys.version_info[0] < 3:
-            assert unicode(returned_v.value, encoding='utf-8') == value
-        else:
-            assert returned_v.value == value
+        assert to_unicode(returned_v.value) == value
 
     def testCommandEncoding(self):
         g = self.g
         name = u'unicode value\u2017'
         aliases = [u'alias\u2017', u'alias\u00c5 2']
         cmd = g.create_vertex_command(UnicodeV, name=name, alias=aliases)
-        assert unicode(cmd) == (u'CREATE VERTEX unicode SET alias=["alias\u2017",'
-                                u'"alias\u00c5 2"],name="unicode value\u2017"')
+
+        # to_unicode(str(x)) produces unicode correctly on both python 2 and 3
+        assert to_unicode(str(cmd)) == (u'CREATE VERTEX unicode SET alias=["alias\u2017",'
+                                        u'"alias\u00c5 2"],name="unicode value\u2017"')
+
         g.unicode.create(name=name, value=u'a', alias=aliases)
 
         returned_v = g.unicode.query(name=name).one()
-        assert set(aliases) == set([a.decode('utf-8') for a in returned_v.alias])
+        assert set(aliases) == set([to_unicode(a) for a in returned_v.alias])
 
 
 class OGMTestCase(unittest.TestCase):
@@ -453,3 +452,11 @@ class OGMEmbeddedTestCase(unittest.TestCase):
         result = g.emb_set.query(name=name2).one()
 
         self.assertSetEqual(alias2, set(result.alias))
+
+
+if sys.version_info[0] < 3:
+    def to_unicode(x):
+        return x.decode('utf-8')
+else:
+    def to_unicode(x):
+        return x
