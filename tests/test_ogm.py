@@ -367,7 +367,12 @@ class OGMUnicodeTestCase(unittest.TestCase):
         g = self.g
 
         name = 'unicode test'
-        value = u'unicode value\u2017'
+
+        # \u2017 = Double Low Line
+        # \u00c5 = Latin Capital Letter A With Ring Above
+        #          significant because python would like to represent this
+        #          as \xc5 rather than \u00c5, which OrientDB doesn't support
+        value = u'unicode value\u2017\u00c5'
 
         g.unicode.create(name=name, value=value)
 
@@ -381,14 +386,14 @@ class OGMUnicodeTestCase(unittest.TestCase):
     def testCommandEncoding(self):
         g = self.g
         name = u'unicode value\u2017'
-        aliases = [u'alias\u2017', u'alias\u2017 2']
+        aliases = [u'alias\u2017', u'alias\u00c5 2']
         cmd = g.create_vertex_command(UnicodeV, name=name, alias=aliases)
         assert unicode(cmd) == (u'CREATE VERTEX unicode SET alias=["alias\u2017",'
-                                u'"alias\u2017 2"],name="unicode value\u2017"')
+                                u'"alias\u00c5 2"],name="unicode value\u2017"')
         g.unicode.create(name=name, value=u'a', alias=aliases)
 
         returned_v = g.unicode.query(name=name).one()
-        assert set(aliases) == set([a.decode('utf8') for a in returned_v.alias])
+        assert set(aliases) == set([a.decode('utf-8') for a in returned_v.alias])
 
 
 class OGMTestCase(unittest.TestCase):
