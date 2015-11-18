@@ -388,7 +388,7 @@ class OGMUnicodeTestCase(unittest.TestCase):
         g.unicode.create(name=name, value=u'a', alias=aliases)
 
         returned_v = g.unicode.query(name=name).one()
-        assert aliases == [a.decode('utf8') for a in returned_v.alias]
+        assert set(aliases) == set([a.decode('utf8') for a in returned_v.alias])
 
 
 class OGMTestCase(unittest.TestCase):
