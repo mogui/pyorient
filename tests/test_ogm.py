@@ -383,10 +383,6 @@ class OGMUnicodeTestCase(unittest.TestCase):
         g = self.g
         name = u'unicode value\u2017'
         aliases = [u'alias\u2017', u'alias\u00c5 2']
-        cmd = g.create_vertex_command(UnicodeV, name=name, alias=aliases)
-
-        assert to_unicode(cmd) == (u'CREATE VERTEX unicode SET alias=["alias\u2017",'
-                                   u'"alias\u00c5 2"],name="unicode value\u2017"')
 
         g.unicode.create(name=name, value=u'a', alias=aliases)
 
