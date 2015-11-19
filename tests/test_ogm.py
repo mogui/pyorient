@@ -385,9 +385,8 @@ class OGMUnicodeTestCase(unittest.TestCase):
         aliases = [u'alias\u2017', u'alias\u00c5 2']
         cmd = g.create_vertex_command(UnicodeV, name=name, alias=aliases)
 
-        # to_unicode(str(x)) produces unicode correctly on both python 2 and 3
-        assert to_unicode(str(cmd)) == (u'CREATE VERTEX unicode SET alias=["alias\u2017",'
-                                        u'"alias\u00c5 2"],name="unicode value\u2017"')
+        assert to_unicode(cmd) == (u'CREATE VERTEX unicode SET alias=["alias\u2017",'
+                                   u'"alias\u00c5 2"],name="unicode value\u2017"')
 
         g.unicode.create(name=name, value=u'a', alias=aliases)
 
@@ -456,7 +455,7 @@ class OGMEmbeddedTestCase(unittest.TestCase):
 
 if sys.version_info[0] < 3:
     def to_unicode(x):
-        return x.decode('utf-8')
+        return str(x).decode('utf-8')
 else:
     def to_unicode(x):
         return str(x)

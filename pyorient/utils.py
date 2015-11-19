@@ -114,10 +114,10 @@ if sys.version < '3':
         return codecs.unicode_escape_decode(x)[0]
 
     def to_unicode(x):
-        return x.decode('utf-8')
+        return str(x).decode('utf-8')
 
     def to_str(x):
-        return x.encode('utf-8')
+        return unicode(x).encode('utf-8')
 else:
     def u(x):
         return x
