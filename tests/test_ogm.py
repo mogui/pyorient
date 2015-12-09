@@ -30,6 +30,7 @@ class Food(AnimalsNode):
 
 class Eats(AnimalsRelationship):
     label = 'eats'
+    modifier = String()
 
 class OGMAnimalsTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -73,9 +74,11 @@ class OGMAnimalsTestCase(unittest.TestCase):
 
         assert queried_pea == pea
 
-        rat_eats_pea = g.eats.create(queried_rat, queried_pea)
+        rat_eats_pea = g.eats.create(queried_rat, queried_pea, modifier='lots')
         mouse_eats_pea = g.eats.create(mouse, pea)
         mouse_eats_cheese = Eats.objects.create(mouse, cheese)
+
+        assert rat_eats_pea.modifier == 'lots'
 
         eaters = g.in_(Food, Eats)
         assert rat in eaters
