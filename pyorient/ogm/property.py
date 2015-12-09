@@ -1,9 +1,9 @@
 from .operators import Operand, ArithmeticMixin
 
 import sys
-import json
 import decimal
-from datetime import datetime
+import datetime
+
 
 class Property(Operand):
     num_instances = 0 # Basis for ordering property instances
@@ -80,15 +80,21 @@ class PropertyEncoder:
     def encode(value):
         if isinstance(value, decimal.Decimal):
             return repr(str(value))
-        elif isinstance(value, datetime):
-            return '"{}"'.format(value)
+        elif isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
+            return u'"{}"'.format(value)
         elif isinstance(value, str):
             return repr(value)
         elif sys.version_info[0] < 3 and isinstance(value, unicode):
-            return repr(value.encode('utf-8'))
+            return u'"{}"'.format(value.replace('"', '\\"'))
         elif value is None:
             return 'null'
+        elif isinstance(value, list) or isinstance(value, set):
+            return u'[{}]'.format(u','.join([PropertyEncoder.encode(v) for v in value]))
         else:
+            # returning the same object will cause repr(value) to be used
+
+            # TODO: perhaps add more conversions, unclear if pyorient works for embedded maps
+
             return value
 
 class Boolean(Property):
