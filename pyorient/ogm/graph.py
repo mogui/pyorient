@@ -611,6 +611,12 @@ class Graph(object):
             if hasattr(classes, '__iter__') and not isinstance(classes, str) \
             else getattr(classes, 'registry_name', classes)
 
+    @staticmethod
+    def coerce_class_names_to_quoted(classes):
+        """Get the quoted class name(s) for vertexes/edges. Useful when passing them to some operators"""
+        names = Graph.coerce_class_names(classes)
+        return [repr(name) for name in names] if names else []
+
     def init_broker_for_class(self, cls):
         broker = get_broker(cls)
         if broker:
