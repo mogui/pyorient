@@ -474,13 +474,10 @@ class Graph(object):
         :param from_: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT outE({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(from_)))
-        return [self.get_edge(e) for e in records[0].oRecordData['outE']] \
+        records = self.client.query('SELECT EXPAND( outE({0}) ) FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(from_)), -1)
+        return [self.edge_from_record(r) for r in records] \
             if records else []
 
     def inE(self, to, *edge_classes):
@@ -489,12 +486,10 @@ class Graph(object):
         :param to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT inE({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(to)))
-        return [self.get_edge(e) for e in records[0].oRecordData['inE']] \
+        records = self.client.query('SELECT EXPAND( inE({0}) ) FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(to)), -1)
+        return [self.edge_from_record(r) for r in records] \
             if records else []
 
     def bothE(self, from_to, *edge_classes):
@@ -503,13 +498,10 @@ class Graph(object):
         :param from_to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT bothE({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(from_to)))
-        return [self.get_edge(e) for e in records[0].oRecordData['bothE']] \
+        records = self.client.query('SELECT EXPAND( bothE({0}) ) FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(from_to)), -1)
+        return [self.edge_from_record(r) for r in records] \
             if records else []
 
     def out(self, from_, *edge_classes):
@@ -518,13 +510,10 @@ class Graph(object):
         :param from_: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT out({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(from_)))
-        return [self.get_vertex(v) for v in records[0].oRecordData['out']] \
+        records = self.client.query('SELECT EXPAND( out({0}) ) FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(from_)), -1)
+        return [self.vertex_from_record(v) for v in records] \
             if records else []
 
     def in_(self, to, *edge_classes):
@@ -533,13 +522,10 @@ class Graph(object):
         :param to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT in({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(to)))
-        return [self.get_vertex(v) for v in records[0].oRecordData['in']] \
+        records = self.client.query('SELECT EXPAND( in({0}) ) FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(to)), -1)
+        return [self.vertex_from_record(v) for v in records] \
             if records else []
 
     def both(self, from_to, *edge_classes):
@@ -548,13 +534,10 @@ class Graph(object):
         :param from_to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT both({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(from_to)))
-        return [self.get_vertex(v) for v in records[0].oRecordData['both']] \
+        records = self.client.query('SELECT EXPAND( both({0}) )FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(from_to)), -1)
+        return [self.vertex_from_record(v) for v in records] \
             if records else []
 
     # The following mostly intended for internal use
