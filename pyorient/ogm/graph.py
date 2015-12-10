@@ -467,7 +467,7 @@ class Graph(object):
         :param from_to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-        records = self.client.query('SELECT EXPAND( both({0}) )FROM {1}'
+        records = self.client.query('SELECT EXPAND( both({0}) ) FROM {1}'
             .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
                     , self.coerce_class_names(from_to)), -1)
         return [self.vertex_from_record(v) for v in records] \
