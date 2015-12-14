@@ -1,3 +1,4 @@
+import sys
 import unittest
 import decimal
 import os.path
@@ -7,8 +8,7 @@ from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
-from pyorient.ogm.property import String, DateTime, Decimal, Float, UUID
-
+from pyorient.ogm.property import String, DateTime, Decimal, EmbeddedSet, Float, UUID
 from pyorient.ogm.what import expand, in_, out, distinct
 
 AnimalsNode = declarative_node()
@@ -335,18 +335,28 @@ class OGMDateTimeTestCase(unittest.TestCase):
 
         assert returned_dt.at == at
 
+    def testDate(self):
+        g = self.g
+
+        at = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
+        g.datetime.create(name='today', at=at.date())
+
+        returned_dt = g.datetime.query(name='today').one()
+
+        assert returned_dt.at == at
+
 
 UnicodeNode = declarative_node()
 
+class UnicodeV(UnicodeNode):
+    element_type = 'unicode'
+    element_plural = 'unicode'
+
+    name = String(nullable=False, unique=True)
+    value = String(nullable=False)
+    alias = EmbeddedSet(linked_to=String(), nullable=True)
 
 class OGMUnicodeTestCase(unittest.TestCase):
-    class UnicodeV(UnicodeNode):
-        element_type = 'unicode'
-        element_plural = 'unicode'
-
-        name = String(nullable=False, unique=True)
-        value = String(nullable=False)
-
     def setUp(self):
         g = self.g = Graph(Config.from_url('test_unicode', 'root', 'root',
                                            initial_drop=True))
@@ -357,13 +367,27 @@ class OGMUnicodeTestCase(unittest.TestCase):
         g = self.g
 
         name = 'unicode test'
-        value = u'unicode value'
+
+        # \u2017 = Double Low Line
+        # \u00c5 = Latin Capital Letter A With Ring Above
+        #          significant because python would like to represent this
+        #          as \xc5 rather than \u00c5, which OrientDB doesn't support
+        value = u'unicode value\u2017\u00c5'
 
         g.unicode.create(name=name, value=value)
 
         returned_v = g.unicode.query(name=name).one()
+        assert to_unicode(returned_v.value) == value
 
-        assert returned_v.value == value
+    def testCommandEncoding(self):
+        g = self.g
+        name = u'unicode value\u2017'
+        aliases = [u'alias\u2017', u'alias\u00c5 2']
+
+        g.unicode.create(name=name, value=u'a', alias=aliases)
+
+        returned_v = g.unicode.query(name=name).one()
+        assert set(aliases) == set([to_unicode(a) for a in returned_v.alias])
 
 
 class OGMTestCase(unittest.TestCase):
@@ -380,3 +404,54 @@ class OGMTestCase(unittest.TestCase):
         for conf in configs:
             # the following line should not raise errors
             Graph(Config.from_url(conf, 'root', 'root', initial_drop=True))
+
+
+EmbeddedNode = declarative_node()
+
+
+class OGMEmbeddedTestCase(unittest.TestCase):
+    class EmbeddedSetV(EmbeddedNode):
+        element_type = 'emb_set'
+        element_plural = 'emb_set'
+
+        name = String(nullable=False, unique=True)
+        alias = EmbeddedSet(nullable=False)
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('test_embedded', 'root', 'root',
+                                           initial_drop=True))
+
+        g.create_all(EmbeddedNode.registry)
+
+    def testEmbeddedSetCreate(self):
+        g = self.g
+
+        # OrientDB currently has a bug that allows identical entries in EmbeddedSet:
+        # https://github.com/orientechnologies/orientdb/issues/3601
+        # This is not planned to be fixed until v3.0, so tolerate data
+        # returned as a list, and turn it to a set before the check for convenience
+
+        name = 'embed'
+        alias = ['implant', 'lodge', 'place']
+
+        g.emb_set.create(name=name, alias=alias)
+        result = g.emb_set.query(name=name).one()
+
+        self.assertSetEqual(set(alias), set(result.alias))
+
+        # now try the same operation, but pass a set instead of a list
+        name2 = 'embed2'
+        alias2 = set(alias)
+
+        g.emb_set.create(name=name2, alias=alias2)
+        result = g.emb_set.query(name=name2).one()
+
+        self.assertSetEqual(alias2, set(result.alias))
+
+
+if sys.version_info[0] < 3:
+    def to_unicode(x):
+        return str(x).decode('utf-8')
+else:
+    def to_unicode(x):
+        return str(x)
