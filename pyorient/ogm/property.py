@@ -90,11 +90,14 @@ class PropertyEncoder:
             return 'null'
         elif isinstance(value, list) or isinstance(value, set):
             return u'[{}]'.format(u','.join([PropertyEncoder.encode(v) for v in value]))
+        elif isinstance(value, dict):
+            contents = u','.join([
+                '{}: {}'.format(PropertyEncoder.encode(k), PropertyEncoder.encode(v))
+                for k, v in value.items()
+            ])
+            return u'{{ {} }}'.format(contents)
         else:
             # returning the same object will cause repr(value) to be used
-
-            # TODO: perhaps add more conversions, unclear if pyorient works for embedded maps
-
             return value
 
 class Boolean(Property):
