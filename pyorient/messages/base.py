@@ -4,7 +4,7 @@ import struct
 import sys
 
 from ..exceptions import PyOrientBadMethodCallException, \
-    PyOrientCommandException
+    PyOrientCommandException, PyOrientNullRecordException
 from ..otypes import OrientRecord, OrientRecordLink
 
 from ..hexdump import hexdump
@@ -448,13 +448,13 @@ class BaseMessage(object):
             (0:short)(record-type:byte)(cluster-id:short)
             (cluster-position:long)(record-version:int)(record-content:bytes)
 
-        :raise: Exception
+        :raise: PyOrientNullRecordException
         :return: OrientRecordLink,OrientRecord
         """
         marker = self._decode_field( FIELD_SHORT )  # marker
 
         if marker is -2:
-            raise Exception('NULL Record')
+            raise PyOrientNullRecordException('NULL Record', [])
         elif marker is -3:
             res = OrientRecordLink( self._decode_field( FIELD_TYPE_LINK ) )
         else:
