@@ -59,6 +59,8 @@ class OGMAnimalsTestCase(unittest.TestCase):
 
         queried_mouse = g.query(mouse).one()
         assert mouse == queried_mouse
+        assert mouse == g.get_vertex(mouse._id)
+        assert mouse == g.get_element(mouse._id)
 
         try:
             rat2 = g.animals.create(name='rat', specie='rodent')
@@ -79,6 +81,8 @@ class OGMAnimalsTestCase(unittest.TestCase):
         mouse_eats_cheese = Eats.objects.create(mouse, cheese)
 
         assert rat_eats_pea.modifier == 'lots'
+        assert rat_eats_pea == g.get_edge(rat_eats_pea._id)
+        assert rat_eats_pea == g.get_element(rat_eats_pea._id)
 
         eaters = g.in_(Food, Eats)
         assert rat in eaters
