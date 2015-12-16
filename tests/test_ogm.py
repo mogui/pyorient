@@ -8,7 +8,7 @@ from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
-from pyorient.ogm.property import String, DateTime, Decimal, EmbeddedSet, Float, UUID
+from pyorient.ogm.property import String, DateTime, Decimal, EmbeddedMap, EmbeddedSet, Float, UUID
 from pyorient.ogm.what import expand, in_, out, distinct
 
 AnimalsNode = declarative_node()
@@ -30,6 +30,7 @@ class Food(AnimalsNode):
 
 class Eats(AnimalsRelationship):
     label = 'eats'
+    modifier = String()
 
 class OGMAnimalsTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -73,9 +74,11 @@ class OGMAnimalsTestCase(unittest.TestCase):
 
         assert queried_pea == pea
 
-        rat_eats_pea = g.eats.create(queried_rat, queried_pea)
+        rat_eats_pea = g.eats.create(queried_rat, queried_pea, modifier='lots')
         mouse_eats_pea = g.eats.create(mouse, pea)
         mouse_eats_cheese = Eats.objects.create(mouse, cheese)
+
+        assert rat_eats_pea.modifier == 'lots'
 
         eaters = g.in_(Food, Eats)
         assert rat in eaters
@@ -417,6 +420,13 @@ class OGMEmbeddedTestCase(unittest.TestCase):
         name = String(nullable=False, unique=True)
         alias = EmbeddedSet(nullable=False)
 
+    class EmbeddedMapV(EmbeddedNode):
+        element_type = 'emb_map'
+        element_plural = 'emb_map'
+
+        name = String(nullable=False, unique=True)
+        children = EmbeddedMap()
+
     def setUp(self):
         g = self.g = Graph(Config.from_url('test_embedded', 'root', 'root',
                                            initial_drop=True))
@@ -447,6 +457,19 @@ class OGMEmbeddedTestCase(unittest.TestCase):
         result = g.emb_set.query(name=name2).one()
 
         self.assertSetEqual(alias2, set(result.alias))
+
+    def testEmbeddedMapCreate(self):
+        g = self.g
+
+        name = 'embed_map'
+        children = {u'abc': u'def', 'x': 1}
+
+        g.emb_map.create(name=name, children=children)
+        result = g.emb_map.query(name=name).one()
+
+        # if dicts A and B are subsets of each other, then they are the same dict (by value)
+        self.assertDictContainsSubset(result.children, children)
+        self.assertDictContainsSubset(children, result.children)
 
 
 if sys.version_info[0] < 3:

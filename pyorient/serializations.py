@@ -518,6 +518,7 @@ class OrientSerializationCSV(object):
 
         return [OrientBinaryObject(collected), content[( i + 1 ):]]
 
+    @staticmethod
     def _parse_binary(content):
         """
           Consume a binary field.

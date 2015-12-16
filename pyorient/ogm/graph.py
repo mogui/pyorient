@@ -342,7 +342,7 @@ class Graph(object):
         class_name = edge_cls.registry_name
 
         if kwargs:
-            db_props = self.props_to_db(vertex_cls, kwargs)
+            db_props = self.props_to_db(edge_cls, kwargs)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
                          for k,v in db_props.items()))
