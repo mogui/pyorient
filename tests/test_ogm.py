@@ -52,7 +52,7 @@ class OGMAnimalsTestCase(unittest.TestCase):
         self.g = None
 
     def setUp(self):
-        g = self.g = Graph(Config.from_url('animals', 'admin', 'admin'
+        g = self.g = Graph(Config.from_url('animals', 'root', 'root',
                                            , initial_drop=True))
 
         g.create_all(AnimalsNode.registry)
@@ -207,7 +207,7 @@ class OGMMoneyTestCase(unittest.TestCase):
         self.g = None
 
     def setUp(self):
-        g = self.g = Graph(Config.from_url('money', 'admin', 'admin'
+        g = self.g = Graph(Config.from_url('money', 'root', 'root'
                                            , initial_drop=True))
 
         g.create_all(MoneyNode.registry)
@@ -313,7 +313,7 @@ class OGMClassTestCase(unittest.TestCase):
         self.g = None
 
     def setUp(self):
-        g = self.g = Graph(Config.from_url('classes', 'admin', 'admin'
+        g = self.g = Graph(Config.from_url('classes', 'root', 'root'
                                            , initial_drop=True))
 
     def testGraph(self):
@@ -349,7 +349,7 @@ class OGMDateTimeTestCase(unittest.TestCase):
         at = DateTime(nullable=False)
 
     def setUp(self):
-        g = self.g = Graph(Config.from_url('test_datetime', 'admin', 'admin',
+        g = self.g = Graph(Config.from_url('test_datetime', 'root', 'root',
                                            initial_drop=True))
 
         g.create_all(DateTimeNode.registry)
@@ -390,7 +390,7 @@ class UnicodeV(UnicodeNode):
 
 class OGMUnicodeTestCase(unittest.TestCase):
     def setUp(self):
-        g = self.g = Graph(Config.from_url('test_unicode', 'admin', 'admin',
+        g = self.g = Graph(Config.from_url('test_unicode', 'root', 'root',
                                            initial_drop=True))
 
         g.create_all(UnicodeNode.registry)
@@ -435,7 +435,7 @@ class OGMTestCase(unittest.TestCase):
 
         for conf in configs:
             # the following line should not raise errors
-            Graph(Config.from_url(conf, 'admin', 'admin', initial_drop=True))
+            Graph(Config.from_url(conf, 'root', 'root', initial_drop=True))
 
 
 EmbeddedNode = declarative_node()
@@ -457,7 +457,7 @@ class OGMEmbeddedTestCase(unittest.TestCase):
         children = EmbeddedMap()
 
     def setUp(self):
-        g = self.g = Graph(Config.from_url('test_embedded', 'admin', 'admin',
+        g = self.g = Graph(Config.from_url('test_embedded', 'root', 'root',
                                            initial_drop=True))
 
         g.create_all(EmbeddedNode.registry)
