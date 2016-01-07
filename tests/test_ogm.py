@@ -53,7 +53,7 @@ class OGMAnimalsTestCase(unittest.TestCase):
 
     def setUp(self):
         g = self.g = Graph(Config.from_url('animals', 'root', 'root',
-                                           , initial_drop=True))
+                                           initial_drop=True))
 
         g.create_all(AnimalsNode.registry)
         g.create_all(AnimalsRelationship.registry)
