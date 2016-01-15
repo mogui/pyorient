@@ -693,12 +693,13 @@ class Graph(object):
     @staticmethod
     def toposort_classes(classes):
         """Sort class metadatas so that a superclass is always before the subclass"""
-        def get_class_topolist(class_name, name_to_class, processed_classes):
+        def get_class_topolist(class_name, name_to_class, processed_classes, current_trace):
             """Return a topologically sorted list of this class's dependencies and class itself
 
             :param class_name: name of the class to process
             :param name_to_class: a map from class name to the descriptor
             :param processed_classes: a set of classes that have already been processed
+            :param current_trace: list of classes traversed during the recursion.
 
             :returns: element of classes list sorted in topological order
             """
@@ -706,7 +707,9 @@ class Graph(object):
             if class_name in processed_classes:
                 return []
 
-            processed_classes.add(class_name)
+            if class_name in current_trace:
+                raise AssertionError(
+                    'Dependency loop detected between classes {}'.format(repr(current_trace)))
 
             cls = name_to_class[class_name]
             # Collect the dependency classes
@@ -720,11 +723,15 @@ class Graph(object):
 
             class_list = []
             # Recursively process superclasses
+            current_trace.append(class_name)
             for dependency in dependencies:
-                class_list.extend(get_class_topolist(dependency, name_to_class, processed_classes))
-
+                class_list.extend(get_class_topolist(
+                    dependency, name_to_class, processed_classes, current_trace))
+            current_trace.pop()
             # Do the bookkeeping
             class_list.append(name_to_class[class_name])
+            processed_classes.add(class_name)
+
             return class_list
 
         # Map names to classes
@@ -733,5 +740,5 @@ class Graph(object):
 
         toposorted = []
         for name in name_to_class.keys():
-            toposorted.extend(get_class_topolist(name, name_to_class, seen_classes))
+            toposorted.extend(get_class_topolist(name, name_to_class, seen_classes, []))
         return toposorted

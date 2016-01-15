@@ -548,12 +548,13 @@ class OGMToposortTestCase(unittest.TestCase):
         assert OGMToposortTestCase.before(toposorted, 'B', 'D')
         assert OGMToposortTestCase.before(toposorted, 'H', 'G')
 
-    def testStops(self):
+    def testInfiniteLoop(self):
         # Make sure that this at least stops in case of an infinite loop
-        toposorted = Graph.toposort_classes([
-            { 'name': 'A', 'superClasses': ['B']},
-            { 'name': 'B', 'superClasses': ['A']}
-        ])
+        with self.assertRaises(AssertionError):
+            toposorted = Graph.toposort_classes([
+                { 'name': 'A', 'superClasses': ['B']},
+                { 'name': 'B', 'superClasses': ['A']}
+            ])
 
 
 HardwareNode = declarative_node()
