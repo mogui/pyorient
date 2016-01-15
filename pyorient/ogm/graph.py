@@ -195,7 +195,7 @@ class Graph(object):
            Useful in preparation for reloading mapping classes from the database
         """
         # Start by removing broker classes from attrs (reverse of init_broker_for_class)
-        for k, cls in self.registry.iteritems():
+        for k, cls in self.registry.items():
             broker_name = getattr(cls, 'registry_plural', None)
             if (broker_name and not getattr(cls, 'no_graph_broker', False) and
                     hasattr(self, broker_name)):
