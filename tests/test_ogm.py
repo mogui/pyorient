@@ -4,11 +4,13 @@ import decimal
 import os.path
 from datetime import datetime
 
+from pyorient import PyOrientCommandException
 from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
-from pyorient.ogm.property import String, DateTime, Decimal, EmbeddedMap, EmbeddedSet, Float, UUID
+from pyorient.ogm.property import (
+    String, DateTime, Decimal, EmbeddedMap, EmbeddedSet, Float, Link, UUID)
 from pyorient.ogm.what import expand, in_, out, distinct
 
 AnimalsNode = declarative_node()
@@ -146,6 +148,8 @@ def get_colored_eaten_foods(animal, color) {
         assert zombie.specie == 'undead'
 
 
+    def testRegistry(self):
+        g = self.g
         schema_registry = g.build_mapping(AnimalsNode, AnimalsRelationship, auto_plural=True)
         assert all(c in schema_registry for c in ['animal', 'food', 'eats'])
 
@@ -154,7 +158,25 @@ def get_colored_eaten_foods(animal, color) {
         # Plurals not communicated to schema; postprocess registry before
         # include() if you have a better solution than auto_plural.
         assert schema_registry['food'].registry_plural != Food.registry_plural
+        g.clear_registry()
+        assert len(g.registry) == 0
+        g.include(schema_registry)
+        assert set(g.registry.keys()) == set(['animal', 'food', 'eats'])
 
+        rat = g.animal.create(name='rat', specie='rodent')
+        mouse = g.animal.create(name='mouse', specie='rodent')
+        rat_class = g.registry['animal']
+        queried_rat = g.query(rat_class).filter(
+            rat_class.name.endswith('at') | (rat_class.name == 'tiger')).one()
+
+        assert rat == queried_rat
+
+        # try again, to make sure that brokers get cleared correctly
+        schema_registry = g.build_mapping(
+            declarative_node(), declarative_relationship(), auto_plural=True)
+        g.clear_registry()
+        g.include(schema_registry)
+        assert set(g.registry.keys()) == set(['animal', 'food', 'eats'])
 
 
 MoneyNode = declarative_node()
@@ -363,6 +385,7 @@ class UnicodeV(UnicodeNode):
     value = String(nullable=False)
     alias = EmbeddedSet(linked_to=String(), nullable=True)
 
+
 class OGMUnicodeTestCase(unittest.TestCase):
     def setUp(self):
         g = self.g = Graph(Config.from_url('test_unicode', 'root', 'root',
@@ -482,3 +505,100 @@ if sys.version_info[0] < 3:
 else:
     def to_unicode(x):
         return str(x)
+
+
+class OGMToposortTestCase(unittest.TestCase):
+    @staticmethod
+    def before(classes, bf, aft):
+        """Test if bf is before aft in the classes list
+
+            Does not check if both exist
+        """
+        for c in classes:
+            if c['name'] == bf:
+                return True
+            if c['name'] == aft:
+                return False
+        return False
+
+    def testToposort(self):
+        toposorted = Graph.toposort_classes([
+            { 'name': 'A', 'superClasses': None},
+            { 'name': 'B', 'superClasses': None},
+            { 'name': 'C', 'superClasses': ['B']},
+            { 'name': 'D', 'superClasses': ['E', 'F']},
+            { 'name': 'E', 'superClasses': None},
+            { 'name': 'F', 'superClasses': ['B']},
+            { 'name': 'G', 'superClasses': None, 'properties': [{'linkedClass': 'H'}]},
+            { 'name': 'H', 'superClasses': None}
+        ])
+
+        assert set([c['name'] for c in toposorted]) == set(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])
+        assert OGMToposortTestCase.before(toposorted, 'B', 'C')
+        assert OGMToposortTestCase.before(toposorted, 'B', 'C')
+        assert OGMToposortTestCase.before(toposorted, 'E', 'D')
+        assert OGMToposortTestCase.before(toposorted, 'F', 'D')
+        assert OGMToposortTestCase.before(toposorted, 'B', 'F')
+        assert OGMToposortTestCase.before(toposorted, 'B', 'D')
+        assert OGMToposortTestCase.before(toposorted, 'H', 'G')
+
+    def testStops(self):
+        # Make sure that this at least stops in case of an infinite loop
+        toposorted = Graph.toposort_classes([
+            { 'name': 'A', 'superClasses': ['B']},
+            { 'name': 'B', 'superClasses': ['A']}
+        ])
+
+
+HardwareNode = declarative_node()
+HardwareRelationship = declarative_relationship()
+
+class CPU(HardwareNode):
+    element_plural = 'cpu'
+    name = String(nullable=False)
+
+class Manufacturer(HardwareNode):
+    element_plural = 'manufacturer'
+    name = String(nullable=False)
+
+class Manufactures(HardwareRelationship):
+    label = 'manufactures'
+    out_ = Link(linked_to=Manufacturer)
+    in_ = Link(linked_to=CPU)
+
+
+class OGMTypedEdgeTestCase(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMTypedEdgeTestCase, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('hardware', 'root', 'root'
+                                           , initial_drop=True))
+
+        g.create_all(HardwareNode.registry)
+        g.create_all(HardwareRelationship.registry)
+
+    def testConstraints(self):
+        g = self.g
+        pentium = g.cpu.create(name='Pentium')
+        intel = g.manufacturer.create(name='Intel')
+
+        # Now the constraints are enforced
+        with self.assertRaises(PyOrientCommandException):
+            g.manufactures.create(pentium, pentium)
+
+        g.manufactures.create(intel, pentium)
+        loaded_pentium = g.manufacturer.query().what(expand(distinct(out(Manufactures)))).all()
+        assert loaded_pentium == [pentium]
+
+    def testRegistryLoading(self):
+        g = self.g
+
+        database_registry = g.build_mapping(declarative_node(), declarative_relationship(), auto_plural=True)
+        g.clear_registry()
+        g.include(database_registry)
+
+        manufactures_cls = g.registry['manufactures']
+        assert type(manufactures_cls.in_) == Link
+        assert manufactures_cls.in_.linked_to == g.registry['cpu']
