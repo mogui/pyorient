@@ -139,14 +139,15 @@ class Graph(object):
             ' \'ORIDs\', \'OUser\', \'OIdentity\', \'OSchedule\', \'OFunction\']')
 
         def resolve_class(name, registries):
-            for r in registry:
+            for r in registries:
                 if name in registry:
                     return registry[name]
             return None
 
         # We need to topologically sort classes, since we cannot rely on any ordering
         # in the database. In particular defaultClusterId is set to -1 for all abstract
-        # classes
+        # classes. Additionally, superclass(es) can be changed post-create, changing the
+        # dependency ordering.
         schema = Graph.toposort_classes([c.oRecordData for c in schema])
         registries = [registry, self.registry]
 
@@ -702,7 +703,7 @@ class Graph(object):
             :returns: element of classes list sorted in topological order
             """
             # Check if this class has already been handled
-            if class_name in seen_classes:
+            if class_name in processed_classes:
                 return []
 
             processed_classes.add(class_name)

@@ -34,17 +34,23 @@ class Eats(AnimalsRelationship):
     label = 'eats'
     modifier = String()
 
-class OGMAnimalsTestCase(unittest.TestCase):
+
+class OGMAnimalsTestCaseBase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
-        super(OGMAnimalsTestCase, self).__init__(*args, **kwargs)
+        super(OGMAnimalsTestCaseBase, self).__init__(*args, **kwargs)
         self.g = None
 
     def setUp(self):
-        g = self.g = Graph(Config.from_url('animals', 'root', 'root'
+        self.g = Graph(Config.from_url('animals', 'root', 'root'
                                            , initial_drop=True))
 
+        g = self.g
         g.create_all(AnimalsNode.registry)
         g.create_all(AnimalsRelationship.registry)
+
+class OGMAnimalsTestCase(OGMAnimalsTestCaseBase):
+    def __init__(self, *args, **kwargs):
+        super(OGMAnimalsTestCase, self).__init__(*args, **kwargs)
 
     def testGraph(self):
         assert len(AnimalsNode.registry) == 2
@@ -148,9 +154,10 @@ def get_colored_eaten_foods(animal, color) {
         assert zombie.specie == 'undead'
 
 
+class OGMAnimalsRegistryTestCase(OGMAnimalsTestCaseBase):
     def testRegistry(self):
         g = self.g
-        schema_registry = g.build_mapping(AnimalsNode, AnimalsRelationship, auto_plural=True)
+        schema_registry = g.build_mapping(declarative_node(), declarative_relationship(), auto_plural=True)
         assert all(c in schema_registry for c in ['animal', 'food', 'eats'])
 
         assert type(schema_registry['animal'].specie) == String
@@ -535,7 +542,6 @@ class OGMToposortTestCase(unittest.TestCase):
 
         assert set([c['name'] for c in toposorted]) == set(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])
         assert OGMToposortTestCase.before(toposorted, 'B', 'C')
-        assert OGMToposortTestCase.before(toposorted, 'B', 'C')
         assert OGMToposortTestCase.before(toposorted, 'E', 'D')
         assert OGMToposortTestCase.before(toposorted, 'F', 'D')
         assert OGMToposortTestCase.before(toposorted, 'B', 'F')
@@ -553,13 +559,16 @@ class OGMToposortTestCase(unittest.TestCase):
 HardwareNode = declarative_node()
 HardwareRelationship = declarative_relationship()
 
+
 class CPU(HardwareNode):
     element_plural = 'cpu'
     name = String(nullable=False)
 
+
 class Manufacturer(HardwareNode):
     element_plural = 'manufacturer'
     name = String(nullable=False)
+
 
 class Manufactures(HardwareRelationship):
     label = 'manufactures'
@@ -595,7 +604,8 @@ class OGMTypedEdgeTestCase(unittest.TestCase):
     def testRegistryLoading(self):
         g = self.g
 
-        database_registry = g.build_mapping(declarative_node(), declarative_relationship(), auto_plural=True)
+        database_registry = g.build_mapping(
+            declarative_node(), declarative_relationship(), auto_plural=True)
         g.clear_registry()
         g.include(database_registry)
 
