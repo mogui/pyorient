@@ -124,8 +124,8 @@ class Graph(object):
 
         Returns a registry suitable for passing to include()
 
-        :param vertex: Base class for vertexes
-        :param edge: Base class for edges
+        :param vertex: Base class for vertexes. Always pass new declarative_node.
+        :param edge: Base class for edges. Always pass new declarative_relationship.
         :param auto_plural: If True, will automatically set registry_plural
         on classes. For convenience when include() should set brokers.
         """
