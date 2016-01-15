@@ -139,20 +139,20 @@ class Decimal(Property, ArithmeticMixin):
 class Embedded(Property):
     pass
 
-class Link(Property):
-    pass
-
 class LinkedClassProperty(Property):
     def __init__(self, linked_to=None, name=None, default=None,
                  nullable=True, unique=False, indexed=False,
                  mandatory=False, readonly=False):
-        """Create a property representing a collection of entries.
+        """Create a property representing a collection of entries or a link.
 
         :param linked_to: Entry type; optional, as per 'CREATE PROPERTY' syntax
         """
         super(LinkedClassProperty, self).__init__(
             name, nullable, default, indexed, unique, mandatory, readonly)
         self.linked_to = linked_to
+
+class Link(LinkedClassProperty):
+    pass
 
 class LinkList(LinkedClassProperty):
     pass

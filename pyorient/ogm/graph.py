@@ -1,5 +1,6 @@
 from .property import *
 from .exceptions import ReservedWordError
+from .declarative import DeclarativeType
 from .vertex import Vertex
 from .edge import Edge
 from .broker import get_broker
@@ -123,8 +124,8 @@ class Graph(object):
 
         Returns a registry suitable for passing to include()
 
-        :param vertex: Base class for vertexes
-        :param edge: Base class for edges
+        :param vertex: Base class for vertexes. Always pass new declarative_node.
+        :param edge: Base class for edges. Always pass new declarative_relationship.
         :param auto_plural: If True, will automatically set registry_plural
         on classes. For convenience when include() should set brokers.
         """
@@ -135,28 +136,51 @@ class Graph(object):
         schema = self.client.command(
             'SELECT FROM (SELECT expand(classes) FROM metadata:schema)'
             ' WHERE name NOT IN [\'ORole\', \'ORestricted\', \'OTriggered\','
-            ' \'ORIDs\', \'OUser\', \'OIdentity\', \'OSchedule\','
-            ' \'OFunction\'] ORDER BY defaultClusterId')
+            ' \'ORIDs\', \'OUser\', \'OIdentity\', \'OSchedule\', \'OFunction\']')
 
-        for c in schema:
-            class_def = c.oRecordData
+        def resolve_class(name, registries):
+            for r in registries:
+                if name in registry:
+                    return registry[name]
+            return None
 
+        # We need to topologically sort classes, since we cannot rely on any ordering
+        # in the database. In particular defaultClusterId is set to -1 for all abstract
+        # classes. Additionally, superclass(es) can be changed post-create, changing the
+        # dependency ordering.
+        schema = Graph.toposort_classes([c.oRecordData for c in schema])
+        registries = [registry, self.registry]
+
+        for class_def in schema:
             sup = class_def['superClass']
             if sup is not None:
                 base_names = class_def.get('superClasses', [sup])
                 bases = tuple(
-                    vertex if b == 'V' else edge if b == 'E'
-                        else registry[b] if b in registry
-                        else self.registry[b]
+                    vertex if b == 'V' else edge if b == 'E' else resolve_class(b, registries)
                     for b in base_names
                         if b == 'V' or b == 'E'
                         or b in registry or b in self.registry)
                 class_name = class_def['name']
 
                 if bases:
-                    props = { p['name']:self.property_from_schema(p)
-                                for p in class_def['properties'] }
+                    props = {}
+
                     props['decl_type'] = bases[0].decl_type
+
+                    for p in class_def['properties']:
+                        linked_class = None
+                        if 'linkedClass' in p:
+                            linked_class = resolve_class(p['linkedClass'], registries)
+
+                        prop_name = p['name']
+                        # Special-case in property, mainly on edges
+                        if props['decl_type'] == DeclarativeType.Edge:
+                            if p['name'] == 'in':
+                                prop_name = 'in_'
+                            elif p['name'] == 'out':
+                                prop_name = 'out_'
+
+                        props[prop_name] = self.property_from_schema(p, linked_class)
 
                     if auto_plural:
                         props['registry_plural'] = class_name
@@ -164,6 +188,22 @@ class Graph(object):
                     registry[class_name] = mc(class_name, bases, props)
 
         return registry
+
+    def clear_registry(self):
+        """Clear the registry and associated brokers.
+
+           Useful in preparation for reloading mapping classes from the database
+        """
+        # Start by removing broker classes from attrs (reverse of init_broker_for_class)
+        for k, cls in self.registry.items():
+            broker_name = getattr(cls, 'registry_plural', None)
+            if (broker_name and not getattr(cls, 'no_graph_broker', False) and
+                    hasattr(self, broker_name)):
+                delattr(self, broker_name)
+
+        self.registry = {}
+        self.props_from_db = {}
+
 
     def create_class(self, cls):
         """Add vertex or edge class to database.
@@ -210,6 +250,13 @@ class Graph(object):
                 db_to_element[prop_name] = prop_name
 
             self.guard_reserved_words(prop_name, cls)
+
+            # Special case in_ and out_ properties for edges
+            if cls.decl_type == DeclarativeType.Edge:
+                if prop_name == 'in_':
+                    prop_name = 'in'
+                elif prop_name == 'out_':
+                    prop_name = 'out'
 
             class_prop = '{0}.{1}'.format(cls_name, prop_name)
 
@@ -555,17 +602,22 @@ class Graph(object):
     }
 
     @classmethod
-    def property_from_schema(cls, prop_def):
+    def property_from_schema(cls, prop_def, linked_class=None):
         prop_type = cls.PROPERTY_TYPES.get(prop_def['type'], Property)
 
-        return prop_type(
-            nullable=not prop_def['notNull']
-            , default=prop_def.get('defaultValue', None)
-            , indexed=False # FIXME
-            , unique=False # FIXME
-            , mandatory=prop_def['mandatory']
-            , readonly=prop_def['readonly']
-            )
+        property_params = {
+            'nullable': not prop_def['notNull'],
+            'default': prop_def.get('defaultValue', None),
+            'indexed': False, # FIXME
+            'unique': False, # FIXME
+            'mandatory': prop_def['mandatory'],
+            'readonly': prop_def['readonly']
+        }
+
+        if linked_class:
+            property_params['linked_to'] = linked_class
+
+        return prop_type(**property_params)
 
 
     @staticmethod
@@ -638,4 +690,55 @@ class Graph(object):
                     ' attribute to True for this element class.')
             setattr(self, broker_name, broker)
 
+    @staticmethod
+    def toposort_classes(classes):
+        """Sort class metadatas so that a superclass is always before the subclass"""
+        def get_class_topolist(class_name, name_to_class, processed_classes, current_trace):
+            """Return a topologically sorted list of this class's dependencies and class itself
 
+            :param class_name: name of the class to process
+            :param name_to_class: a map from class name to the descriptor
+            :param processed_classes: a set of classes that have already been processed
+            :param current_trace: list of classes traversed during the recursion.
+
+            :returns: element of classes list sorted in topological order
+            """
+            # Check if this class has already been handled
+            if class_name in processed_classes:
+                return []
+
+            if class_name in current_trace:
+                raise AssertionError(
+                    'Encountered self-reference in dependency chain of {}'.format(class_name))
+
+            cls = name_to_class[class_name]
+            # Collect the dependency classes
+            # These are bases and classes from linked properties
+            dependencies = [base_name for base_name in cls.get('superClasses', []) or []]
+            # Recursively process linked edges
+            properties = cls['properties'] if 'properties' in cls else []
+            for prop in properties:
+                if 'linkedClass' in prop:
+                    dependencies.append(prop['linkedClass'])
+
+            class_list = []
+            # Recursively process superclasses
+            current_trace.add(class_name)
+            for dependency in dependencies:
+                class_list.extend(get_class_topolist(
+                    dependency, name_to_class, processed_classes, current_trace))
+            current_trace.remove(class_name)
+            # Do the bookkeeping
+            class_list.append(name_to_class[class_name])
+            processed_classes.add(class_name)
+
+            return class_list
+
+        # Map names to classes
+        class_map = {c['name']: c for c in classes}
+        seen_classes = set()
+
+        toposorted = []
+        for name in class_map.keys():
+            toposorted.extend(get_class_topolist(name, class_map, seen_classes, set([])))
+        return toposorted
