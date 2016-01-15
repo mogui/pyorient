@@ -549,7 +549,7 @@ class OGMToposortTestCase(unittest.TestCase):
         assert OGMToposortTestCase.before(toposorted, 'H', 'G')
 
     def testInfiniteLoop(self):
-        # Make sure that this at least stops in case of an infinite loop
+        # Make sure that this at least stops in case of an infinite dependency loop
         with self.assertRaises(AssertionError):
             toposorted = Graph.toposort_classes([
                 { 'name': 'A', 'superClasses': ['B']},

@@ -709,7 +709,7 @@ class Graph(object):
 
             if class_name in current_trace:
                 raise AssertionError(
-                    'Dependency loop detected between classes {}'.format(repr(current_trace)))
+                    'Encountered self-reference in dependency chain of {}'.format(class_name))
 
             cls = name_to_class[class_name]
             # Collect the dependency classes
@@ -723,11 +723,11 @@ class Graph(object):
 
             class_list = []
             # Recursively process superclasses
-            current_trace.append(class_name)
+            current_trace.add(class_name)
             for dependency in dependencies:
                 class_list.extend(get_class_topolist(
                     dependency, name_to_class, processed_classes, current_trace))
-            current_trace.pop()
+            current_trace.remove(class_name)
             # Do the bookkeeping
             class_list.append(name_to_class[class_name])
             processed_classes.add(class_name)
@@ -735,10 +735,10 @@ class Graph(object):
             return class_list
 
         # Map names to classes
-        name_to_class = {c['name']: c for c in classes}
+        class_map = {c['name']: c for c in classes}
         seen_classes = set()
 
         toposorted = []
-        for name in name_to_class.keys():
-            toposorted.extend(get_class_topolist(name, name_to_class, seen_classes, []))
+        for name in class_map.keys():
+            toposorted.extend(get_class_topolist(name, class_map, seen_classes, set([])))
         return toposorted
