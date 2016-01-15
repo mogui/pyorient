@@ -475,6 +475,21 @@ class OGMEmbeddedTestCase(unittest.TestCase):
         self.assertDictContainsSubset(result.children, children)
         self.assertDictContainsSubset(children, result.children)
 
+    def testEmbeddedSetContains(self):
+        g = self.g
+
+        name = 'embed'
+        alias = ['implant', 'lodge', 'place']
+        element_cls = g.registry['emb_set']
+
+        g.emb_set.create(name=name, alias=alias)
+        canonical_result = g.emb_set.query(name=name).one()
+        self.assertIsNotNone(canonical_result)
+
+        for alternate in alias:
+            received = g.query(element_cls).filter(element_cls.alias.contains(alternate)).one()
+            self.assertEqual(canonical_result, received)
+
 
 if sys.version_info[0] < 3:
     def to_unicode(x):
