@@ -10,7 +10,7 @@ from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
-    String, DateTime, Decimal, EmbeddedMap, EmbeddedSet, Float, Link, UUID)
+    String, Date, DateTime, Decimal, EmbeddedMap, EmbeddedSet, Float, Link, UUID)
 from pyorient.ogm.what import expand, in_, out, distinct
 
 AnimalsNode = declarative_node()
@@ -352,6 +352,13 @@ class OGMDateTimeTestCase(unittest.TestCase):
         name = String(nullable=False, unique=True)
         at = DateTime(nullable=False)
 
+    class DateV(DateTimeNode):
+        element_type = 'dt'
+        element_plural = 'dt'
+
+        name = String(nullable=False, unique=True)
+        at = Date(nullable=False)
+
     def setUp(self):
         g = self.g = Graph(Config.from_url('test_datetime', 'root', 'root',
                                            initial_drop=True))
@@ -374,10 +381,9 @@ class OGMDateTimeTestCase(unittest.TestCase):
     def testDate(self):
         g = self.g
 
-        at = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-        g.datetime.create(name='today', at=at.date())
-
-        returned_dt = g.datetime.query(name='today').one()
+        at = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None).date()
+        g.dt.create(name='today', at=at)
+        returned_dt = g.dt.query(name='today').one()
 
         assert returned_dt.at == at
 
