@@ -1,9 +1,9 @@
 from .operators import Operand, ArithmeticMixin
 
 import sys
-import json
 import decimal
-from datetime import datetime
+import datetime
+
 
 class Property(Operand):
     num_instances = 0 # Basis for ordering property instances
@@ -80,15 +80,24 @@ class PropertyEncoder:
     def encode(value):
         if isinstance(value, decimal.Decimal):
             return repr(str(value))
-        elif isinstance(value, datetime):
-            return '"{}"'.format(value)
+        elif isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
+            return u'"{}"'.format(value)
         elif isinstance(value, str):
             return repr(value)
         elif sys.version_info[0] < 3 and isinstance(value, unicode):
-            return repr(value.encode('utf-8'))
+            return u'"{}"'.format(value.replace('"', '\\"'))
         elif value is None:
             return 'null'
+        elif isinstance(value, list) or isinstance(value, set):
+            return u'[{}]'.format(u','.join([PropertyEncoder.encode(v) for v in value]))
+        elif isinstance(value, dict):
+            contents = u','.join([
+                '{}: {}'.format(PropertyEncoder.encode(k), PropertyEncoder.encode(v))
+                for k, v in value.items()
+            ])
+            return u'{{ {} }}'.format(contents)
         else:
+            # returning the same object will cause repr(value) to be used
             return value
 
 class Boolean(Property):
@@ -135,13 +144,14 @@ class Link(Property):
 
 class LinkedClassProperty(Property):
     def __init__(self, linked_to=None, name=None, default=None,
-                 nullable=True, unique=False, indexed=False):
+                 nullable=True, unique=False, indexed=False,
+                 mandatory=False, readonly=False):
         """Create a property representing a collection of entries.
 
         :param linked_to: Entry type; optional, as per 'CREATE PROPERTY' syntax
         """
         super(LinkedClassProperty, self).__init__(
-            name, nullable, default, indexed, unique)
+            name, nullable, default, indexed, unique, mandatory, readonly)
         self.linked_to = linked_to
 
 class LinkList(LinkedClassProperty):

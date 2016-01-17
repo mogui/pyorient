@@ -74,3 +74,7 @@ class PyOrientWrongProtocolVersionException(PyOrientException):
 
 class PyOrientSerializationException(PyOrientException):
     pass
+
+
+class PyOrientNullRecordException(PyOrientException):
+    pass

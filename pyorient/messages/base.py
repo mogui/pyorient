@@ -4,8 +4,8 @@ import struct
 import sys
 
 from ..exceptions import PyOrientBadMethodCallException, \
-    PyOrientCommandException
-from ..types import OrientRecord, OrientRecordLink
+    PyOrientCommandException, PyOrientNullRecordException
+from ..otypes import OrientRecord, OrientRecordLink
 
 from ..hexdump import hexdump
 from ..constants import BOOLEAN, BYTE, BYTES, CHAR, FIELD_BOOLEAN, FIELD_BYTE, \
@@ -53,6 +53,8 @@ class BaseMessage(object):
 
         # callback for push received from the server
         self._push_callback = None
+
+        self._need_token = True
 
         global in_transaction
         in_transaction = False
@@ -122,14 +124,12 @@ class BaseMessage(object):
         # session_id
         self._fields_definition.insert( 1, ( FIELD_INT, self._session_id ) )
 
-        from .connection import ConnectMessage
-        from .database import DbOpenMessage
+
         """
         #  Token authentication handling
         #  we must recognize ConnectMessage and DbOpenMessage messages
         """
-        if not isinstance( self, ( ConnectMessage, DbOpenMessage ) ) \
-                and self._request_token is True:
+        if self._need_token and self._request_token is True:
             self._fields_definition.insert(
                 2, ( FIELD_STRING, self._auth_token )
             )
@@ -448,13 +448,13 @@ class BaseMessage(object):
             (0:short)(record-type:byte)(cluster-id:short)
             (cluster-position:long)(record-version:int)(record-content:bytes)
 
-        :raise: Exception
+        :raise: PyOrientNullRecordException
         :return: OrientRecordLink,OrientRecord
         """
         marker = self._decode_field( FIELD_SHORT )  # marker
 
         if marker is -2:
-            raise Exception('NULL Record')
+            raise PyOrientNullRecordException('NULL Record', [])
         elif marker is -3:
             res = OrientRecordLink( self._decode_field( FIELD_TYPE_LINK ) )
         else:

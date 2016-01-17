@@ -68,8 +68,8 @@ class Query(object):
             g = self._graph
             while True:
                 current_skip = params['skip']
-                where = 'WHERE {0}'.format(
-                    ' and '.join(
+                where = u'WHERE {0}'.format(
+                    u' and '.join(
                         [self.rid_lower(current_skip)] + wheres))
                 select = self.build_select(props, [where] + optional_clauses)
 
@@ -144,7 +144,7 @@ class Query(object):
         optional_clauses = self.build_optional_clauses(params, skip)
 
         wheres = rid_clause + self.build_wheres(params)
-        where = ['WHERE {0}'.format(' and '.join(wheres))] if wheres else []
+        where = [u'WHERE {0}'.format(u' and '.join(wheres))] if wheres else []
 
         return props, where, optional_clauses
 
@@ -283,7 +283,7 @@ class Query(object):
             if isinstance(left, Operand):
                 left_str = left.context_name() # Expecting a Property
             elif isinstance(left, ArithmeticOperation):
-                left_str = '({})'.format(self.arithmetic_string(left))
+                left_str = u'({})'.format(self.arithmetic_string(left))
             elif isinstance(left, FunctionWhat):
                 left_str = self.build_what(left)
             else:
@@ -291,27 +291,27 @@ class Query(object):
                     'Operator {} not supported as a filter'.format(op))
 
             if op is Operator.Equal:
-                return '{0} = {1}'.format(
+                return u'{0} = {1}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, self))
             elif op is Operator.GreaterEqual:
-                return '{0} >= {1}'.format(
+                return u'{0} >= {1}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, self))
             elif op is Operator.Greater:
-                return '{0} > {1}'.format(
+                return u'{0} > {1}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, self))
             elif op is Operator.LessEqual:
-                return '{0} <= {1}'.format(
+                return u'{0} <= {1}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, self))
             elif op is Operator.Less:
-                return '{0} < {1}'.format(
+                return u'{0} < {1}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, self))
             elif op is Operator.NotEqual:
-                return '{0} <> {1}'.format(
+                return u'{0} <> {1}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, self))
             elif op is Operator.Between:
@@ -319,24 +319,24 @@ class Query(object):
                 return '{0} BETWEEN {1} and {2}'.format(
                     left_str, right, far_right)
             elif op is Operator.Contains:
-                return '{0} contains({1})'.format(
+                return u'{0} contains({1})'.format(
                     left_str, self.filter_string(right))
             elif op is Operator.EndsWith:
-                return '{0} like \'%{1}\''.format(left_str, right)
+                return u'{0} like \'%{1}\''.format(left_str, right)
             elif op is Operator.Is:
                 if not right: # :)
                     return '{0} is null'.format(left_str)
             elif op is Operator.Like:
-                return '{0} like \'{1}\''.format(
+                return u'{0} like \'{1}\''.format(
                     left_str, right)
             elif op is Operator.Matches:
-                return '{0} matches \'{1}\''.format(
+                return u'{0} matches \'{1}\''.format(
                     left_str, right)
             elif op is Operator.StartsWith:
-                return '{0} like \'{1}%\''.format(
+                return u'{0} like \'{1}%\''.format(
                     left_str, right)
         else:
-            return '{0} {1} {2}'.format(
+            return u'{0} {1} {2}'.format(
                 self.filter_string(left)
                 , 'and' if op is Operator.And else 'or'
                 , self.filter_string(right))
@@ -406,7 +406,7 @@ class Query(object):
 
     def build_wheres(self, params):
         kw_filters = params.get('kw_filters')
-        kw_where = [' and '.join('{0}={1}'
+        kw_where = [u' and '.join(u'{0}={1}'
             .format(k, PropertyEncoder.encode(v))
                 for k,v in kw_filters.items())] if kw_filters else []
 
@@ -595,16 +595,16 @@ class Query(object):
         # This 'is not None' is important; don't want to implicitly call
         # __len__ (which invokes count()) on subquery.
         if self._subquery is not None:
-            src = '({})'.format(self._subquery)
+            src = u'({})'.format(self._subquery)
         else:
             src = self.source_name
 
         optional_string = ' '.join(optional_clauses)
         if props:
-            return 'SELECT {} FROM {} {}'.format(
+            return u'SELECT {} FROM {} {}'.format(
                 ','.join(props), src, optional_string)
         else:
-            return 'SELECT FROM {} {}'.format(src, optional_string)
+            return u'SELECT FROM {} {}'.format(src, optional_string)
 
 class TempParams(object):
     def __init__(self, params, **kwargs):

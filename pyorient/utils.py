@@ -4,7 +4,7 @@ import os
 import sys
 from pyorient.exceptions import PyOrientConnectionException, \
     PyOrientDatabaseException
-from pyorient.types import OrientRecordLink
+from pyorient.otypes import OrientRecordLink
 
 
 def is_debug_active():
@@ -109,8 +109,21 @@ def parse_cluster_position(_cluster_position):
 
 if sys.version < '3':
     import codecs
+
     def u(x):
         return codecs.unicode_escape_decode(x)[0]
+
+    def to_unicode(x):
+        return str(x).decode('utf-8')
+
+    def to_str(x):
+        return unicode(x).encode('utf-8')
 else:
     def u(x):
         return x
+
+    def to_str(x):
+        return str(x)
+
+    def to_unicode(x):
+        return str(x)

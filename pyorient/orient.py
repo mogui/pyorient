@@ -92,10 +92,25 @@ class OrientSocket(object):
         self.connected = False
 
     def write(self, buff):
-        count = 0
-        while count < len(buff):
-            count += self._socket.send(buff[count:])
-        return count
+        # This is a trick to detect server disconnection
+        # or broken line issues because of
+        """:see: https://docs.python.org/2/howto/sockets.html#when-sockets-die """
+
+        try:
+            _, ready_to_write, in_error = select.select(
+                [], [self._socket], [self._socket], 1)
+        except select.error as e:
+            self.connected = False
+            self._socket.close()
+            raise e
+
+        if not in_error and ready_to_write:
+            self._socket.sendall(buff)
+            return len(buff)
+        else:
+            self.connected = False
+            self._socket.close()
+            raise PyOrientConnectionException("Socket error", [])
 
     # The man page for recv says: The receive calls normally return
     #   any data available, up to the requested amount, rather than waiting
@@ -116,6 +131,7 @@ class OrientSocket(object):
                     select.select( [self._socket, ], [], [self._socket, ], 30 )
             except select.error as e:
                 self.connected = False
+                self._socket.close()
                 raise e
 
             if len(ready_to_read) > 0:
@@ -127,10 +143,7 @@ class OrientSocket(object):
                     if not n_bytes:
                         self._socket.close()
                         # TODO Implement re-connection to another listener
-                        # from the Hi availability list
-                        # ( self.cluster_map.hiAvailabilityList.listeners )
 
-                        # Additional cleanup
                         raise PyOrientConnectionException(
                             "Server seems to have went down", [])
 
@@ -479,6 +492,7 @@ class OrientDB(object):
                 return message_instance
 
         except KeyError as e:
+            self._connection.close()
             raise PyOrientBadMethodCallException(
                 "Unable to find command " + str(e), []
             )
