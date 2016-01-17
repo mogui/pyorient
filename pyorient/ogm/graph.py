@@ -48,7 +48,7 @@ class Graph(object):
 
         self.strict = strict
 
-    def set_strict(strict):
+    def set_strict(self, strict):
         """Set whether property checking should be strict"""
         self.strict = strict
 

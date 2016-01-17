@@ -385,11 +385,6 @@ class OGMDateTimeTestCase(unittest.TestCase):
         at = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None).date()
         g.dt.create(name='today', at=at)
         returned_dt = g.dt.query(name='today').one()
-
-        assert returned_dt.at == at
-
-        returned_dt = g.datetime.query(name='today').one()
-
         assert returned_dt.at == at
 
 
@@ -632,7 +627,7 @@ class OGMTypedEdgeTestCase(unittest.TestCase):
 
 class OGMTestInheritance(unittest.TestCase):
     def __init__(self, *args, **kwargs):
-        super(OGMTypedEdgeTestCase, self).__init__(*args, **kwargs)
+        super(OGMTestInheritance, self).__init__(*args, **kwargs)
         self.g = None
 
     def setUp(self):
