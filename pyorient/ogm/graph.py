@@ -785,6 +785,7 @@ class Graph(object):
     @staticmethod
     def list_superclasses(class_def):
         sup_list = [class_def.get('superClass', None)]
+        # Make sure that the superclass is actually present. Otherwise clear the list
         if not sup_list[0]:
             sup_list.pop()
         return class_def.get('superClasses', []) or sup_list
