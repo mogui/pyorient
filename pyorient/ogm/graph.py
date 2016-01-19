@@ -164,7 +164,7 @@ class Graph(object):
             class_name = class_def['name']
             props = {}
             # Resolve all of the base classes
-            base_names = class_def.get('superClasses', []) or []
+            base_names = Graph.list_superclasses(class_def)
             bases = []
             for base_name in base_names:
                 if base_name == 'V':
@@ -753,7 +753,7 @@ class Graph(object):
             cls = name_to_class[class_name]
             # Collect the dependency classes
             # These are bases and classes from linked properties
-            dependencies = [base_name for base_name in cls.get('superClasses', []) or []]
+            dependencies = Graph.list_superclasses(cls)
             # Recursively process linked edges
             properties = cls['properties'] if 'properties' in cls else []
             for prop in properties:
@@ -781,3 +781,10 @@ class Graph(object):
         for name in class_map.keys():
             toposorted.extend(get_class_topolist(name, class_map, seen_classes, set([])))
         return toposorted
+
+    @staticmethod
+    def list_superclasses(class_def):
+        sup_list = [class_def.get('superClass', None)]
+        if not sup_list[0]:
+            sup_list.pop()
+        return class_def.get('superClasses', []) or sup_list
