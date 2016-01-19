@@ -660,6 +660,11 @@ class OGMTestInheritance(unittest.TestCase):
         # But in strict mode they generate errors
         g = self.g = Graph(Config.from_url('hardware', 'root', 'root'
                                            , initial_drop=False), strict=True)
-
+        g.include(g.build_mapping(
+            declarative_node(), declarative_relationship(), auto_plural=True))
         with self.assertRaises(AttributeError):
             pentium = g.cpu.create(name='Pentium', version=6)
+
+        pentium = g.x86cpu.create(name='Pentium', version=6)
+        self.assertEquals('Pentium', pentium.name)
+        self.assertEquals(6, pentium.version)
