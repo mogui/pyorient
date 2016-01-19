@@ -193,6 +193,8 @@ class Graph(object):
                         props['registry_plural'] = class_name
                     props['element_type'] = class_name
 
+                # Use DeclarativeMeta as the metaclass when constructing the OGM class
+                # inheritance is passed through bases
                 registry[class_name] = DeclarativeMeta(class_name, tuple(bases), props)
             else:
                 # Otherwise preserve the properties in case a graph type derives from it.
