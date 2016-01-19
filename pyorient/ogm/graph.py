@@ -128,8 +128,8 @@ class Graph(object):
 
         def resolve_class(name, registries):
             for r in registries:
-                if name in registry:
-                    return registry[name]
+                if name in r:
+                    return r[name]
             return None
 
         def extract_properties(property_schema, is_edge):
