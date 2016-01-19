@@ -48,10 +48,6 @@ class Graph(object):
 
         self.strict = strict
 
-    def set_strict(self, strict):
-        """Set whether property checking should be strict"""
-        self.strict = strict
-
     def open(self, db_name, storage, user=None, cred=None):
         """Open a graph on currently-connected database.
 
@@ -107,22 +103,8 @@ class Graph(object):
         Faster than a full create_all() when it's not required.
         """
         for cls in registry.values():
-            db_to_element = {}
-
-            props = sorted([(k,v) for k,v in cls.__dict__.items()
-                            if isinstance(v, Property)]
-                           , key=lambda p:p[1].instance_idx)
-            for prop_name, prop_value in props:
-                value_name = prop_value.name
-                if value_name:
-                    db_to_element[value_name] = prop_name
-                    prop_name = value_name
-                else:
-                    db_to_element[prop_name] = prop_name
-
-                self.guard_reserved_words(prop_name, cls)
-
-            self.props_from_db[cls] = self.create_props_mapping(db_to_element)
+            db_to_element = Graph.compute_all_properties(cls)
+            self.props_from_db[cls] = Graph.create_props_mapping(db_to_element)
             self.init_broker_for_class(cls)
             self.registry[cls.registry_name] = cls
 
@@ -166,7 +148,7 @@ class Graph(object):
                     elif p['name'] == 'out':
                         prop_name = 'out_'
 
-                props[prop_name] = self.property_from_schema(p, linked_class)
+                props[prop_name] = Graph.property_from_schema(p, linked_class)
             return props
 
         # We need to topologically sort classes, since we cannot rely on any ordering
@@ -243,7 +225,7 @@ class Graph(object):
 
         cls_name = cls.registry_name
 
-        bases = [base for base in cls.__bases__ if self.valid_element_base(base)]
+        bases = [base for base in cls.__bases__ if Graph.valid_element_base(base)]
         if not bases:
             raise TypeError(
                 'Unexpected base class(es) in Graph.create_class'
@@ -265,20 +247,15 @@ class Graph(object):
             # Class already exists
             pass
 
-        db_to_element = {}
-
         props = sorted([(k,v) for k,v in cls.__dict__.items()
                         if isinstance(v, Property)]
                        , key=lambda p:p[1].instance_idx)
         for prop_name, prop_value in props:
             value_name = prop_value.name
             if value_name:
-                db_to_element[value_name] = prop_name
                 prop_name = value_name
-            else:
-                db_to_element[prop_name] = prop_name
 
-            self.guard_reserved_words(prop_name, cls)
+            Graph.guard_reserved_words(prop_name, cls)
 
             # Special case in_ and out_ properties for edges
             if cls.decl_type == DeclarativeType.Edge:
@@ -345,7 +322,10 @@ class Graph(object):
                     # Index already exists
                     pass
 
-        self.props_from_db[cls] = self.create_props_mapping(db_to_element)
+        # We store all of the properties for the reverse mapping, not only
+        # those that are defined directly on the class
+        db_to_element = Graph.compute_all_properties(cls)
+        self.props_from_db[cls] = Graph.create_props_mapping(db_to_element)
         self.init_broker_for_class(cls)
         self.registry[cls_name] = cls
 
@@ -395,7 +375,7 @@ class Graph(object):
         class_name = vertex_cls.registry_name
 
         if kwargs:
-            db_props = self.props_to_db(vertex_cls, kwargs, self.strict)
+            db_props = Graph.props_to_db(vertex_cls, kwargs, self.strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
                          for k,v in db_props.items()))
@@ -418,7 +398,7 @@ class Graph(object):
         class_name = edge_cls.registry_name
 
         if kwargs:
-            db_props = self.props_to_db(edge_cls, kwargs, self.strict)
+            db_props = Graph.props_to_db(edge_cls, kwargs, self.strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
                          for k,v in db_props.items()))
@@ -452,7 +432,7 @@ class Graph(object):
                     'Class \'{}\' not registered with graph.'.format(name))
 
         if props:
-            db_props = self.props_to_db(element_class, props, self.strict)
+            db_props = Graph.props_to_db(element_class, props, self.strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
                          for k,v in db_props.items()))
@@ -676,14 +656,38 @@ class Graph(object):
     def props_to_db(element_class, props, strict):
         db_props = {}
         for k, v in props.items():
-            try:
+            if hasattr(element_class, k):
                 prop = getattr(element_class, k)
                 db_props[prop.name or k] = v
-            except AttributeError as e:
-                # if we are not in the strict mode, swallow missing properties
-                if strict:
-                    raise e
+            elif strict:
+                raise AttributeError('Class {} has no property {}'.format(
+                    element_class, k))
+            # if we are not in the strict mode, swallow missing properties
         return db_props
+
+    @staticmethod
+    def compute_all_properties(cls):
+        """Compute all properties (including the inherited ones) for the class """
+        all_properties = {}
+
+        props = []
+        # Get all of the properties of the class including inherited ones
+        for m in dir(cls):
+            p = getattr(cls, m)
+            if isinstance(p, Property):
+                props.append((m, p))
+
+        props = sorted(props, key=lambda p:p[1].instance_idx)
+        for prop_name, prop_value in props:
+            value_name = prop_value.name
+            if value_name:
+                all_properties[value_name] = prop_name
+                prop_name = value_name
+            else:
+                all_properties[prop_name] = prop_name
+
+            Graph.guard_reserved_words(prop_name, cls)
+        return all_properties
 
     @staticmethod
     def coerce_class_names(classes):

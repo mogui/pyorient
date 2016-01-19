@@ -640,8 +640,13 @@ class OGMTestInheritance(unittest.TestCase):
     def testInheritance(self):
         g = self.g
         pentium = g.x86cpu.create(name='Pentium', version=6)
+        self.assertTrue(isinstance(pentium.name, str))
+        self.assertEquals('Pentium', pentium.name)
+        self.assertEquals(6, pentium.version)
+
         loaded_pentium = g.get_vertex(pentium._id)
-        assert loaded_pentium == pentium
+        self.assertEquals(pentium, loaded_pentium)
+        self.assertTrue(isinstance(loaded_pentium.name, str))
 
     def testStrictness(self):
         g = self.g
@@ -649,10 +654,12 @@ class OGMTestInheritance(unittest.TestCase):
         # Unknown properties get silently dropped by default
         pentium = g.cpu.create(name='Pentium', version=6)
         loaded_pentium = g.get_vertex(pentium._id)
+        # Version is not defined in cpu
         assert not hasattr(pentium, 'version')
 
         # But in strict mode they generate errors
-        g.set_strict(True)
+        g = self.g = Graph(Config.from_url('hardware', 'root', 'root'
+                                           , initial_drop=False), strict=True)
 
         with self.assertRaises(AttributeError):
             pentium = g.cpu.create(name='Pentium', version=6)

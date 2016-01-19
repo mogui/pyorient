@@ -24,14 +24,11 @@ class GraphElement(object):
         return self._graph.save_element(self.__class__, self._props, self._id)
 
     def __setattr__(self, key, value):
-        try:
-            # Check if the attribute is actually a property of the OGM type
-            element_entry = getattr(type(self), key)
-            if isinstance(element_entry, Property):
+        # Check if the attribute is actually a property of the OGM type
+        if (hasattr(type(self), key) and
+            isinstance(getattr(type(self), key), Property)):
                 self._props[key] = value
-            return
-        except AttributeError:
-            pass
+                return
 
         super(GraphElement, self).__setattr__(key, value)
 
