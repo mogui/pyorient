@@ -1,6 +1,6 @@
 from .property import *
 from .exceptions import ReservedWordError
-from .declarative import DeclarativeType
+from .declarative import DeclarativeMeta, DeclarativeType
 from .vertex import Vertex
 from .edge import Edge
 from .broker import get_broker
@@ -119,7 +119,6 @@ class Graph(object):
         on classes. For convenience when include() should set brokers.
         """
 
-        mc = type(vertex)
         registry = {}
 
         schema = self.client.command(
@@ -193,7 +192,8 @@ class Graph(object):
                     if auto_plural:
                         props['registry_plural'] = class_name
                     props['element_type'] = class_name
-                registry[class_name] = mc(class_name, tuple(bases), props)
+
+                registry[class_name] = DeclarativeMeta(class_name, tuple(bases), props)
             else:
                 # Otherwise preserve the properties in case a graph type derives from it.
                 non_graph_properties[class_name] = props
