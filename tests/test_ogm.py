@@ -576,6 +576,7 @@ class X86CPU(CPU):
     element_plural = 'x86cpu'
     version = Integer(nullable=True)
 
+
 class Manufacturer(HardwareNode):
     element_plural = 'manufacturer'
     name = String(nullable=False)
