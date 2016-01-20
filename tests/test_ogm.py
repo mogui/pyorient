@@ -588,6 +588,14 @@ class Manufactures(HardwareRelationship):
     in_ = Link(linked_to=CPU)
 
 
+# Added this to catch a nasty bug where toposort_classes overrode superClasses
+# when reading schema from the database
+class Outperforms(HardwareRelationship):
+    label = 'outperforms'
+    out_ = Link(linked_to=CPU)
+    in_ = Link(linked_to=CPU)
+
+
 class OGMTypedEdgeTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(OGMTypedEdgeTestCase, self).__init__(*args, **kwargs)

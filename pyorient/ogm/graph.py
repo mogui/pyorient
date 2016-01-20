@@ -784,9 +784,13 @@ class Graph(object):
 
     @staticmethod
     def list_superclasses(class_def):
+        superclasses = class_def.get('superClasses', [])
+        if superclasses:
+            # Make sure to duplicate the list
+            return list(superclasses)
+
         sup = class_def.get('superClass', None)
         if sup:
-            sup_list = [sup]
+            return [sup]
         else:
-            sup_list = []
-        return class_def.get('superClasses', []) or sup_list
+            return []
