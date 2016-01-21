@@ -1,4 +1,5 @@
-from .operators import Operator, RelativeOperand, Operand, ArithmeticOperation
+from .operators import (Operator, RelativeOperand, Operand,
+                        ArithmeticOperation, LogicalConnective)
 from .property import Property, PropertyEncoder
 from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
@@ -316,11 +317,15 @@ class Query(object):
                                                       , right, self))
             elif op is Operator.Between:
                 far_right = PropertyEncoder.encode(expression_root.operands[2])
-                return '{0} BETWEEN {1} and {2}'.format(
+                return u'{0} BETWEEN {1} and {2}'.format(
                     left_str, right, far_right)
             elif op is Operator.Contains:
-                return u'{0} contains({1})'.format(
-                    left_str, self.filter_string(right))
+                if isinstance(right, LogicalConnective):
+                    return u'{0} contains({1})'.format(
+                        left_str, self.filter_string(right))
+                else:
+                    return u'{} in {}'.format(
+                        PropertyEncoder.encode(right), left_str)
             elif op is Operator.EndsWith:
                 return u'{0} like \'%{1}\''.format(left_str, right)
             elif op is Operator.Is:
