@@ -24,11 +24,13 @@ class GraphElement(object):
         return self._graph.save_element(self.__class__, self._props, self._id)
 
     def __setattr__(self, key, value):
-        element_entry = type(self).__dict__.get(key, None)
-        if isinstance(element_entry, Property):
-            self._props[key] = value
-        else:
-            super(GraphElement, self).__setattr__(key, value)
+        # Check if the attribute is actually a property of the OGM type
+        if (hasattr(type(self), key) and
+            isinstance(getattr(type(self), key), Property)):
+                self._props[key] = value
+                return
+
+        super(GraphElement, self).__setattr__(key, value)
 
     def __getattribute__(self, key):
         try:

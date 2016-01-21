@@ -1,5 +1,6 @@
 from .property import *
 from .exceptions import ReservedWordError
+from .declarative import DeclarativeMeta, DeclarativeType
 from .vertex import Vertex
 from .edge import Edge
 from .broker import get_broker
@@ -14,13 +15,14 @@ from collections import namedtuple
 ServerVersion = namedtuple('orientdb_version', ['major', 'minor', 'build'])
 
 class Graph(object):
-    def __init__(self, config, user=None, cred=None):
+    def __init__(self, config, user=None, cred=None, strict=False):
         """Connect to OrientDB graph database, creating the database if
         non-existent.
 
         :param config: Information on database to which to connect
         :param user: (Optional) Username by which to use database
         :param cred: (Optional) Credential for database username
+        :param strict: (Optional, default False) Use strict property checking
 
         :note: user only meaningful when cred also provided.
         """
@@ -43,6 +45,8 @@ class Graph(object):
         self.props_from_db = {}
 
         self.scripts = config.scripts or pyorient.Scripts()
+
+        self.strict = strict
 
     def open(self, db_name, storage, user=None, cred=None):
         """Open a graph on currently-connected database.
@@ -99,22 +103,8 @@ class Graph(object):
         Faster than a full create_all() when it's not required.
         """
         for cls in registry.values():
-            db_to_element = {}
-
-            props = sorted([(k,v) for k,v in cls.__dict__.items()
-                            if isinstance(v, Property)]
-                           , key=lambda p:p[1].instance_idx)
-            for prop_name, prop_value in props:
-                value_name = prop_value.name
-                if value_name:
-                    db_to_element[value_name] = prop_name
-                    prop_name = value_name
-                else:
-                    db_to_element[prop_name] = prop_name
-
-                self.guard_reserved_words(prop_name, cls)
-
-            self.props_from_db[cls] = self.create_props_mapping(db_to_element)
+            db_to_element = Graph.compute_all_properties(cls)
+            self.props_from_db[cls] = Graph.create_props_mapping(db_to_element)
             self.init_broker_for_class(cls)
             self.registry[cls.registry_name] = cls
 
@@ -123,47 +113,110 @@ class Graph(object):
 
         Returns a registry suitable for passing to include()
 
-        :param vertex: Base class for vertexes
-        :param edge: Base class for edges
+        :param vertex: Base class for vertexes. Always pass new declarative_node.
+        :param edge: Base class for edges. Always pass new declarative_relationship.
         :param auto_plural: If True, will automatically set registry_plural
         on classes. For convenience when include() should set brokers.
         """
 
-        mc = type(vertex)
         registry = {}
 
         schema = self.client.command(
             'SELECT FROM (SELECT expand(classes) FROM metadata:schema)'
             ' WHERE name NOT IN [\'ORole\', \'ORestricted\', \'OTriggered\','
-            ' \'ORIDs\', \'OUser\', \'OIdentity\', \'OSchedule\','
-            ' \'OFunction\'] ORDER BY defaultClusterId')
+            ' \'ORIDs\', \'OUser\', \'OIdentity\', \'OSchedule\', \'OFunction\']')
 
-        for c in schema:
-            class_def = c.oRecordData
+        def resolve_class(name, registries):
+            for r in registries:
+                if name in r:
+                    return r[name]
+            return None
 
-            sup = class_def['superClass']
-            if sup is not None:
-                base_names = class_def.get('superClasses', [sup])
-                bases = tuple(
-                    vertex if b == 'V' else edge if b == 'E'
-                        else registry[b] if b in registry
-                        else self.registry[b]
-                    for b in base_names
-                        if b == 'V' or b == 'E'
-                        or b in registry or b in self.registry)
-                class_name = class_def['name']
+        def extract_properties(property_schema, is_edge):
+            props = {}
+            for p in property_schema:
+                linked_class = None
+                if 'linkedClass' in p:
+                    linked_class = resolve_class(p['linkedClass'], registries)
 
-                if bases:
-                    props = { p['name']:self.property_from_schema(p)
-                                for p in class_def['properties'] }
-                    props['decl_type'] = bases[0].decl_type
+                prop_name = p['name']
+                # Special-case in property, mainly on edges
+                if is_edge:
+                    if p['name'] == 'in':
+                        prop_name = 'in_'
+                    elif p['name'] == 'out':
+                        prop_name = 'out_'
 
+                props[prop_name] = Graph.property_from_schema(p, linked_class)
+            return props
+
+        # We need to topologically sort classes, since we cannot rely on any ordering
+        # in the database. In particular defaultClusterId is set to -1 for all abstract
+        # classes. Additionally, superclass(es) can be changed post-create, changing the
+        # dependency ordering.
+        schema = Graph.toposort_classes([c.oRecordData for c in schema])
+        registries = [registry, self.registry]
+        # We will keep properties of non-graph types here, just in case vertex/edge
+        # types derive from them.
+        non_graph_properties = {}
+
+        for class_def in schema:
+            class_name = class_def['name']
+            props = {}
+            # Resolve all of the base classes
+            base_names = Graph.list_superclasses(class_def)
+            bases = []
+            for base_name in base_names:
+                if base_name == 'V':
+                    bases.append(vertex)
+                elif base_name == 'E':
+                    bases.append(edge)
+                else:
+                    base = resolve_class(base_name, registries)
+                    if base:
+                        bases.append(base)
+                    else:
+                        # Worst-case scenario -- the base is not a graph type
+                        props.update(non_graph_properties.get(base_name, {}))
+
+            is_edge = bases and bases[0].decl_type == DeclarativeType.Edge
+            props.update(extract_properties(class_def['properties'], is_edge))
+
+            if bases:
+                # Create class for the graph type
+                props['decl_type'] = bases[0].decl_type
+
+                if is_edge:
+                    props['label'] = class_name
+                else:
                     if auto_plural:
                         props['registry_plural'] = class_name
                     props['element_type'] = class_name
-                    registry[class_name] = mc(class_name, bases, props)
+
+                # Use DeclarativeMeta as the metaclass when constructing the OGM class
+                # inheritance is passed through bases
+                registry[class_name] = DeclarativeMeta(class_name, tuple(bases), props)
+            else:
+                # Otherwise preserve the properties in case a graph type derives from it.
+                non_graph_properties[class_name] = props
 
         return registry
+
+    def clear_registry(self):
+        """Clear the registry and associated brokers.
+
+           Useful in preparation for reloading mapping classes from the database
+        """
+        # Start by removing broker classes from attrs (reverse of init_broker_for_class)
+        for k, cls in self.registry.items():
+            broker_name = getattr(cls, 'registry_plural', None)
+            if (broker_name and not getattr(cls, 'no_graph_broker', False) and
+                    hasattr(self, broker_name)):
+                delattr(self, broker_name)
+
+        self.registry = {}
+        self.props_from_db = {}
+
 
     def create_class(self, cls):
         """Add vertex or edge class to database.
@@ -174,7 +227,7 @@ class Graph(object):
 
         cls_name = cls.registry_name
 
-        bases = [base for base in cls.__bases__ if self.valid_element_base(base)]
+        bases = [base for base in cls.__bases__ if Graph.valid_element_base(base)]
         if not bases:
             raise TypeError(
                 'Unexpected base class(es) in Graph.create_class'
@@ -196,20 +249,22 @@ class Graph(object):
             # Class already exists
             pass
 
-        db_to_element = {}
-
         props = sorted([(k,v) for k,v in cls.__dict__.items()
                         if isinstance(v, Property)]
                        , key=lambda p:p[1].instance_idx)
         for prop_name, prop_value in props:
             value_name = prop_value.name
             if value_name:
-                db_to_element[value_name] = prop_name
                 prop_name = value_name
-            else:
-                db_to_element[prop_name] = prop_name
 
-            self.guard_reserved_words(prop_name, cls)
+            Graph.guard_reserved_words(prop_name, cls)
+
+            # Special case in_ and out_ properties for edges
+            if cls.decl_type == DeclarativeType.Edge:
+                if prop_name == 'in_':
+                    prop_name = 'in'
+                elif prop_name == 'out_':
+                    prop_name = 'out'
 
             class_prop = '{0}.{1}'.format(cls_name, prop_name)
 
@@ -269,7 +324,10 @@ class Graph(object):
                     # Index already exists
                     pass
 
-        self.props_from_db[cls] = self.create_props_mapping(db_to_element)
+        # We store all of the properties for the reverse mapping, not only
+        # those that are defined directly on the class
+        db_to_element = Graph.compute_all_properties(cls)
+        self.props_from_db[cls] = Graph.create_props_mapping(db_to_element)
         self.init_broker_for_class(cls)
         self.registry[cls_name] = cls
 
@@ -319,7 +377,7 @@ class Graph(object):
         class_name = vertex_cls.registry_name
 
         if kwargs:
-            db_props = self.props_to_db(vertex_cls, kwargs)
+            db_props = Graph.props_to_db(vertex_cls, kwargs, self.strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
                          for k,v in db_props.items()))
@@ -342,7 +400,7 @@ class Graph(object):
         class_name = edge_cls.registry_name
 
         if kwargs:
-            db_props = self.props_to_db(edge_cls, kwargs)
+            db_props = Graph.props_to_db(edge_cls, kwargs, self.strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
                          for k,v in db_props.items()))
@@ -376,7 +434,7 @@ class Graph(object):
                     'Class \'{}\' not registered with graph.'.format(name))
 
         if props:
-            db_props = self.props_to_db(element_class, props)
+            db_props = Graph.props_to_db(element_class, props, self.strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
                          for k,v in db_props.items()))
@@ -555,17 +613,22 @@ class Graph(object):
     }
 
     @classmethod
-    def property_from_schema(cls, prop_def):
+    def property_from_schema(cls, prop_def, linked_class=None):
         prop_type = cls.PROPERTY_TYPES.get(prop_def['type'], Property)
 
-        return prop_type(
-            nullable=not prop_def['notNull']
-            , default=prop_def.get('defaultValue', None)
-            , indexed=False # FIXME
-            , unique=False # FIXME
-            , mandatory=prop_def['mandatory']
-            , readonly=prop_def['readonly']
-            )
+        property_params = {
+            'nullable': not prop_def['notNull'],
+            'default': prop_def.get('defaultValue', None),
+            'indexed': False, # FIXME
+            'unique': False, # FIXME
+            'mandatory': prop_def['mandatory'],
+            'readonly': prop_def['readonly']
+        }
+
+        if linked_class:
+            property_params['linked_to'] = linked_class
+
+        return prop_type(**property_params)
 
 
     @staticmethod
@@ -592,13 +655,41 @@ class Graph(object):
                 if k in db_to_element }
 
     @staticmethod
-    def props_to_db(element_class, props):
+    def props_to_db(element_class, props, strict):
         db_props = {}
         for k, v in props.items():
-            prop = element_class.__dict__.get(k)
-            if prop:
+            if hasattr(element_class, k):
+                prop = getattr(element_class, k)
                 db_props[prop.name or k] = v
+            elif strict:
+                raise AttributeError('Class {} has no property {}'.format(
+                    element_class, k))
+            # if we are not in the strict mode, swallow missing properties
         return db_props
+
+    @staticmethod
+    def compute_all_properties(cls):
+        """Compute all properties (including the inherited ones) for the class """
+        all_properties = {}
+
+        props = []
+        # Get all of the properties of the class including inherited ones
+        for m in dir(cls):
+            p = getattr(cls, m)
+            if isinstance(p, Property):
+                props.append((m, p))
+
+        props = sorted(props, key=lambda p:p[1].instance_idx)
+        for prop_name, prop_value in props:
+            value_name = prop_value.name
+            if value_name:
+                all_properties[value_name] = prop_name
+                prop_name = value_name
+            else:
+                all_properties[prop_name] = prop_name
+
+            Graph.guard_reserved_words(prop_name, cls)
+        return all_properties
 
     @staticmethod
     def coerce_class_names(classes):
@@ -638,4 +729,68 @@ class Graph(object):
                     ' attribute to True for this element class.')
             setattr(self, broker_name, broker)
 
+    @staticmethod
+    def toposort_classes(classes):
+        """Sort class metadatas so that a superclass is always before the subclass"""
+        def get_class_topolist(class_name, name_to_class, processed_classes, current_trace):
+            """Return a topologically sorted list of this class's dependencies and class itself
 
+            :param class_name: name of the class to process
+            :param name_to_class: a map from class name to the descriptor
+            :param processed_classes: a set of classes that have already been processed
+            :param current_trace: list of classes traversed during the recursion.
+
+            :returns: element of classes list sorted in topological order
+            """
+            # Check if this class has already been handled
+            if class_name in processed_classes:
+                return []
+
+            if class_name in current_trace:
+                raise AssertionError(
+                    'Encountered self-reference in dependency chain of {}'.format(class_name))
+
+            cls = name_to_class[class_name]
+            # Collect the dependency classes
+            # These are bases and classes from linked properties
+            dependencies = Graph.list_superclasses(cls)
+            # Recursively process linked edges
+            properties = cls['properties'] if 'properties' in cls else []
+            for prop in properties:
+                if 'linkedClass' in prop:
+                    dependencies.append(prop['linkedClass'])
+
+            class_list = []
+            # Recursively process superclasses
+            current_trace.add(class_name)
+            for dependency in dependencies:
+                class_list.extend(get_class_topolist(
+                    dependency, name_to_class, processed_classes, current_trace))
+            current_trace.remove(class_name)
+            # Do the bookkeeping
+            class_list.append(name_to_class[class_name])
+            processed_classes.add(class_name)
+
+            return class_list
+
+        # Map names to classes
+        class_map = {c['name']: c for c in classes}
+        seen_classes = set()
+
+        toposorted = []
+        for name in class_map.keys():
+            toposorted.extend(get_class_topolist(name, class_map, seen_classes, set([])))
+        return toposorted
+
+    @staticmethod
+    def list_superclasses(class_def):
+        superclasses = class_def.get('superClasses', [])
+        if superclasses:
+            # Make sure to duplicate the list
+            return list(superclasses)
+
+        sup = class_def.get('superClass', None)
+        if sup:
+            return [sup]
+        else:
+            return []

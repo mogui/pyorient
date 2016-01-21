@@ -4,11 +4,14 @@ import decimal
 import os.path
 from datetime import datetime
 
+from pyorient import PyOrientCommandException
 from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
-from pyorient.ogm.property import String, DateTime, Decimal, EmbeddedMap, EmbeddedSet, Float, UUID
+from pyorient.ogm.property import (
+    String, Date, DateTime, Decimal, Integer, EmbeddedMap, EmbeddedSet, Float,
+    Link, UUID)
 from pyorient.ogm.what import expand, in_, out, distinct
 
 AnimalsNode = declarative_node()
@@ -32,17 +35,23 @@ class Eats(AnimalsRelationship):
     label = 'eats'
     modifier = String()
 
-class OGMAnimalsTestCase(unittest.TestCase):
+
+class OGMAnimalsTestCaseBase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
-        super(OGMAnimalsTestCase, self).__init__(*args, **kwargs)
+        super(OGMAnimalsTestCaseBase, self).__init__(*args, **kwargs)
         self.g = None
 
     def setUp(self):
-        g = self.g = Graph(Config.from_url('animals', 'root', 'root'
+        self.g = Graph(Config.from_url('animals', 'root', 'root'
                                            , initial_drop=True))
 
+        g = self.g
         g.create_all(AnimalsNode.registry)
         g.create_all(AnimalsRelationship.registry)
+
+class OGMAnimalsTestCase(OGMAnimalsTestCaseBase):
+    def __init__(self, *args, **kwargs):
+        super(OGMAnimalsTestCase, self).__init__(*args, **kwargs)
 
     def testGraph(self):
         assert len(AnimalsNode.registry) == 2
@@ -146,7 +155,10 @@ def get_colored_eaten_foods(animal, color) {
         assert zombie.specie == 'undead'
 
 
-        schema_registry = g.build_mapping(AnimalsNode, AnimalsRelationship, auto_plural=True)
+class OGMAnimalsRegistryTestCase(OGMAnimalsTestCaseBase):
+    def testRegistry(self):
+        g = self.g
+        schema_registry = g.build_mapping(declarative_node(), declarative_relationship(), auto_plural=True)
         assert all(c in schema_registry for c in ['animal', 'food', 'eats'])
 
         assert type(schema_registry['animal'].specie) == String
@@ -154,7 +166,25 @@ def get_colored_eaten_foods(animal, color) {
         # Plurals not communicated to schema; postprocess registry before
         # include() if you have a better solution than auto_plural.
         assert schema_registry['food'].registry_plural != Food.registry_plural
+        g.clear_registry()
+        assert len(g.registry) == 0
+        g.include(schema_registry)
+        assert set(g.registry.keys()) == set(['animal', 'food', 'eats'])
 
+        rat = g.animal.create(name='rat', specie='rodent')
+        mouse = g.animal.create(name='mouse', specie='rodent')
+        rat_class = g.registry['animal']
+        queried_rat = g.query(rat_class).filter(
+            rat_class.name.endswith('at') | (rat_class.name == 'tiger')).one()
+
+        assert rat == queried_rat
+
+        # try again, to make sure that brokers get cleared correctly
+        schema_registry = g.build_mapping(
+            declarative_node(), declarative_relationship(), auto_plural=True)
+        g.clear_registry()
+        g.include(schema_registry)
+        assert set(g.registry.keys()) == set(['animal', 'food', 'eats'])
 
 
 MoneyNode = declarative_node()
@@ -323,6 +353,13 @@ class OGMDateTimeTestCase(unittest.TestCase):
         name = String(nullable=False, unique=True)
         at = DateTime(nullable=False)
 
+    class DateV(DateTimeNode):
+        element_type = 'dt'
+        element_plural = 'dt'
+
+        name = String(nullable=False, unique=True)
+        at = Date(nullable=False)
+
     def setUp(self):
         g = self.g = Graph(Config.from_url('test_datetime', 'root', 'root',
                                            initial_drop=True))
@@ -345,11 +382,9 @@ class OGMDateTimeTestCase(unittest.TestCase):
     def testDate(self):
         g = self.g
 
-        at = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None)
-        g.datetime.create(name='today', at=at.date())
-
-        returned_dt = g.datetime.query(name='today').one()
-
+        at = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0, tzinfo=None).date()
+        g.dt.create(name='today', at=at)
+        returned_dt = g.dt.query(name='today').one()
         assert returned_dt.at == at
 
 
@@ -362,6 +397,7 @@ class UnicodeV(UnicodeNode):
     name = String(nullable=False, unique=True)
     value = String(nullable=False)
     alias = EmbeddedSet(linked_to=String(), nullable=True)
+
 
 class OGMUnicodeTestCase(unittest.TestCase):
     def setUp(self):
@@ -482,3 +518,162 @@ if sys.version_info[0] < 3:
 else:
     def to_unicode(x):
         return str(x)
+
+
+class OGMToposortTestCase(unittest.TestCase):
+    @staticmethod
+    def before(classes, bf, aft):
+        """Test if bf is before aft in the classes list
+
+            Does not check if both exist
+        """
+        for c in classes:
+            if c['name'] == bf:
+                return True
+            if c['name'] == aft:
+                return False
+        return False
+
+    def testToposort(self):
+        toposorted = Graph.toposort_classes([
+            { 'name': 'A', 'superClasses': None},
+            { 'name': 'B', 'superClasses': None},
+            { 'name': 'C', 'superClasses': ['B']},
+            { 'name': 'D', 'superClasses': ['E', 'F']},
+            { 'name': 'E', 'superClasses': None},
+            { 'name': 'F', 'superClasses': ['B']},
+            { 'name': 'G', 'superClasses': None, 'properties': [{'linkedClass': 'H'}]},
+            { 'name': 'H', 'superClasses': None}
+        ])
+
+        assert set([c['name'] for c in toposorted]) == set(['A', 'B', 'C', 'D', 'E', 'F', 'G', 'H'])
+        assert OGMToposortTestCase.before(toposorted, 'B', 'C')
+        assert OGMToposortTestCase.before(toposorted, 'E', 'D')
+        assert OGMToposortTestCase.before(toposorted, 'F', 'D')
+        assert OGMToposortTestCase.before(toposorted, 'B', 'F')
+        assert OGMToposortTestCase.before(toposorted, 'B', 'D')
+        assert OGMToposortTestCase.before(toposorted, 'H', 'G')
+
+    def testInfiniteLoop(self):
+        # Make sure that this at least stops in case of an infinite dependency loop
+        with self.assertRaises(AssertionError):
+            toposorted = Graph.toposort_classes([
+                { 'name': 'A', 'superClasses': ['B']},
+                { 'name': 'B', 'superClasses': ['A']}
+            ])
+
+
+HardwareNode = declarative_node()
+HardwareRelationship = declarative_relationship()
+
+
+class CPU(HardwareNode):
+    element_plural = 'cpu'
+    name = String(nullable=False)
+
+
+class X86CPU(CPU):
+    element_plural = 'x86cpu'
+    version = Integer(nullable=True)
+
+
+class Manufacturer(HardwareNode):
+    element_plural = 'manufacturer'
+    name = String(nullable=False)
+
+
+class Manufactures(HardwareRelationship):
+    label = 'manufactures'
+    out_ = Link(linked_to=Manufacturer)
+    in_ = Link(linked_to=CPU)
+
+
+# Added this to catch a nasty bug where toposort_classes overrode superClasses
+# when reading schema from the database
+class Outperforms(HardwareRelationship):
+    label = 'outperforms'
+    out_ = Link(linked_to=CPU)
+    in_ = Link(linked_to=CPU)
+
+
+class OGMTypedEdgeTestCase(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMTypedEdgeTestCase, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('hardware', 'root', 'root'
+                                           , initial_drop=True))
+
+        g.create_all(HardwareNode.registry)
+        g.create_all(HardwareRelationship.registry)
+
+    def testConstraints(self):
+        g = self.g
+        pentium = g.cpu.create(name='Pentium')
+        intel = g.manufacturer.create(name='Intel')
+
+        # Now the constraints are enforced
+        with self.assertRaises(PyOrientCommandException):
+            g.manufactures.create(pentium, pentium)
+
+        g.manufactures.create(intel, pentium)
+        loaded_pentium = g.manufacturer.query().what(expand(distinct(out(Manufactures)))).all()
+        assert loaded_pentium == [pentium]
+
+    def testRegistryLoading(self):
+        g = self.g
+
+        database_registry = g.build_mapping(
+            declarative_node(), declarative_relationship(), auto_plural=True)
+        g.clear_registry()
+        g.include(database_registry)
+
+        manufactures_cls = g.registry['manufactures']
+        assert type(manufactures_cls.in_) == Link
+        assert manufactures_cls.in_.linked_to == g.registry['cpu']
+
+
+class OGMTestInheritance(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMTestInheritance, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('hardware', 'root', 'root'
+                                           , initial_drop=True))
+
+        g.create_all(HardwareNode.registry)
+        g.create_all(HardwareRelationship.registry)
+
+    def testInheritance(self):
+        g = self.g
+        pentium = g.x86cpu.create(name='Pentium', version=6)
+        self.assertTrue(isinstance(pentium.name, str))
+        self.assertEquals('Pentium', pentium.name)
+        self.assertEquals(6, pentium.version)
+
+        loaded_pentium = g.get_vertex(pentium._id)
+        self.assertEquals(pentium, loaded_pentium)
+        self.assertTrue(isinstance(loaded_pentium.name, str))
+
+    def testStrictness(self):
+        g = self.g
+
+        # Unknown properties get silently dropped by default
+        pentium = g.cpu.create(name='Pentium', version=6)
+        loaded_pentium = g.get_vertex(pentium._id)
+        # Version is not defined in cpu
+        assert not hasattr(pentium, 'version')
+
+        # But in strict mode they generate errors
+        g = self.g = Graph(Config.from_url('hardware', 'root', 'root'
+                                           , initial_drop=False), strict=True)
+        g.include(g.build_mapping(
+            declarative_node(), declarative_relationship(), auto_plural=True))
+        with self.assertRaises(AttributeError):
+            pentium = g.cpu.create(name='Pentium', version=6)
+
+        pentium = g.x86cpu.create(name='Pentium', version=6)
+        self.assertEquals('Pentium', pentium.name)
+        self.assertEquals(6, pentium.version)
