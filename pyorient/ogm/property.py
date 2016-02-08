@@ -1,5 +1,6 @@
 from .operators import Operand, ArithmeticMixin
 
+import json
 import sys
 import decimal
 import datetime
@@ -83,9 +84,12 @@ class PropertyEncoder:
         elif isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
             return u'"{}"'.format(value)
         elif isinstance(value, str):
-            return repr(value)
+            # it just so happens that JSON in ASCII mode has the same limitations
+            # and escape sequences as what we need: \u00c5 vs \xc5 representation,
+            # quote escaping etc.
+            return json.dumps(value)
         elif sys.version_info[0] < 3 and isinstance(value, unicode):
-            return u'"{}"'.format(value.replace('"', '\\"'))
+            return json.dumps(value)
         elif value is None:
             return 'null'
         elif isinstance(value, list) or isinstance(value, set):

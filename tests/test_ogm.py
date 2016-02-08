@@ -409,18 +409,19 @@ class OGMUnicodeTestCase(unittest.TestCase):
     def testUnicode(self):
         g = self.g
 
-        name = 'unicode test'
+        data = [
+            (u'general_unicode', u'unicode value\u2017\u00c5'),
+            (u'special chars: single quote', u'\''),
+            (u'special chars: quote', u'"'),
+            (u'special chars: new line', u'\n'),
+            (u'special chars: tab', u'\t'),
+            (u'multiple special chars', u'\'"\n\t'),
+        ]
 
-        # \u2017 = Double Low Line
-        # \u00c5 = Latin Capital Letter A With Ring Above
-        #          significant because python would like to represent this
-        #          as \xc5 rather than \u00c5, which OrientDB doesn't support
-        value = u'unicode value\u2017\u00c5'
-
-        g.unicode.create(name=name, value=value)
-
-        returned_v = g.unicode.query(name=name).one()
-        assert to_unicode(returned_v.value) == value
+        for name, value in data:
+            g.unicode.create(name=name, value=value)
+            returned_v = g.unicode.query(name=name).one()
+            assert to_unicode(returned_v.value) == value
 
     def testCommandEncoding(self):
         g = self.g
