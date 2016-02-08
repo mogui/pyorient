@@ -16,7 +16,7 @@ class ArgConverter(object):
     @staticmethod
     def convert_to(conversion, arg, for_query):
         if conversion is ArgConverter.Label:
-            return '{}'.format(PropertyEncoder.encode(arg))
+            return '{}'.format(PropertyEncoder.encode_value(arg))
         elif conversion is ArgConverter.Expression:
             if isinstance(arg, LogicalConnective):
                 return '\'{}\''.format(for_query.filter_string(arg))
@@ -46,7 +46,7 @@ class ArgConverter(object):
             elif isinstance(arg, What):
                 return for_query.build_what(arg)
             else:
-                return PropertyEncoder.encode(arg)
+                return PropertyEncoder.encode_value(arg)
         elif conversion is ArgConverter.Boolean:
             if isinstance(arg, What):
                 return for_query.build_what(arg)

@@ -1,8 +1,9 @@
 from .operators import Operand, ArithmeticMixin
 
-import sys
-import decimal
 import datetime
+import decimal
+import string
+import sys
 
 
 class Property(Operand):
@@ -76,8 +77,17 @@ class UUID:
         return 'UUID()'
 
 class PropertyEncoder:
+    PROHIBITED_NAME_CHARS = set(''.join([string.whitespace, '"\'']))
+
     @staticmethod
-    def encode(value):
+    def encode_name(name):
+        for c in name:
+            if c in PropertyEncoder.PROHIBITED_NAME_CHARS:
+                raise ValueError('Prohibited character in property name: {}'.format(name))
+        return name
+
+    @staticmethod
+    def encode_value(value):
         if isinstance(value, decimal.Decimal):
             return repr(str(value))
         elif isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
@@ -89,10 +99,10 @@ class PropertyEncoder:
         elif value is None:
             return 'null'
         elif isinstance(value, list) or isinstance(value, set):
-            return u'[{}]'.format(u','.join([PropertyEncoder.encode(v) for v in value]))
+            return u'[{}]'.format(u','.join([PropertyEncoder.encode_value(v) for v in value]))
         elif isinstance(value, dict):
             contents = u','.join([
-                '{}: {}'.format(PropertyEncoder.encode(k), PropertyEncoder.encode(v))
+                '{}: {}'.format(PropertyEncoder.encode_value(k), PropertyEncoder.encode_value(v))
                 for k, v in value.items()
             ])
             return u'{{ {} }}'.format(contents)
