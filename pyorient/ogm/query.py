@@ -316,7 +316,7 @@ class Query(object):
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, self))
             elif op is Operator.Between:
-                far_right = PropertyEncoder.encode(expression_root.operands[2])
+                far_right = PropertyEncoder.encode_value(expression_root.operands[2])
                 return u'{0} BETWEEN {1} and {2}'.format(
                     left_str, right, far_right)
             elif op is Operator.Contains:
@@ -325,7 +325,7 @@ class Query(object):
                         left_str, self.filter_string(right))
                 else:
                     return u'{} in {}'.format(
-                        PropertyEncoder.encode(right), left_str)
+                        PropertyEncoder.encode_value(right), left_str)
             elif op is Operator.EndsWith:
                 return u'{0} like \'%{1}\''.format(left_str, right)
             elif op is Operator.Is:
@@ -412,7 +412,7 @@ class Query(object):
     def build_wheres(self, params):
         kw_filters = params.get('kw_filters')
         kw_where = [u' and '.join(u'{0}={1}'
-            .format(k, PropertyEncoder.encode(v))
+            .format(PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v))
                 for k,v in kw_filters.items())] if kw_filters else []
 
         filter_exp = params.get('filter')

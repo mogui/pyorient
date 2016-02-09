@@ -295,7 +295,7 @@ class Graph(object):
                     self.client.command(
                         'ALTER PROPERTY {0} DEFAULT {1}'
                             .format(class_prop,
-                                    PropertyEncoder.encode(prop_value.default)))
+                                    PropertyEncoder.encode_value(prop_value.default)))
 
             self.client.command(
                     'ALTER PROPERTY {0} NOTNULL {1}'
@@ -366,7 +366,6 @@ class Graph(object):
 
     def create_vertex(self, vertex_cls, **kwargs):
         result = self.client.command(
-            # to_unicode(str())
             to_unicode(self.create_vertex_command(vertex_cls, **kwargs)))[0]
 
         props = result.oRecordData
@@ -379,8 +378,9 @@ class Graph(object):
         if kwargs:
             db_props = Graph.props_to_db(vertex_cls, kwargs, self.strict)
             set_clause = u' SET {}'.format(
-                u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
-                         for k,v in db_props.items()))
+                u','.join(u'{}={}'.format(
+                    PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v))
+                    for k, v in db_props.items()))
         else:
             set_clause = u''
 
@@ -402,15 +402,15 @@ class Graph(object):
         if kwargs:
             db_props = Graph.props_to_db(edge_cls, kwargs, self.strict)
             set_clause = u' SET {}'.format(
-                u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
-                         for k,v in db_props.items()))
+                u','.join(u'{}={}'.format(
+                    PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v))
+                    for k, v in db_props.items()))
         else:
             set_clause = ''
 
         return CreateEdgeCommand(
             u'CREATE EDGE {} FROM {} TO {}{}'.format(
                 class_name, from_vertex._id, to_vertex._id, set_clause))
-
 
     def get_vertex(self, vertex_id):
         record = self.client.command('SELECT FROM {}'.format(vertex_id))
@@ -436,8 +436,9 @@ class Graph(object):
         if props:
             db_props = Graph.props_to_db(element_class, props, self.strict)
             set_clause = u' SET {}'.format(
-                u','.join(u'{}={}'.format(k,PropertyEncoder.encode(v))
-                         for k,v in db_props.items()))
+                u','.join(u'{}={}'.format(
+                    PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v))
+                    for k, v in db_props.items()))
         else:
             set_clause = ''
 
@@ -658,6 +659,10 @@ class Graph(object):
     def props_to_db(element_class, props, strict):
         db_props = {}
         for k, v in props.items():
+            # sanitize the property name -- this line
+            # will raise an error if the name is invalid
+            PropertyEncoder.encode_name(k)
+
             if hasattr(element_class, k):
                 prop = getattr(element_class, k)
                 db_props[prop.name or k] = v

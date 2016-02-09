@@ -66,6 +66,14 @@ class OGMAnimalsTestCase(OGMAnimalsTestCaseBase):
 
         assert rat == queried_rat
 
+        invalid_query_args = {'name': 'rat', 'name="rat" OR 1': 1}
+        try:
+            g.animals.query(**invalid_query_args).all()
+        except:
+            pass
+        else:
+            assert False and 'Invalid params did not raise an exception!'
+
         queried_mouse = g.query(mouse).one()
         assert mouse == queried_mouse
         assert mouse == g.get_vertex(mouse._id)
