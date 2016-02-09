@@ -49,7 +49,7 @@ class Drinks(AnimalsRelationship):
     label = 'drinks'
     modifier = String()
 
-class OGMAnimalsTestCase(unittest.TestCase):
+class OGMAnimalsTestCaseBase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(OGMAnimalsTestCaseBase, self).__init__(*args, **kwargs)
         self.g = None
@@ -61,10 +61,6 @@ class OGMAnimalsTestCase(unittest.TestCase):
 
         g.create_all(AnimalsNode.registry)
         g.create_all(AnimalsRelationship.registry)
-
-class OGMAnimalsTestCase(OGMAnimalsTestCaseBase):
-    def __init__(self, *args, **kwargs):
-        super(OGMAnimalsTestCase, self).__init__(*args, **kwargs)
 
     def testGraph(self):
         assert len(AnimalsNode.registry) == 3
@@ -205,7 +201,8 @@ class OGMAnimalsRegistryTestCase(OGMAnimalsTestCaseBase):
         g.clear_registry()
         assert len(g.registry) == 0
         g.include(schema_registry)
-        assert set(g.registry.keys()) == set(['animal', 'food', 'eats'])
+
+        assert set(g.registry.keys()) == set(['food', 'dislikes', 'eats', 'beverage', 'animal', 'drinks'])
 
         rat = g.animal.create(name='rat', specie='rodent')
         mouse = g.animal.create(name='mouse', specie='rodent')
@@ -220,7 +217,7 @@ class OGMAnimalsRegistryTestCase(OGMAnimalsTestCaseBase):
             declarative_node(), declarative_relationship(), auto_plural=True)
         g.clear_registry()
         g.include(schema_registry)
-        assert set(g.registry.keys()) == set(['animal', 'food', 'eats'])
+        assert set(g.registry.keys()) == set(['food', 'dislikes', 'eats', 'beverage', 'animal', 'drinks'])
 
 
 MoneyNode = declarative_node()
