@@ -176,7 +176,7 @@ def get_colored_eaten_foods(animal, color) {
         batch['zombie'] = batch.animals.create(name='zombie',specie='undead')
         batch['brains'] = batch.foods.create(name='brains', color='grey')
         # Retry up to twenty times
-        batch[::20] = batch.eats.create(batch[:'zombie'], batch[:'brains'])
+        batch[:] = batch.eats.create(batch[:'zombie'], batch[:'brains']).retry(20)
 
         batch['unicorn'] = batch.animals.create(name='unicorn', specie='mythical')
         batch['unknown'] = batch.foods.create(name='unknown', color='rainbow')

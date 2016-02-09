@@ -188,8 +188,10 @@ class Graph(object):
 
                 if is_edge:
                     props['label'] = class_name
+                    props['registry_name'] = class_name
                 else:
                     if auto_plural:
+                        props['element_plural'] = class_name
                         props['registry_plural'] = class_name
                     props['element_type'] = class_name
 
@@ -449,7 +451,7 @@ class Graph(object):
         return Query(self, (first_entity,) + entities)
 
     def batch(self, isolation_level=Batch.READ_COMMITTED):
-        return Batch(self)
+        return Batch(self, isolation_level)
 
     def gremlin(self, script, args=None, namespace=None):
         script_body = self.scripts.script_body(script, args, namespace)
