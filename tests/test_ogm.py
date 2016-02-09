@@ -31,21 +31,34 @@ class Food(AnimalsNode):
     name = String(nullable=False, unique=True)
     color = String(nullable=False)
 
+class Beverage(AnimalsNode):
+    element_type = 'beverage'
+    element_plural = 'beverages'
+
+    name = String(nullable=False, unique=True)
+    color = String(nullable=False)
+
 class Eats(AnimalsRelationship):
     label = 'eats'
     modifier = String()
 
+class Dislikes(AnimalsRelationship):
+    label = 'dislikes'
 
-class OGMAnimalsTestCaseBase(unittest.TestCase):
+class Drinks(AnimalsRelationship):
+    label = 'drinks'
+    modifier = String()
+
+class OGMAnimalsTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(OGMAnimalsTestCaseBase, self).__init__(*args, **kwargs)
         self.g = None
 
     def setUp(self):
-        self.g = Graph(Config.from_url('animals', 'root', 'root'
-                                           , initial_drop=True))
+        g = self.g = Graph(Config.from_url('animals', 'root', 'root',
+                                           initial_drop=True))
 
-        g = self.g
+
         g.create_all(AnimalsNode.registry)
         g.create_all(AnimalsRelationship.registry)
 
@@ -54,8 +67,8 @@ class OGMAnimalsTestCase(OGMAnimalsTestCaseBase):
         super(OGMAnimalsTestCase, self).__init__(*args, **kwargs)
 
     def testGraph(self):
-        assert len(AnimalsNode.registry) == 2
-        assert len(AnimalsRelationship.registry) == 1
+        assert len(AnimalsNode.registry) == 3
+        assert len(AnimalsRelationship.registry) == 3
 
         g = self.g
 
@@ -100,6 +113,21 @@ class OGMAnimalsTestCase(OGMAnimalsTestCaseBase):
         assert rat_eats_pea.modifier == 'lots'
         assert rat_eats_pea == g.get_edge(rat_eats_pea._id)
         assert rat_eats_pea == g.get_element(rat_eats_pea._id)
+
+        water = g.beverages.create(name='water', color='clear')
+        mouse_drinks_water = g.drinks.create(mouse, water)
+
+        assert [water] == mouse.out(Drinks)
+        assert [mouse_drinks_water] == mouse.outE(Drinks)
+        assert [water] == mouse.both(Drinks)
+        assert [mouse_drinks_water] == mouse.bothE(Drinks)
+
+        nut = g.foods.create(name='nut', color='brown')
+        rat_dislikes_nut = g.dislikes.create(rat, nut)
+        mouse_eats_nut = g.eats.create(mouse, nut)
+
+        assert [rat] == nut.in_(Dislikes)
+        assert [rat_dislikes_nut] == nut.inE(Dislikes)
 
         eaters = g.in_(Food, Eats)
         assert rat in eaters
