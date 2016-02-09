@@ -11,7 +11,7 @@
 
 Pyorient works with orientdb version 1.7 and later.
 > **Warning** Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
-
+> **NOTICE** Prior to version 1.4.7 there was a potential SQL injection vulnerability that now is fixed. (see [details](https://github.com/mogui/pyorient/pull/172) )
 
 ## Installation
 
@@ -20,7 +20,7 @@ Pyorient works with orientdb version 1.7 and later.
 ## How to contribute
 
 - Fork the project
-- work on **develop** branch 
+- work on **develop** branch
 - Make your changes
 - Add tests for it. This is important so I don't break it in a future version unintentionally
 - Send me a pull request *(pull request to master will be rejected)*
@@ -32,7 +32,7 @@ Pyorient works with orientdb version 1.7 and later.
 - ensure you have `ant` and `nose` installed properly
 - bootsrap orient by running `./ci/ci-start.sh` from project directory   
   *it will download latest orient and make some change on config and database for the tests*
-- run with `nosetests` 
+- run with `nosetests`
 
 ## Usage
 > A proper documentation will be available soon, for now you have to read the tests.
@@ -81,7 +81,7 @@ client.db_count_records()
 ### Send a command
 ```python
 cluster_id = client.command( "create class my_class extends V" )
-client.command( 
+client.command(
     "insert into my_class ( 'accommodation', 'work', 'holiday' ) values( 'B&B', 'garage', 'mountain' )"
 )
 ```
@@ -177,14 +177,14 @@ cluster_id = 3
 ### execute real create to get some info
 rec = { 'accommodation': 'mountain hut', 'work': 'not!', 'holiday': 'lake' }
 rec_position = client.record_create( cluster_id, rec )
-	
+
 tx = client.tx_commit()
 tx.begin()
-	
+
 ### create a new record
 rec1 = { 'accommodation': 'home', 'work': 'some work', 'holiday': 'surf' }
 rec_position1 = client.record_create( -1, rec1 )
-	
+
 ### prepare for an update
 rec2 = { 'accommodation': 'hotel', 'work': 'office', 'holiday': 'mountain' }
 update_record = client.record_update( cluster_id, rec_position._rid, rec2, rec_position._version )
@@ -220,7 +220,7 @@ Since version 27 is introduced an extension to allow use a token based session. 
 When using the token based authentication, the connections can be shared between users of the same server.
 ```python
 client = pyorient.OrientDB("localhost", 2424)
-client.set_session_token( True )  # set true to enable the token based 
+client.set_session_token( True )  # set true to enable the token based
 authentication
 client.db_open( "GratefulDeadConcerts", "admin", "admin" )
 
@@ -234,7 +234,7 @@ del client
 client = pyorient.OrientDB("localhost", 2424)
 
 ### set the previous obtained token to re-attach to the old session
-client.set_session_token( sessionToken ) 
+client.set_session_token( sessionToken )
 
 ### now the dbOpen is not needed to perform database operations
 record = client.query( 'select from V where @rid = #9:1' )
@@ -249,7 +249,7 @@ assert sessionToken != new_sessionToken
 
 ### A GRAPH Example
 
-The GRAPH representation of animals and its food 
+The GRAPH representation of animals and its food
 
 
 ```python
@@ -271,7 +271,7 @@ client.command("create class Animal extends V")
 ### Insert a new value
 client.command("insert into Animal set name = 'rat', specie = 'rodent'")
 
-### query the values 
+### query the values
 client.query("select * from Animal")
 [<OrientRecord at 0x7f>..., ...]
 
@@ -291,7 +291,7 @@ eat_edges = client.command(
     "select from Food where name = 'pea'"
     ")"
 )
- 
+
 ### Who eats the peas?
 pea_eaters = client.command("select expand( in( Eat )) from Food where name = 'pea'")
 for animal in pea_eaters:
