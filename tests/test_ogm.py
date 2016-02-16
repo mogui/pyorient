@@ -726,3 +726,21 @@ class OGMTestInheritance(unittest.TestCase):
         pentium = g.x86cpu.create(name='Pentium', version=6)
         self.assertEquals('Pentium', pentium.name)
         self.assertEquals(6, pentium.version)
+
+class OGMTestNullProperties(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMTestNullProperties, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('hardware', 'root', 'root'
+                                           , initial_drop=True))
+
+        g.create_all(HardwareNode.registry)
+        g.create_all(HardwareRelationship.registry)
+
+    def testInheritance(self):
+        g = self.g
+        pentium = g.x86cpu.create(name='Pentium')
+        loaded_pentium = g.get_vertex(pentium._id)
+        self.assertIsNone(loaded_pentium.version)
