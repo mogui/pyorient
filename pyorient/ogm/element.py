@@ -36,7 +36,12 @@ class GraphElement(object):
         try:
             return super(GraphElement, self).__getattribute__('_props')[key]
         except:
-            return super(GraphElement, self).__getattribute__(key)
+            attr = super(GraphElement, self).__getattribute__(key)
+            # Make sure to never return properties as instance attributes
+            if isinstance(attr, Property):
+                return None
+            else:
+                return attr
 
     def __eq__(self, other):
         return type(self) is type(other) and \
