@@ -342,6 +342,8 @@ class Query(object):
             elif op is Operator.StartsWith:
                 return u'{0} like {1}'.format(
                     left_str, PropertyEncoder.encode_value(right + '%'))
+            else:
+                raise AssertionError('Unhandled Operator type: {}'.format(op))
         else:
             return u'{0} {1} {2}'.format(
                 self.filter_string(left)
