@@ -160,6 +160,8 @@ class Query(object):
 
         g = self._graph
 
+        print('SELECTED:', select)
+
         response = g.client.command(select)
         if response:
             # TODO Determine which other queries always take only one iteration
@@ -318,7 +320,7 @@ class Query(object):
             elif op is Operator.Between:
                 far_right = PropertyEncoder.encode_value(expression_root.operands[2])
                 return u'{0} BETWEEN {1} and {2}'.format(
-                    left_str, right, far_right)
+                    left_str, PropertyEncoder.encode_value(right), far_right)
             elif op is Operator.Contains:
                 if isinstance(right, LogicalConnective):
                     return u'{0} contains({1})'.format(
@@ -327,19 +329,19 @@ class Query(object):
                     return u'{} in {}'.format(
                         PropertyEncoder.encode_value(right), left_str)
             elif op is Operator.EndsWith:
-                return u'{0} like \'%{1}\''.format(left_str, right)
+                return u'{0} like {1}'.format(left_str, PropertyEncoder.encode_value('%' + right))
             elif op is Operator.Is:
                 if not right: # :)
                     return '{0} is null'.format(left_str)
             elif op is Operator.Like:
-                return u'{0} like \'{1}\''.format(
-                    left_str, right)
+                return u'{0} like {1}'.format(
+                    left_str, PropertyEncoder.encode_value(right))
             elif op is Operator.Matches:
-                return u'{0} matches \'{1}\''.format(
-                    left_str, right)
+                return u'{0} matches {1}'.format(
+                    left_str, PropertyEncoder.encode_value(right))
             elif op is Operator.StartsWith:
-                return u'{0} like \'{1}%\''.format(
-                    left_str, right)
+                return u'{0} like {1}'.format(
+                    left_str, PropertyEncoder.encode_value(right + '%'))
         else:
             return u'{0} {1} {2}'.format(
                 self.filter_string(left)
