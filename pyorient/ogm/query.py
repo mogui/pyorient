@@ -160,8 +160,6 @@ class Query(object):
 
         g = self._graph
 
-        print('SELECTED:', select)
-
         response = g.client.command(select)
         if response:
             # TODO Determine which other queries always take only one iteration
