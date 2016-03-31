@@ -2,10 +2,10 @@ pyorient: OrientDB native client library
 ========================================
 
 .. image:: https://img.shields.io/pypi/v/pyorient.svg
-    :target: https://pypi.python.org/pypi/requests
+    :target: https://pypi.python.org/pypi/pyorient
 
 .. image:: https://img.shields.io/pypi/dm/pyorient.svg
-        :target: https://pypi.python.org/pypi/requests
+        :target: https://pypi.python.org/pypi/pyorient
 
 .. image:: https://travis-ci.org/mogui/pyorient.svg?branch=master
     :target: https://travis-ci.org/mogui/pyorient
