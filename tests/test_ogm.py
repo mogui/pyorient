@@ -744,3 +744,48 @@ class OGMTestNullProperties(unittest.TestCase):
         pentium = g.x86cpu.create(name='Pentium')
         loaded_pentium = g.get_vertex(pentium._id)
         self.assertIsNone(loaded_pentium.version)
+
+
+ClassFieldNode = declarative_node()
+ClassFieldRelationship = declarative_relationship()
+
+class ClassFieldVertex(ClassFieldNode):
+    name = String(nullable=False)
+
+class ClassFieldVertex2(ClassFieldNode):
+    name = String(nullable=False)
+
+
+class ClassFieldEdge(ClassFieldRelationship):
+    out_ = Link(linked_to=ClassFieldVertex)
+    in_ = Link(linked_to=ClassFieldVertex)
+
+class OGMTestClassField(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMTestClassField, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('custom_field', 'root', 'root'
+                                           , initial_drop=True))
+
+        g.create_all(ClassFieldNode.registry)
+        g.create_all(ClassFieldRelationship.registry)
+        g.client.command('ALTER CLASS classfieldvertex CUSTOM test_field_1=test string one')
+        g.client.command('ALTER CLASS classfieldvertex CUSTOM test_field_2=test string two')
+        g.client.command('ALTER CLASS classfieldedge CUSTOM test_field_1=test string two')
+
+    def testCustomFields(self):
+        g = self.g
+
+        database_registry = g.build_mapping(
+            declarative_node(), declarative_relationship(), auto_plural=True)
+        g.clear_registry()
+        g.include(database_registry)
+        self.assertEquals(
+            {'test_field_1': 'test string one', 'test_field_2': 'test string two'},
+            g.registry['classfieldvertex'].class_fields)
+        self.assertEquals({}, g.registry['classfieldvertex2'].class_fields)
+        self.assertEquals(
+            {'test_field_1': 'test string two'},
+            g.registry['classfieldedge'].class_fields)

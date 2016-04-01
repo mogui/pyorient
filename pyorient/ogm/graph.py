@@ -182,6 +182,8 @@ class Graph(object):
             is_edge = bases and bases[0].decl_type == DeclarativeType.Edge
             props.update(extract_properties(class_def['properties'], is_edge))
 
+            props['class_fields'] = class_def.get('customFields', None) or {}
+
             if bases:
                 # Create class for the graph type
                 props['decl_type'] = bases[0].decl_type
