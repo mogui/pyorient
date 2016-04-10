@@ -226,9 +226,9 @@ class DataClusterDropMessage(BaseMessage):
     @need_db_opened
     def prepare(self, params=None):
 
-        if isinstance( params, int ):
+        if isinstance( params[0], int ):
             # mandatory if not passed by method
-            self._cluster_id = params
+            self._cluster_id = params[0]
 
         self._append( ( FIELD_SHORT, self._cluster_id ) )
         return super( DataClusterDropMessage, self ).prepare()

@@ -88,7 +88,7 @@ class DataClusterTestCase(unittest.TestCase):
         for _cid in _created_clusters:
             drop_c = DataClusterDropMessage( connection )
             print("Drop cluster %u" % _cid)
-            res = drop_c.prepare( _cid ).send().fetch_response()
+            res = drop_c.prepare( ( _cid, ) ).send().fetch_response()
             if res is True:
                 print("Done")
             else:
