@@ -97,41 +97,60 @@ class CommandTestCase(unittest.TestCase):
             assert True
             assert result == []
 
-            # CLUSTERS
-            new_cluster_id = client.data_cluster_add(
-                'my_cluster_1234567', pyorient.CLUSTER_TYPE_PHYSICAL
-            )
-            assert new_cluster_id > 0
+    def test_cluster_add_drop_recount(self):
 
-            new_cluster_list = client.db_reload()
-            new_cluster_list.sort(key=lambda cluster: cluster.id)
+        client = pyorient.OrientDB("localhost", 2424)  # TEST COMMANDS
+        client.connect( "root", "root" )
 
-            _list = []
-            for cluster in new_cluster_list:
-                print("Cluster Name: %s, ID: %u " \
-                      % ( cluster.name, cluster.id))
-                value = client.data_cluster_data_range(cluster.id)
-                print("Value: %s " % value)
-                _list.append( cluster.id)
-                assert value is not []
-                assert value is not None
+        db_name = 'test_commands'
+        exists = client.db_exists(db_name, pyorient.STORAGE_TYPE_MEMORY)
 
-            # check for new cluster in database
-            try:
-                _list.index( new_cluster_id )
-                print("New cluster %r found in reload." % new_cluster_id)
-                assert True
-            except ValueError:
-                assert False
-
-            # delete the new cluster TODO: broken test
-            # print("Drop Cluster ID: %r" % new_cluster_id
-            # drop_cluster = client.data_cluster_drop( new_cluster_id )
-            # assert drop_cluster is True
-
-            result = client.query("select from my_class", 10, '*:0')
+        print("Before %r" % exists)
+        try:
+            client.db_drop(db_name)
             assert True
-            assert result == []
+        except pyorient.PyOrientCommandException as e:
+            print(str(e))
+        finally:
+            client.db_create(db_name, pyorient.DB_TYPE_GRAPH,
+                             pyorient.STORAGE_TYPE_MEMORY)
+
+        cluster_info = client.db_open(
+            db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
+        )
+
+        # CLUSTERS
+        new_cluster_id = client.data_cluster_add(
+            'my_cluster_1234567', pyorient.CLUSTER_TYPE_PHYSICAL
+        )
+        assert new_cluster_id > 0
+
+        new_cluster_list = client.db_reload()
+        new_cluster_list.sort(key=lambda cluster: cluster.id)
+
+        _list = []
+        for cluster in new_cluster_list:
+            print("Cluster Name: %s, ID: %u " % (cluster.name, cluster.id))
+            value = client.data_cluster_data_range(cluster.id)
+            print("Value: %s " % value)
+            _list.append(cluster.id)
+            assert value is not []
+            assert value is not None
+
+        # check for new cluster in database
+        try:
+            _list.index(new_cluster_id)
+            print("New cluster %r found in reload." % new_cluster_id)
+            assert True
+        except ValueError:
+            assert False
+
+        # delete the new cluster TODO: broken test
+        print("Drop Cluster ID: %r" % new_cluster_id)
+        drop_cluster = client.data_cluster_drop(new_cluster_id)
+        assert drop_cluster is True
+
+
 
     def test_transaction_new_iface(self):
 
