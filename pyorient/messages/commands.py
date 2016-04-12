@@ -114,7 +114,7 @@ class CommandMessage(BaseMessage):
 
             # a limit specified in a sql string should always override a
             # limit parameter pass to prepare()
-            if ' limit ' not in self._query or self._command_type == QUERY_GREMLIN:
+            if ' LIMIT ' not in self._query.upper() or self._command_type == QUERY_GREMLIN:
                 _payload_definition.append( ( FIELD_INT, self._limit ) )
             else:
                 _payload_definition.append( ( FIELD_INT, -1 ) )
