@@ -287,6 +287,27 @@ class CommandTestCase(unittest.TestCase):
         client.command( "create index KEY on obj ( _KEY ) unique" )
         assert True is True
 
+    def test_limit(self):
+
+        client = pyorient.OrientDB("localhost", 2424)
+        client.connect("root", "root")
+
+        db_name = "GratefulDeadConcerts"
+
+        cluster_info = client.db_open(
+            db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
+        )
+
+        assert len( client.query( "select from V Limit 1" ) ) == 1
+        assert len( client.query( "select from V Limit 51" ) ) == 51
+        assert len( client.query( "select from V lIMit 51" ) ) == 51
+        assert len( client.query( "select from V LIMIT 51" ) ) == 51
+        assert len( client.query( "select from V limit 51" ) ) == 51
+        assert len( client.query( "select from V limit 1" ) ) == 1
+        assert len( client.query( "select from V", 25 ) ) == 25
+        assert len( client.query( "select from V limit 21", 10 ) ) == 21
+        assert len( client.query( "select from V LIMIT 21", 10 ) ) == 21
+        assert len( client.query( "select from V" ) ) == 20
 
 # x = CommandTestCase('test_command').run()
 
