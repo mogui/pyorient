@@ -807,5 +807,5 @@ class OGMTestAbstractField(unittest.TestCase):
 
         database_registry = g.build_mapping(
             declarative_node(), declarative_relationship(), auto_plural=True)
-        self.assertTrue(database_registry['AbstractClass'].is_abstract)
-        self.assertFalse(database_registry['ConcreteClass'].is_abstract)
+        self.assertTrue(database_registry['AbstractClass'].abstract)
+        self.assertFalse(database_registry['ConcreteClass'].abstract)
