@@ -183,7 +183,6 @@ class Graph(object):
             props.update(extract_properties(class_def['properties'], is_edge))
 
             props['class_fields'] = class_def.get('customFields', None) or {}
-            clusters = class_def.get('clusterIds', None) or []
             props['abstract'] = class_def.get('abstract', False)
 
             if bases:
