@@ -141,7 +141,10 @@ class BaseMessage(object):
 
     def get_protocol(self):
         if self._protocol < 0:
-            self._protocol = self._orientSocket.protocol
+            if SUPPORTED_PROTOCOL < self._orientSocket.protocol:
+                self._protocol = SUPPORTED_PROTOCOL
+            else:
+                self._protocol = self._orientSocket.protocol
         return self._protocol
 
     def _decode_header(self):
