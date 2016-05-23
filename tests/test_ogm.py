@@ -789,3 +789,23 @@ class OGMTestClassField(unittest.TestCase):
         self.assertEquals(
             {'test_field_1': 'test string two'},
             g.registry['classfieldedge'].class_fields)
+
+
+class OGMTestAbstractField(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMTestAbstractField, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('abstract_classes', 'root', 'root'
+                                           , initial_drop=True))
+        g.client.command('CREATE CLASS AbstractClass EXTENDS V ABSTRACT')
+        g.client.command('CREATE CLASS ConcreteClass EXTENDS V')
+
+    def testAbstractFlag(self):
+        g = self.g
+
+        database_registry = g.build_mapping(
+            declarative_node(), declarative_relationship(), auto_plural=True)
+        self.assertTrue(database_registry['AbstractClass'].abstract)
+        self.assertFalse(database_registry['ConcreteClass'].abstract)
