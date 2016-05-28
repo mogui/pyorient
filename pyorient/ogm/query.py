@@ -85,10 +85,12 @@ class Query(object):
 
                             if len(prop_names) > 1:
                                 yield selectuple(
-                                    *tuple(response.oRecordData.get(name)
+                                    *tuple(self.parse_record_prop(
+                                            response.oRecordData.get(name))
                                         for name in prop_names))
                             else:
-                                yield response.oRecordData[prop_names[0]]
+                                yield self.parse_record_prop(
+                                        response.oRecordData[prop_names[0]])
                         else:
                             yield g.element_from_record(response)
                             break
@@ -169,12 +171,16 @@ class Query(object):
                 if prop_names:
                     if len(prop_names) > 1:
                         return [
-                            selectuple(*tuple(record.oRecordData.get(name)
-                                       for name in prop_names))
+                            selectuple(*tuple(
+                                self.parse_record_prop(
+                                    record.oRecordData.get(name))
+                                for name in prop_names))
                             for record in response]
                     else:
-                        return [record.oRecordData[prop_names[0]]
-                                for record in response]
+                        return [
+                            self.parse_record_prop(
+                                record.oRecordData[prop_names[0]])
+                            for record in response]
                 else:
                     return g.elements_from_records(response)
             else:
@@ -612,6 +618,16 @@ class Query(object):
                 ','.join(props), src, optional_string)
         else:
             return u'SELECT FROM {} {}'.format(src, optional_string)
+
+    def parse_record_prop(self, prop):
+        if isinstance(prop, list):
+            g = self._graph
+            if len(prop) > 1:
+                return g.elements_from_links(prop)
+            else:
+                return g.element_from_link(prop[0])
+        else:
+            return prop
 
 class TempParams(object):
     def __init__(self, params, **kwargs):

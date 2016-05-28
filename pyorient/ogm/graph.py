@@ -612,6 +612,12 @@ class Graph(object):
     def elements_from_records(self, records):
         return [self.element_from_record(record) for record in records]
 
+    def element_from_link(self, link):
+        return self.get_element(link.get_hash())
+
+    def elements_from_links(self, links):
+        return [self.element_from_link(link) for link in links]
+
     PROPERTY_TYPES = {
         0:Boolean
         , 1:Integer
