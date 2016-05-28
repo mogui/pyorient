@@ -241,9 +241,8 @@ class VertexWhatBegin(object):
 out = VertexWhatBegin(What.Out)
 in_ = VertexWhatBegin(What.In)
 both = VertexWhatBegin(What.Both)
-outE = VertexWhatBegin(What.OutE)
-inE = VertexWhatBegin(What.InE)
-bothE = VertexWhatBegin(What.BothE)
+outV = VertexWhatBegin(What.OutV)
+inV = VertexWhatBegin(What.InV)
 
 class EdgeWhat(ElementWhat):
     def __init__(self, chain):
@@ -251,21 +250,22 @@ class EdgeWhat(ElementWhat):
 
     def outV(self):
         chain = self.chain
-        chain.append(tuple(What.OutV))
+        chain.append((What.OutV,))
         return VertexWhat(chain)
 
     def inV(self):
         chain = self.chain
-        chain.append(tuple(What.InV))
+        chain.append((What.InV,))
         return VertexWhat(chain)
 
 class EdgeWhatBegin(object):
     def __init__(self, func):
         self.func = func
 
-    def __call__(self):
-        return EdgeWhat([(self.func,)])
+    def __call__(self, *labels):
+        return EdgeWhat([(self.func, labels)])
 
-outV = EdgeWhatBegin(What.OutV)
-inV = EdgeWhatBegin(What.InV)
+outE = EdgeWhatBegin(What.OutE)
+inE = EdgeWhatBegin(What.InE)
+bothE = EdgeWhatBegin(What.BothE)
 

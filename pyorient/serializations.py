@@ -113,7 +113,7 @@ class OrientSerializationCSV(object):
         if isinstance(value, str):
             ret = '"' + value + '"'
         elif isinstance(value, float):
-            ret = str(value) + 'f'
+            ret = str(value) + 'd'
 
         elif sys.version_info[0] >= 3 and isinstance(value, int):
             if value > 2147483647:

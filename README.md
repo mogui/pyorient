@@ -37,7 +37,9 @@ Pyorient works with orientdb version 1.7 and later.
 - run with `nosetests`
 
 ## Usage
-> A proper documentation will be available soon, for now you have to read the tests.
+> Proper documentation will be available soon, for now you have to read the tests.
+
+PyOrient is composed of two layers. At its foundation is the python wrapper around OrientDB's binary protocol. Built upon that - and OrientDB's own SQL language - is the Object-Graph Mapper (or OGM). The OGM layer is documented separately.
 
 ### Init the client
 ```python

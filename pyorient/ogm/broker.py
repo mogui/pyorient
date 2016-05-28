@@ -18,7 +18,7 @@ class Broker(object):
                 element_plural = 'foos'
                 name = String()
 
-             g.include(Foo)
+             g.include(Node.registry)
              g.foos.create(name='Bar')
 
     Similarly for relationship classes with a 'label' attribute.
