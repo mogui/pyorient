@@ -4,6 +4,10 @@ from .broker import VertexBroker
 class Vertex(GraphElement):
     Broker = VertexBroker
 
+    # TODO
+    # Edge information is carried in vertexes retrieved from database,
+    # as OrientBinaryObject. Can likely optimise these traversals
+    # when we know how to parse these.
     def outE(self, *edge_classes):
         g = self._graph
         return g.outE(self._id, *edge_classes) if g else None

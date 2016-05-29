@@ -182,18 +182,23 @@ class Query(object):
                                 record.oRecordData[prop_names[0]])
                             for record in response]
                 else:
+                    if self._params.get('reify', False) and len(response) == 1:
+                        # Simplify query for subsequent uses
+                        del self._params['kw_filters']
+                        self.source_name = response[0]._rid
+
                     return g.elements_from_records(response)
             else:
                 return next(iter(response[0].oRecordData.values()))
         else:
             return []
 
-    def first(self):
-        with TempParams(self._params, limit=1):
+    def first(self, reify=False):
+        with TempParams(self._params, limit=1, reify=reify):
             response = self.all()
             return response[0] if response else None
 
-    def one(self):
+    def one(self, reify=False):
         with TempParams(self._params, limit=2):
             responses = self.all()
             num_responses = len(responses)
@@ -624,10 +629,11 @@ class Query(object):
             g = self._graph
             if len(prop) > 1:
                 return g.elements_from_links(prop)
-            else:
+            elif len(prop) == 1:
                 return g.element_from_link(prop[0])
-        else:
-            return prop
+            else:
+                return None
+        return prop
 
 class TempParams(object):
     def __init__(self, params, **kwargs):
