@@ -12,7 +12,7 @@ from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
     String, Date, DateTime, Decimal, Integer, EmbeddedMap, EmbeddedSet, Float,
     Link, UUID)
-from pyorient.ogm.what import expand, in_, out, distinct
+from pyorient.ogm.what import expand, in_, out, distinct, sysdate
 
 AnimalsNode = declarative_node()
 AnimalsRelationship = declarative_relationship()
@@ -411,6 +411,12 @@ class OGMDateTimeTestCase(unittest.TestCase):
         returned_dt = g.datetime.query(name='now').one()
 
         assert returned_dt.at == at
+
+        # FIXME This returns microseconds, so there's nothing wrong with
+        # OrientDB's storage. What's breaking for the above case?
+        server_now = g.datetime.create(name='server_now', at=sysdate())
+        assert server_now.at >= returned_dt.at
+
 
     def testDate(self):
         g = self.g

@@ -1,4 +1,5 @@
 from .operators import Operand, ArithmeticMixin
+from .what import What, FunctionWhat
 
 import json
 import datetime
@@ -110,6 +111,8 @@ class PropertyEncoder:
                 for k, v in value.items()
             ])
             return u'{{ {} }}'.format(contents)
+        elif isinstance(value, FunctionWhat) and value.func == What.SysDate:
+            return 'sysdate({})'.format(','.join([PropertyEncoder.encode_value(v) for v in value.args if v is not None]))
         else:
             # returning the same object will cause repr(value) to be used
             return value

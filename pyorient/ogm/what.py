@@ -112,7 +112,7 @@ def sum(field):
 def date(date_str, fmt=None, tz=None):
     return FunctionWhat(What.Date, (date_str, fmt, tz))
 
-def sysdate(fmt, tz=None):
+def sysdate(fmt=None, tz=None):
     return FunctionWhat(What.SysDate, (fmt, tz))
 
 def format(fmt_str, *args):
