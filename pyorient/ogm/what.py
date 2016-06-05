@@ -83,10 +83,10 @@ def count(field):
     return FunctionWhat(What.Count, (field,))
 
 def min(field, *more):
-    return FunctionWhat(What.Min, [field] + more)
+    return FunctionWhat(What.Min, [field] + [f for f in more])
 
 def max(field, *more):
-    return FunctionWhat(What.Max, [field] + more)
+    return FunctionWhat(What.Max, [field] + [f for f in more])
 
 def avg(field):
     return FunctionWhat(What.Avg, (field,))
