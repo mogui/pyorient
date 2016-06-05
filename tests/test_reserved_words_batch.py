@@ -58,7 +58,7 @@ class CommandTestCase(unittest.TestCase):
         assert res[0]._out.get_hash() == rec_position1._rid
 
         result = self.client.query(
-            "select @rid, @version, holiday from my_v_class")
+            "select @rid, @version, holiday from V")
         # for x in result:
         # print ( "%r" % x._rid.get() )
         # print ( "%r" % x._rid.get_hash() )

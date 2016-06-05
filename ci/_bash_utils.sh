@@ -2,25 +2,16 @@
 
 build(){
 
-    if command_exists "mvn" && [[ "$1" != *"-"* ]] && [[ "$1" != *"SNAPSHOT"* ]] && [[ "$1" != *"2.0"* ]]; then
-        echo "Build started with MAVEN"
-        build_via_mvn $1 $2
-    elif [[ "$1" == *"SNAPSHOT"* ]]; then
+#    if command_exists "mvn" && [[ "$1" != *"-"* ]] && [[ "$1" != *"SNAPSHOT"* ]] && [[ "$1" != *"2.0"* ]]; then
+#        echo "Build started with MAVEN"
+#        build_via_mvn $1 $2
+#    el
+    if [[ "$1" == *"SNAPSHOT"* ]]; then
         echo "Build by clone/pull github develop branch"
-        if command_exists "ant"; then
         build_via_git $1 $2
-        else
-            echo "Error: you must have at least ant installed"
-            exit -1
-        fi
     else
         echo "Build by download from github repository"
-        if command_exists "ant"; then
-            build_via_github $1 $2
-        else
-            echo "Error: you must have at least ant installed"
-            exit -1
-        fi
+        build_via_github $1 $2
     fi
 
 }
@@ -68,8 +59,8 @@ download () {
     elif command_exists "curl" ; then
         echo "cd ${OUTPUT_DIR}"
         cd ${OUTPUT_DIR}
-        echo "curl --silent -L -o "$OUTPUT_DIR/$PACKAGE_NAME" $1"
-        curl --silent -L -o "$OUTPUT_DIR/$PACKAGE_NAME" $1
+        echo "curl --silent -L $1 \"$OUTPUT_DIR/$PACKAGE_NAME\""
+        curl --silent -L $1 --output "$OUTPUT_DIR/$PACKAGE_NAME"
     else
         echo "Cannot download $1 [missing wget or curl]"
         exit 1
@@ -80,6 +71,7 @@ build_via_git (){
 
     ODB_VERSION=$1
     CI_DIR=$2
+    ODB_ARCHIVED_NAME="orientdb-${ODB_VERSION}"
 
     cd ${CI_DIR}
     if [ ! -d "orientdb-develop" ]; then
@@ -95,10 +87,17 @@ build_via_git (){
     fi
 
     git pull origin develop
-    ant clean install
 
-    echo "mv ${CI_DIR}/releases/* ${CI_DIR}"
-    mv ${CI_DIR}/releases/* ${CI_DIR}
+    echo "mvn clean install -DskipTests"
+    mvn clean install -DskipTests
+
+    if [ -d "${CI_DIR}/${ODB_ARCHIVED_NAME}/distribution/target/${ODB_COMPILED_NAME}.dir" ]; then
+        echo "mv \"${CI_DIR}/${ODB_ARCHIVED_NAME}\"/distribution/target/${ODB_COMPILED_NAME}.dir/* ${CI_DIR}"
+        mv "${CI_DIR}/${ODB_ARCHIVED_NAME}"/distribution/target/${ODB_COMPILED_NAME}.dir/* ${CI_DIR}
+    else
+        echo "mv \"${CI_DIR}/${ODB_ARCHIVED_NAME}\"/distribution/target/${ODB_COMPILED_NAME}-distribution.dir/* ${CI_DIR}"
+        mv "${CI_DIR}/${ODB_ARCHIVED_NAME}"/distribution/target/${ODB_COMPILED_NAME}-distribution.dir/* ${CI_DIR}
+    fi
 
     echo "rm -rf ${CI_DIR}/releases"
     rm -rf ${CI_DIR}/releases
@@ -128,46 +127,49 @@ build_via_github (){
     echo "cd ${CI_DIR}/${ODB_ARCHIVED_NAME}"
     cd "${CI_DIR}/${ODB_ARCHIVED_NAME}"
 
-    ant clean install
+    echo "mvn clean install -DskipTests"
+    mvn clean install -DskipTests
 
-    echo "mv ${CI_DIR}/releases/* ${CI_DIR}"
-    mv ${CI_DIR}/releases/* ${CI_DIR}
-
-    echo "rm -rf ${CI_DIR}/releases"
-    rm -rf ${CI_DIR}/releases
+    if [ -d "${CI_DIR}/${ODB_ARCHIVED_NAME}/distribution/target/${ODB_COMPILED_NAME}.dir" ]; then
+        echo "mv \"${CI_DIR}/${ODB_ARCHIVED_NAME}\"/distribution/target/${ODB_COMPILED_NAME}.dir/* ${CI_DIR}"
+        mv "${CI_DIR}/${ODB_ARCHIVED_NAME}"/distribution/target/${ODB_COMPILED_NAME}.dir/* ${CI_DIR}
+    else
+        echo "mv \"${CI_DIR}/${ODB_ARCHIVED_NAME}\"/distribution/target/${ODB_COMPILED_NAME}-distribution.dir/* ${CI_DIR}"
+        mv "${CI_DIR}/${ODB_ARCHIVED_NAME}"/distribution/target/${ODB_COMPILED_NAME}-distribution.dir/* ${CI_DIR}
+    fi
 
     echo "rm -rf ${CI_DIR}/${ODB_ARCHIVED_NAME}"
     rm -rf ${CI_DIR}/${ODB_ARCHIVED_NAME}
 
 }
 
-build_via_mvn () {
-
-    ODB_VERSION=$1
-    CI_DIR=$2
-
-    ODB_COMPILED_NAME="orientdb-community-${ODB_VERSION}"
-
-    ODB_PACKAGE_EXT="tar.gz"
-    ODB_COMPRESSED=${ODB_COMPILED_NAME}.${ODB_PACKAGE_EXT}
-
-    OUTPUT_DIR="${2:-$(pwd)}"
-
-    if [ ! -d "$OUTPUT_DIR" ]; then
-        mkdir "$OUTPUT_DIR"
-    fi
-
-    if command_exists "mvn" ; then
-        echo "mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:get -Dartifact=com.orientechnologies:orientdb-community:\"${ODB_VERSION}\":\"${ODB_PACKAGE_EXT}\":distribution -DremoteRepositories=https://oss.sonatype.org/content/repositories/snapshots/ -Ddest=\"$OUTPUT_DIR/$ODB_COMPRESSED\""
-        mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:get -Dartifact=com.orientechnologies:orientdb-community:"${ODB_VERSION}":"${ODB_PACKAGE_EXT}":distribution -DremoteRepositories=https://oss.sonatype.org/content/repositories/snapshots/ -Ddest="$OUTPUT_DIR/$ODB_COMPRESSED"
-    else
-        echo "Cannot download $1 [maven is not installed]"
-        exit 1
-    fi
-
-    ODB_PACKAGE_PATH="${CI_DIR}/${ODB_COMPILED_NAME}.${ODB_PACKAGE_EXT}"
-
-    echo "Extract package"
-    extract ${ODB_PACKAGE_PATH} ${CI_DIR}
-
-}
+#build_via_mvn () {
+#
+#    ODB_VERSION=$1
+#    CI_DIR=$2
+#
+#    ODB_COMPILED_NAME="orientdb-community-${ODB_VERSION}"
+#
+#    ODB_PACKAGE_EXT="tar.gz"
+#    ODB_COMPRESSED=${ODB_COMPILED_NAME}.${ODB_PACKAGE_EXT}
+#
+#    OUTPUT_DIR="${2:-$(pwd)}"
+#
+#    if [ ! -d "$OUTPUT_DIR" ]; then
+#        mkdir "$OUTPUT_DIR"
+#    fi
+#
+#    if command_exists "mvn" ; then
+#        echo "mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:get -Dartifact=com.orientechnologies:orientdb-community:\"${ODB_VERSION}\":\"${ODB_PACKAGE_EXT}\":distribution -DremoteRepositories=https://oss.sonatype.org/content/repositories/snapshots/ -Ddest=\"$OUTPUT_DIR/$ODB_COMPRESSED\""
+#        mvn org.apache.maven.plugins:maven-dependency-plugin:2.8:get -Dartifact=com.orientechnologies:orientdb-community:"${ODB_VERSION}":"${ODB_PACKAGE_EXT}":distribution -DremoteRepositories=https://oss.sonatype.org/content/repositories/snapshots/ -Ddest="$OUTPUT_DIR/$ODB_COMPRESSED"
+#    else
+#        echo "Cannot download $1 [maven is not installed]"
+#        exit 1
+#    fi
+#
+#    ODB_PACKAGE_PATH="${CI_DIR}/${ODB_COMPILED_NAME}.${ODB_PACKAGE_EXT}"
+#
+#    echo "Extract package"
+#    extract ${ODB_PACKAGE_PATH} ${CI_DIR}
+#
+#}

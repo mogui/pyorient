@@ -777,9 +777,9 @@ class OGMTestClassField(unittest.TestCase):
 
         g.create_all(ClassFieldNode.registry)
         g.create_all(ClassFieldRelationship.registry)
-        g.client.command('ALTER CLASS classfieldvertex CUSTOM test_field_1=test string one')
-        g.client.command('ALTER CLASS classfieldvertex CUSTOM test_field_2=test string two')
-        g.client.command('ALTER CLASS classfieldedge CUSTOM test_field_1=test string two')
+        g.client.command('ALTER CLASS classfieldvertex CUSTOM test_field_1=test_string_one')
+        g.client.command('ALTER CLASS classfieldvertex CUSTOM test_field_2="test string two"')
+        g.client.command('ALTER CLASS classfieldedge CUSTOM test_field_1="test string two"')
 
     def testCustomFields(self):
         g = self.g
@@ -789,11 +789,11 @@ class OGMTestClassField(unittest.TestCase):
         g.clear_registry()
         g.include(database_registry)
         self.assertEquals(
-            {'test_field_1': 'test string one', 'test_field_2': 'test string two'},
+            {'test_field_1': 'test_string_one', 'test_field_2': '"test string two"'},
             g.registry['classfieldvertex'].class_fields)
         self.assertEquals({}, g.registry['classfieldvertex2'].class_fields)
         self.assertEquals(
-            {'test_field_1': 'test string two'},
+            {'test_field_1': '"test string two"'},
             g.registry['classfieldedge'].class_fields)
 
 

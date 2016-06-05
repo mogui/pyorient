@@ -45,9 +45,11 @@ class ConnectMessage(BaseMessage):
 
         if self.get_protocol() > 21:
             self._append( ( FIELD_STRING, self._serialization_type ) )
-
-        if self.get_protocol() > 26:
-            self._append( ( FIELD_BOOLEAN, self._request_token ) )
+            if self.get_protocol() > 26:
+                self._append( ( FIELD_BOOLEAN, self._request_token ) )
+                if self.get_protocol() > 32:
+                    self._append(( FIELD_BOOLEAN, True ))  # support-push
+                    self._append(( FIELD_BOOLEAN, True ))  # collect-stats
 
         self._append( ( FIELD_STRING, self._user ) )
         self._append( ( FIELD_STRING, self._pass ) )
