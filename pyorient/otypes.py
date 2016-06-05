@@ -196,6 +196,9 @@ class OrientVersion(object):
         #: build number
         self.build = None
 
+        #: string build version
+        self.subversion = None
+
         self._parse_version(release)
 
     def _parse_version( self, string_release ):
@@ -205,7 +208,7 @@ class OrientVersion(object):
 
         try:
             version_info = string_release.split( "." )
-            self.major = int( version_info[0] )
+            self.major = version_info[0]
             self.minor = version_info[1]
             self.build = version_info[2]
         except IndexError:
@@ -213,18 +216,18 @@ class OrientVersion(object):
 
         if "-" in self.minor:
             _temp = self.minor.split( "-" )
-            self.minor = int( _temp[0] )
-            self.build = _temp[1]
-        else:
-            self.minor = int( self.minor )
+            self.minor = _temp[0]
+            self.build = 0
+            self.subversion = _temp[1]
 
-        build = self.build.split( " ", 1 )[0]
-        try:
-            build = int( build )
-        except ValueError:
-            pass
+        if "-" in self.build:
+            _temp = self.build.split("-")
+            self.build = _temp[0]
+            self.subversion = _temp[1]
 
-        self.build = build
+        self.major = int( self.major )
+        self.minor = int( self.minor )
+        self.build = int( self.build )
 
     def __str__(self):
         return self.release

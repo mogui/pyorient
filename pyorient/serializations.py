@@ -105,6 +105,7 @@ class OrientSerializationCSV(object):
                 raw += ','
 
         return raw
+
     #
     # ENCODING STUFF
     #
@@ -134,21 +135,22 @@ class OrientSerializationCSV(object):
             ret = str(value) + 'c'
         elif isinstance(value, list):
             try:
-                ret = "[" + ','.join(
-                    map(
-                        lambda elem: self._parse_value(type(value[0])(elem))
-                        if not isinstance(value[0], OrientRecordLink)
-                        else elem.get_hash(),
-                        value
-                    )) + ']'
-            except ValueError as e:
-                raise Exception("wrong type commistion")
+                base_cls = type(value[0])
+            except IndexError:
+                elements = value
+            else:
+                if issubclass(base_cls, OrientRecordLink):
+                    elements = [elem.get_hash() for elem in value]
+                else:
+                    try:
+                        elements = [ self._encode_value( base_cls( elem ) ) for elem in value ]
+                    except ValueError as e:
+                        raise Exception("Wrong type commistion")
+            ret = "[" + ",".join(elements) + "]"
         elif isinstance(value, dict):
-            ret = "{" + ','.join(map(
-                lambda elem: '"' + elem + '":' + self._parse_value(value[elem]),
-                value)) + '}'
+            ret = "{" + ','.join( map( lambda elem: '"' + elem + '":' + self._encode_value(value[elem]), value ) ) + '}'
         elif isinstance(value, OrientRecord):
-            ret = "(" + self.__encode(value) + ")"
+            ret = "(" + self.encode(value.oRecordData) + ")"
         elif isinstance(value, OrientRecordLink):
             ret = value.get_hash()
         elif isinstance(value, OrientBinaryObject):

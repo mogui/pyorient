@@ -81,9 +81,14 @@ class DbOpenMessage(BaseMessage):
             self._append(( FIELD_STRING, self._serialization_type ))
             if self.get_protocol() > 26:
                 self._append(( FIELD_BOOLEAN, self._request_token ))
+                if self.get_protocol() >= 36:
+                    self._append(( FIELD_BOOLEAN, True ))  # support-push
+                    self._append(( FIELD_BOOLEAN, True ))  # collect-stats
 
         self._append(( FIELD_STRING, self._db_name ))
-        self._append(( FIELD_STRING, self._db_type ))
+
+        if self.get_protocol() < 33:
+            self._append(( FIELD_STRING, self._db_type ))
 
         self._append(( FIELD_STRING, self._user ))
         self._append(( FIELD_STRING, self._pass ))
@@ -138,11 +143,11 @@ class DbOpenMessage(BaseMessage):
         nodes = []
 
         # parsing Node List TODO: this must be put in serialization interface
-        if len(nodes_config) >0:
+        if len(nodes_config) > 0:
             _, decoded = self.get_serializer().decode(nodes_config)
-
+            self._node_list = []
             for node_dict in decoded['members']:
-                nodes.append(OrientNode(node_dict))
+                self._node_list.append(OrientNode(node_dict))
 
         # set database opened
         self._orientSocket.db_opened = self._db_name
@@ -150,7 +155,7 @@ class DbOpenMessage(BaseMessage):
         # set serialization type, as global in the orient socket class
         self._orientSocket.serialization_type = self._serialization_type
 
-        return info, clusters, nodes
+        return info, clusters, self._node_list
         # self._cluster_map = self._orientSocket.cluster_map = \
         #     Information([clusters, response, self._orientSocket])
 
@@ -300,6 +305,7 @@ class DbCreateMessage(BaseMessage):
         self._db_name = ''
         self._db_type = DB_TYPE_DOCUMENT
         self._storage_type = ''
+        self._backup_path = -1
 
         if self.get_protocol() > 16:  # 1.5-SNAPSHOT
             self._storage_type = STORAGE_TYPE_PLOCAL
@@ -317,12 +323,21 @@ class DbCreateMessage(BaseMessage):
                 self._db_name = params[0]
                 self.set_db_type(params[1])
                 self.set_storage_type(params[2])
+                self.set_backup_path(params[3])
             except IndexError:
                 pass
 
         self._append(
-            (FIELD_STRINGS, [self._db_name, self._db_type, self._storage_type])
+            (FIELD_STRINGS, [self._db_name, self._db_type, self._storage_type ])
         )
+
+        if self.get_protocol() > 35:
+            if isinstance( self._backup_path, int ):
+                field_type = FIELD_INT
+            else:
+                field_type = FIELD_STRING
+            self._append( ( field_type, self._backup_path ) )
+
         return super(DbCreateMessage, self).prepare()
 
     def fetch_response(self):
@@ -333,6 +348,10 @@ class DbCreateMessage(BaseMessage):
 
     def set_db_name(self, db_name):
         self._db_name = db_name
+        return self
+
+    def set_backup_path(self, backup_path):
+        self._backup_path = backup_path
         return self
 
     def set_db_type(self, db_type):

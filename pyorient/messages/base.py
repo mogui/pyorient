@@ -5,7 +5,7 @@ import sys
 
 from ..exceptions import PyOrientBadMethodCallException, \
     PyOrientCommandException, PyOrientNullRecordException
-from ..otypes import OrientRecord, OrientRecordLink
+from ..otypes import OrientRecord, OrientRecordLink, OrientNode
 
 from ..hexdump import hexdump
 from ..constants import BOOLEAN, BYTE, BYTES, CHAR, FIELD_BOOLEAN, FIELD_BYTE, \
@@ -43,6 +43,9 @@ class BaseMessage(object):
         self._db_opened = self._orientSocket.db_opened
         self._connected = self._orientSocket.connected
 
+        self._node_list = []
+        """:type : list of [OrientNode]"""
+
         self._serializer = None
 
         self._output_buffer = b''
@@ -76,10 +79,8 @@ class BaseMessage(object):
         return self._db_opened
 
     def get_cluster_map(self):
-        """
-        :type self._cluster_map: Information
-        """
-        return self._cluster_map
+        """:type : list of [OrientNode]"""
+        return self._node_list
 
 
     def set_session_token( self, token='' ):
@@ -150,21 +151,6 @@ class BaseMessage(object):
         self._header = [ self._decode_field( FIELD_BYTE ),
                          self._decode_field( FIELD_INT ) ]
 
-        from .connection import ConnectMessage
-        from .database import DbOpenMessage
-        """
-        #  Token authentication handling
-        #  we must recognize ConnectMessage and DbOpenMessage messages
-            TODO: change this check avoiding cross import,
-            importing a subclass in a super class is bad
-        """
-        if not isinstance( self, ( ConnectMessage, DbOpenMessage ) ) \
-                and self._request_token is True:
-            token_refresh = self._decode_field( FIELD_STRING )
-            if token_refresh != b'':
-                self._auth_token = token_refresh
-                self._update_socket_token()
-
         # decode message errors and raise an exception
         if self._header[0] == 1:
 
@@ -180,12 +166,12 @@ class BaseMessage(object):
                 exception_message += self._decode_field( FIELD_STRING )
                 more = self._decode_field( FIELD_BOOLEAN )
 
-            if self.get_protocol() > 18:  # > 18 1.6-snapshot
-                # read serialized version of exception thrown on server side
-                # useful only for java clients
-                serialized_exception = self._decode_field( FIELD_STRING )
-                # trash
-                del serialized_exception
+                if self.get_protocol() > 18:  # > 18 1.6-snapshot
+                    # read serialized version of exception thrown on server side
+                    # useful only for java clients
+                    serialized_exception = self._decode_field( FIELD_STRING )
+                    # trash
+                    del serialized_exception
 
             raise PyOrientCommandException(
                 exception_class.decode( 'utf8' ),
@@ -204,28 +190,47 @@ class BaseMessage(object):
             if self._push_callback:
                 self._push_callback(push_command_id, payload)
 
-            # self._cluster_map.set_hi_availability_list(
-            #    self._decode_field( FIELD_STRING )
-            # )  # JSON WITH THE NEW CLUSTER CFG
-
             end_flag = self._decode_field( FIELD_BYTE )
 
             # this flag can be set more than once
             while end_flag == 3:
                 self._decode_field( FIELD_INT )  # FAKE SESSION ID = 2^-31
-                self._decode_field( FIELD_BYTE )  # 80: 0x50 Request Push
-                self._cluster_map.set_hi_availability_list(
-                    self._decode_field( FIELD_STRING )
-                )  # JSON WITH THE NEW CLUSTER CFG
+                op_code = self._decode_field( FIELD_BYTE )  # 80: 0x50 Request Push
 
-                """
-                :type: self._cluster_map pyorient.messages.cluster.Information
-                """
+                # REQUEST_PUSH_RECORD	        79
+                # REQUEST_PUSH_DISTRIB_CONFIG	80
+                # REQUEST_PUSH_LIVE_QUERY	    81
+                if op_code == 80:
+                    # for node in
+                    payload = self.get_serializer().decode(
+                        self._decode_field( FIELD_STRING )
+                    )  # JSON WITH THE NEW CLUSTER CFG
+
+                    # reset the nodelist
+                    self._node_list = []
+                    for node in payload['members']:
+                        self._node_list.append( OrientNode( node ) )
+
                 end_flag = self._decode_field( FIELD_BYTE )
 
             # Try to set the new session id???
             self._header[1] = self._decode_field( FIELD_INT )  # REAL SESSION ID
             pass
+
+        from .connection import ConnectMessage
+        from .database import DbOpenMessage
+        """
+        #  Token authentication handling
+        #  we must recognize ConnectMessage and DbOpenMessage messages
+            TODO: change this check avoiding cross import,
+            importing a subclass in a super class is bad
+        """
+        if not isinstance(self, (ConnectMessage, DbOpenMessage)) \
+                and self._request_token is True:
+            token_refresh = self._decode_field(FIELD_STRING)
+            if token_refresh != b'':
+                self._auth_token = token_refresh
+                self._update_socket_token()
 
     def _decode_body(self):
         # read body

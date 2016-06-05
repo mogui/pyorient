@@ -99,8 +99,7 @@ class CommandMessage(BaseMessage):
             self._mod_byte = 's'
         else:
             if self._callback is None:
-                raise PyOrientBadMethodCallException( "No callback was "
-                                                                  "provided.",[])
+                raise PyOrientBadMethodCallException( "No callback was provided.", [])
             self._mod_byte = 'a'
 
         _payload_definition = [
@@ -184,11 +183,13 @@ class CommandMessage(BaseMessage):
             super( CommandMessage, self ).fetch_response(True)
             # end Line \x00
             return None
-        elif response_type == 'r':
+        elif response_type == 'r' or response_type == 'w':
             res = [ self._read_record() ]
             self._append( FIELD_CHAR )
             # end Line \x00
             _res = super( CommandMessage, self ).fetch_response(True)
+            if response_type == 'w':
+                res = [ res[0].oRecordData['result'] ]
         elif response_type == 'a':
             self._append( FIELD_STRING )
             self._append( FIELD_CHAR )
