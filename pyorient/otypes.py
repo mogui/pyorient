@@ -217,18 +217,16 @@ class OrientVersion(object):
         if "-" in self.minor:
             _temp = self.minor.split( "-" )
             self.minor = _temp[0]
-            self.build = 0
+            self.build = '0'
             self.subversion = _temp[1]
 
         if "-" in self.build:
-            _temp = self.build.split("-")
-            self.build = _temp[0]
-            self.subversion = _temp[1]
-        else:
             import re
-            preg = re.match( '([0-9]+)(.*)', self.build )
+            preg = re.match( '([0-9])[\.\- ]*(.*)', self.build )
             self.build = preg.group(1)
             self.subversion = preg.group(2)
+        else:
+            self.build = self.build[0]
 
         self.major = int( self.major )
         self.minor = int( self.minor )
