@@ -4,7 +4,7 @@ __author__ = 'mogui <mogui83@gmail.com>'
 # Driver Constants
 #
 NAME = "OrientDB Python binary client (pyorient)"
-VERSION = "1.5.1"
+VERSION = "1.5.2"
 SUPPORTED_PROTOCOL = 36
 
 #
