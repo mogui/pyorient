@@ -15,14 +15,16 @@ class Operator(object):
     Contains = 9
     EndsWith = 10
     Is = 11
-    Like = 12
-    Matches = 13
-    StartsWith = 14
-    Add = 15
-    Sub = 16
-    Mul = 17
-    Div = 18
-    Mod = 19
+    IsNot = 12
+    Like = 13
+    Matches = 14
+    StartsWith = 15
+    Add = 16
+    Sub = 17
+    Mul = 18
+    Div = 19
+    Mod = 20
+    InstanceOf = 21
 
 class LogicalConnective(object):
     def __init__(self, operator, operands):
@@ -54,10 +56,14 @@ def or_(a, b):
         raise TypeError('Both operands to disjunction must be LogicalConnective '
                         'objects; got {0} | {1}'.format(type(a), type(b)))
 
-class RelativeOperand(object):
+class IdentityOperand(object):
     def __eq__(self, value):
         return LogicalConnective(Operator.Equal, (self, value))
 
+    def __ne__(self, value):
+        return LogicalConnective(Operator.NotEqual, (self, value))
+
+class RelativeOperand(IdentityOperand):
     def __ge__(self, value):
         return LogicalConnective(Operator.GreaterEqual, (self, value))
 
@@ -69,9 +75,6 @@ class RelativeOperand(object):
 
     def __lt__(self, value):
         return LogicalConnective(Operator.Less, (self, value))
-
-    def __ne__(self, value):
-        return LogicalConnective(Operator.NotEqual, (self, value))
 
     def between(self, left, right):
         return LogicalConnective(Operator.Between, (self, left, right))
@@ -89,6 +92,13 @@ class Operand(RelativeOperand):
         :param value: May (presently?) only be None
         """
         return LogicalConnective(Operator.Is, (self, value))
+
+    def is_not(self, value):
+        """ Test if a property is not nll
+
+        :param value: May (presently?) only be None
+        """
+        return LogicalConnective(Operator.IsNot, (self, value))
 
     def like(self, value):
         return LogicalConnective(Operator.Like, (self, value))
@@ -138,4 +148,17 @@ class ArithmeticOperation(ArithmeticMixin, RelativeOperand):
         """
         self.paren = True
         return self
+
+
+# Record Attributes
+class InstanceOfMixin(object):
+    @classmethod
+    def instanceof(cls, left, right=None):
+        if cls is InstanceOf:
+            return LogicalConnective(Operator.InstanceOf, (left, right))
+        else: # Subclass
+            return LogicalConnective(Operator.InstanceOf, (cls, left))
+
+def instanceof(left, right):
+    return InstanceOfMixin.instanceof(left, right)
 

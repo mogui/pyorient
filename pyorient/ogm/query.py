@@ -1,12 +1,14 @@
-from .operators import (Operator, RelativeOperand, Operand,
+from .operators import (Operator, IdentityOperand, Operand,
                         ArithmeticOperation, LogicalConnective)
 from .property import Property, PropertyEncoder
 from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
-from .what import What, FunctionWhat, ChainableWhat
+from .what import What, FunctionWhat, ChainableWhat, RecordAttribute
 from .query_utils import ArgConverter
 
 #from .traverse import Traverse
+
+import pyorient
 
 from collections import namedtuple
 from keyword import iskeyword
@@ -155,8 +157,24 @@ class Query(object):
         prop_names = []
         props, where, optional_clauses = self.prepare(prop_names)
         if len(prop_names) > 1:
-            selectuple = namedtuple(self.source_name + '_props',
-                [name + '_' if iskeyword(name) else name
+            sanitise_ids = {
+                ord('#'): '_'
+                , ord(':'): '_'
+            }
+            prop_prefix = self.source_name.translate(sanitise_ids)
+
+            used_names = {}
+            def unique_prop(name):
+                used = used_names.get(name, None)
+                if used is None:
+                    used_names[name] = 1
+                    return name
+                else:
+                    used_names[name] += 1
+                    return name + str(used_names[name])
+
+            selectuple = namedtuple(prop_prefix + '_props',
+                [unique_prop(name + '_' if iskeyword(name) else name)
                     for name in prop_names])
         select = self.build_select(props, where + optional_clauses)
 
@@ -291,12 +309,12 @@ class Query(object):
 
         left = expression_root.operands[0]
         right = expression_root.operands[1]
-        if isinstance(left, RelativeOperand):
-            if isinstance(left, Operand):
-                left_str = left.context_name() # Expecting a Property
+        if isinstance(left, IdentityOperand):
+            if isinstance(left, Property):
+                left_str = left.context_name()
             elif isinstance(left, ArithmeticOperation):
                 left_str = u'({})'.format(self.arithmetic_string(left))
-            elif isinstance(left, FunctionWhat):
+            elif isinstance(left, ChainableWhat):
                 left_str = self.build_what(left)
             else:
                 raise ValueError(
@@ -342,6 +360,9 @@ class Query(object):
             elif op is Operator.Is:
                 if not right: # :)
                     return '{0} is null'.format(left_str)
+            elif op is Operator.IsNot:
+                if not right:
+                    return '{} is not null'.format(left_str)
             elif op is Operator.Like:
                 return u'{0} like {1}'.format(
                     left_str, PropertyEncoder.encode_value(right))
@@ -351,6 +372,9 @@ class Query(object):
             elif op is Operator.StartsWith:
                 return u'{0} like {1}'.format(
                     left_str, PropertyEncoder.encode_value(right + '%'))
+            elif op is Operator.InstanceOf:
+                return u'{0] instanceof {1}'.format(
+                    left_str, repr(right.registry_name))
             else:
                 raise AssertionError('Unhandled Operator type: {}'.format(op))
         else:
@@ -411,6 +435,8 @@ class Query(object):
 
         whats = params.get('what')
         if whats:
+            # FIXME prop_names are incorrectly generated when
+            # multiple, distinct what's alias to the same name
             props = [self.build_what(what, prop_names) for what in whats]
         else:
             props = [e.context_name() for e in self._class_props]
@@ -550,7 +576,58 @@ class Query(object):
         , What.TraversedVertex:
             WhatFunction(2, 'traversedVertex({})'
                          , (ArgConverter.Value, ArgConverter.Value))
+        , What.Any: WhatFunction(0, 'any()', tuple())
+        , What.All: WhatFunction(0, 'all()', tuple())
+        # Methods
+        , What.Append: WhatFunction(1, 'append({})', (ArgConverter.Value,))
+        , What.AsBoolean: WhatFunction(0, 'asBoolean()', tuple())
+        , What.AsDate: WhatFunction(0, 'asDate()', tuple())
+        , What.AsDatetime: WhatFunction(0, 'asDatetime()', tuple())
+        , What.AsDecimal: WhatFunction(0, 'asDecimal()', tuple())
+        , What.AsFloat: WhatFunction(0, 'asFloat()', tuple())
+        , What.AsInteger: WhatFunction(0, 'asInteger()', tuple())
+        , What.AsList: WhatFunction(0, 'asList()', tuple())
+        , What.AsLong: WhatFunction(0, 'asLong()', tuple())
+        , What.AsMap: WhatFunction(0, 'asMap()', tuple())
+        , What.AsSet: WhatFunction(0, 'asSet()', tuple())
+        , What.AsString: WhatFunction(0, 'asString()', tuple())
+        , What.CharAt: WhatFunction(1, 'charAt({})', (ArgConverter.Field,))
+        , What.Convert: WhatFunction(1, 'convert({})', (ArgConverter.Value,))
+        , What.Exclude: WhatFunction(None, 'exclude({})', (ArgConverter.Value,))
+        , What.FormatMethod: WhatFunction(1, 'format({})', (ArgConverter.Value,))
+        , What.Hash: WhatFunction(1, 'hash({})', (ArgConverter.Value,))
+        , What.Include: WhatFunction(None, 'include({})', (ArgConverter.Value,))
+        , What.IndexOf: WhatFunction(2, 'indexOf({})', (ArgConverter.Value, ArgConverter.Value))
+        , What.JavaType: WhatFunction(0, 'javaType()', tuple())
+        , What.Keys: WhatFunction(0, 'keys()', tuple())
+        , What.Left: WhatFunction(1, 'left({})', (ArgConverter.Value,))
+        , What.Length: WhatFunction(0, 'length()', tuple())
+        , What.Normalize: WhatFunction(2, 'normalize({})', (ArgConverter.Value, ArgConverter.Value))
+        , What.Prefix: WhatFunction(1, 'prefix({})', (ArgConverter.Value,))
+        , What.Remove: WhatFunction(None, 'remove({})', (ArgConverter.Value,))
+        , What.RemoveAll: WhatFunction(None, 'removeAll({})', (ArgConverter.Value,))
+        , What.Replace: WhatFunction(2, 'replace({})', (ArgConverter.Value, ArgConverter.Value))
+        , What.Right: WhatFunction(1, 'right({})', (ArgConverter.Value,))
+        , What.Size: WhatFunction(0, 'size()', tuple())
+        , What.SubString: WhatFunction(2, 'substring({})', (ArgConverter.Value, ArgConverter.Value))
+        , What.Trim: WhatFunction(0, 'trim()', tuple())
+        , What.ToJSON: WhatFunction(0, 'toJSON()', tuple()) # FIXME TODO Figure out format argument
+        , What.ToLowerCase: WhatFunction(0, 'toLowerCase()', tuple())
+        , What.ToUpperCase: WhatFunction(0, 'toUpperCase()', tuple())
+        , What.Type: WhatFunction(0, 'type()', tuple())
+        , What.Values: WhatFunction(0, 'values()', tuple())
     }
+
+    def append_what_function(self, chain, func_key, func_args):
+        what_function = Query.WhatFunctions[func_key]
+        max_args = what_function.max_args
+        if max_args > 0 or max_args is None:
+            chain.append(
+                what_function.fmt.format(
+                    ','.join(self.what_args(what_function.expected,
+                                            func_args[1]))))
+        else:
+            chain.append(what_function.fmt)
 
     def build_what(self, what, prop_names=None):
         if isinstance(what, Property):
@@ -558,6 +635,8 @@ class Query(object):
             if prop_names is not None:
                 prop_names.append(prop_name)
             return prop_name
+        elif isinstance(what, RecordAttribute):
+            return str(what)
 
         name_override = what.name_override
         as_str = ' AS {}'.format(name_override) if name_override else ''
@@ -579,16 +658,19 @@ class Query(object):
         elif isinstance(what, ChainableWhat):
             chain = []
             for func_args in what.chain:
-                what_function = Query.WhatFunctions[func_args[0]]
-                max_args = what_function.max_args
-                if max_args > 0 or max_args is None:
-                    chain.append(
-                        what_function.fmt.format(
-                            ','.join(self.what_args(what_function.expected,
-                                                    func_args[1]))))
+                func_key = func_args[0]
+                if func_key == What.WhatFilter:
+                    chain[-1] += '[{}]'.format(self.filter_string(func_args[1]))
+                    continue
+
+                self.append_what_function(chain, func_key, func_args)
+
+            for prop in what.props:
+                if isinstance(prop, tuple):
+                    func_key = prop[0]
+                    self.append_what_function(chain, func_key, prop)
                 else:
-                    chain.append(what_function.fmt)
-            chain.extend(what.props)
+                    chain.append(prop)
 
             if prop_names is not None:
                 prop_names.append(
@@ -628,11 +710,13 @@ class Query(object):
         if isinstance(prop, list):
             g = self._graph
             if len(prop) > 1:
-                return g.elements_from_links(prop)
+                return g.elements_from_links(prop) if isinstance(prop[0], pyorient.OrientRecordLink) else prop
             elif len(prop) == 1:
-                return g.element_from_link(prop[0])
+                return g.element_from_link(prop[0]) if isinstance(prop[0], pyorient.OrientRecordLink) else prop[0]
             else:
                 return None
+        elif isinstance(prop, pyorient.OrientRecordLink):
+            return self._graph.element_from_link(prop)
         return prop
 
 class TempParams(object):
