@@ -85,7 +85,7 @@ class CommandTestCase(unittest.TestCase):
 
             res = client.record_load( rec_position._rid, "*:0" )
             assert res._rid == rec_position._rid
-            assert res._class == 'my_class'
+            # assert res._class == 'my_class'
             assert res.alloggio == 'casa'
             assert res.lavoro == 'ufficio'
             assert res.vacanza == 'mare'
@@ -279,10 +279,10 @@ class CommandTestCase(unittest.TestCase):
         with self.assertRaises( pyorient.PyOrientSQLParsingException ) as context:
             client.command( "create index KEY on obj _KEY unique" )
 
-        import re
-        match_obj = re.match( r'(.*):.*', str( context.exception ) )
-        self.assertTrue( 'Error on parsing command at position #23'
-                         in match_obj.group(1) )
+        self.assertTrue( 'Error '
+                         in str( context.exception ) )
+        self.assertTrue( 'parsing '
+                         in str( context.exception ) )
 
         client.command( "create index KEY on obj ( _KEY ) unique" )
         assert True is True

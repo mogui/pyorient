@@ -32,7 +32,7 @@ class CommandTestCase( unittest.TestCase ):
             pass
 
         self.cluster_info = self.client.db_open(
-            db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
+            db_name, "root", "root", pyorient.DB_TYPE_GRAPH, ""
         )
 
         self.class_id1 = \
@@ -55,6 +55,14 @@ class CommandTestCase( unittest.TestCase ):
     def test_record_create_nonstrings( self ):
         # this should succeed with no exception
         self.client.record_create (self.class_id1, {'@my_v_class': {'a': 1.5, 'b': 'foo'}} )
+
+    def test_record_create_embedded_list( self ):
+        # this should succeed with no exception
+        self.client.record_create(self.class_id1, {'@my_v_class': {'a': ['bar', 'bar']}} )
+
+    def test_record_create_embedded_dictionary( self ):
+        # this should succeed with no exception
+        self.client.record_create(self.class_id1, {'@my_v_class': {'a': [{'bar': 'bar'}]}} )
 
     def test_new_orient_dict( self ):
         import re
