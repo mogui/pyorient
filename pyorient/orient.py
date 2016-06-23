@@ -229,6 +229,10 @@ class OrientDB(object):
 
     def __getattr__(self, item):
 
+        # No special handling for private attributes/methods.
+        if item.startswith("_"):
+            return super(OrientDB, self).__getattr__(item)
+
         _names = "".join( [i.capitalize() for i in item.split('_')] )
         _Message = self.get_message(_names + "Message")
 
