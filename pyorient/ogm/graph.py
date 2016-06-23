@@ -274,12 +274,15 @@ class Graph(object):
             class_prop = '{0}.{1}'.format(cls_name, prop_name)
 
             linked_to = None
-            if isinstance(prop_value, LinkedClassProperty):
+            if isinstance(prop_value, LinkedClassProperty) and prop_value.linked_to is not None:
                 type_linked_to = prop_value.linked_to
 
-                linked_to = getattr(type_linked_to, 'registry_name', None)
-                if not linked_to:
-                    link_bases = getattr(type_linked_to, '__bases__', None)
+                # For now, in case type_linked_to is a Property,
+                # need to bypass __getattr__()
+                if type_linked_to.__dict__.get('registry_name', None):
+                    linked_to = type_linked_to.registry_name
+                else:
+                    link_bases = type_linked_to.__dict__.get('__bases__', None)
                     if link_bases and \
                             isinstance(prop_value, LinkedProperty) and \
                             link_bases[0] is Property:

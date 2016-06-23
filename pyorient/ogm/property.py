@@ -1,5 +1,11 @@
 from .operators import Operand, ArithmeticMixin
-from .what import What, FunctionWhat
+from .what import (
+    What, FunctionWhat
+    , StringMethodMixin
+    , CollectionMethodMixin
+    , MapMethodMixin
+    , PropertyWhat
+)
 
 import json
 import datetime
@@ -8,7 +14,7 @@ import string
 import sys
 
 
-class Property(Operand):
+class Property(PropertyWhat):
     num_instances = 0 # Basis for ordering property instances
 
     def __init__(self, name=None, nullable=True
@@ -29,6 +35,7 @@ class Property(Operand):
         :param readonly: Property value can not be changed after first
         assignment.
         """
+        super(Property, self).__init__([], [])
 
         self.name = name
 
@@ -103,6 +110,8 @@ class PropertyEncoder:
             return json.dumps(value)
         elif value is None:
             return 'null'
+        elif isinstance(value, (int,float)) or (sys.version_info[0] < 3 and isinstance(value, long)):
+            return str(value)
         elif isinstance(value, list) or isinstance(value, set):
             return u'[{}]'.format(u','.join([PropertyEncoder.encode_value(v) for v in value]))
         elif isinstance(value, dict):
@@ -138,7 +147,7 @@ class Double(Property, ArithmeticMixin):
 class DateTime(Property):
     pass
 
-class String(Property):
+class String(Property, StringMethodMixin):
     pass
 
 class Binary(Property):
@@ -171,13 +180,13 @@ class LinkedClassProperty(Property):
 class Link(LinkedClassProperty):
     pass
 
-class LinkList(LinkedClassProperty):
+class LinkList(LinkedClassProperty, CollectionMethodMixin):
     pass
 
-class LinkSet(LinkedClassProperty):
+class LinkSet(LinkedClassProperty, CollectionMethodMixin):
     pass
 
-class LinkMap(LinkedClassProperty):
+class LinkMap(LinkedClassProperty, MapMethodMixin):
     pass
 
 class LinkedProperty(LinkedClassProperty):
@@ -185,11 +194,11 @@ class LinkedProperty(LinkedClassProperty):
     primitive types"""
     pass
 
-class EmbeddedList(LinkedProperty):
+class EmbeddedList(LinkedProperty, CollectionMethodMixin):
     pass
 
-class EmbeddedSet(LinkedProperty):
+class EmbeddedSet(LinkedProperty, CollectionMethodMixin):
     pass
 
-class EmbeddedMap(LinkedProperty):
+class EmbeddedMap(LinkedProperty, MapMethodMixin):
     pass

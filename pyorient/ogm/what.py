@@ -1,4 +1,4 @@
-from .operators import RelativeOperand
+from pyorient.ogm.operators import (IdentityOperand, RelativeOperand, Operand, InstanceOfMixin)
 
 class What(object):
     """Specify 'what' a Query retrieves."""
@@ -46,16 +46,53 @@ class What(object):
     TraversedVertex = 41
     Any = 42
     All = 43
+    # Methods
+    Subscript = 44
+    Append = 45
+    AsBoolean = 46
+    AsDate = 47
+    AsDatetime = 48
+    AsDecimal = 49
+    AsFloat = 50
+    AsInteger = 51
+    AsList = 52
+    AsLong = 53
+    AsMap = 54
+    AsSet = 55
+    AsString = 56
+    CharAt = 57
+    Convert = 58
+    Exclude = 59
+    FormatMethod = 60
+    Hash = 61
+    Include = 62
+    IndexOf = 63
+    JavaType = 64
+    Keys = 65
+    Left = 66
+    Length = 67
+    Normalize = 68
+    Prefix = 69
+    Remove = 70
+    RemoveAll = 71
+    Replace = 72
+    Right = 73
+    Size = 74
+    SubString = 75
+    Trim = 76
+    ToJSON = 77
+    ToLowerCase = 78
+    ToUpperCase = 79
+    Type = 80
+    Values = 81
+    # Filter
+    WhatFilter = 82
 
-class FunctionWhat(What, RelativeOperand):
-    def __init__(self, func, args):
-        self.func = func
-        self.args = args
+    def __init__(self):
         self.name_override = None
 
     def as_(self, name_override):
         self.name_override = name_override
-
         return self
 
 def eval_(exp):
@@ -166,16 +203,16 @@ def traversed_vertex(index, items=1):
     return FunctionWhat(What.TraversedVertex, (index, items))
 
 def any():
-    return FunctionWhat(What.Any, None)
+    return FunctionWhat(What.Any, tuple())
 
 def all():
-    return FunctionWhat(What.All, None)
+    return FunctionWhat(What.All, tuple())
 
 class ChainableWhat(What):
     def __init__(self, chain, props):
+        super(ChainableWhat, self).__init__()
         self.chain = chain
         self.props = props
-        self.name_override = None
 
     def as_(self, name_override):
         if type(self) is not ChainableWhat:
@@ -185,20 +222,139 @@ class ChainableWhat(What):
 
         return self
 
-class ElementWhat(ChainableWhat):
-    def __getattr__(self, attr):
-        if type(self) is not ElementWhat:
-            # Prevent further chaining
-            self = ElementWhat(self.chain, self.props)
-        self.props.append(attr)
+# Method mixins, according to type
 
-        return self
+class MethodWhatMixin(object):
+    def asDecimal(self):
+        return MethodWhat.prepare_next_link(self, MethodWhat, (What.AsDecimal,))
+
+    def asFloat(self):
+        return MethodWhat.prepare_next_link(self, MethodWhat, (What.AsFloat,))
+
+    def asInteger(self):
+        return MethodWhat.prepare_next_link(self, MethodWhat, (What.AsInteger,))
+
+    def asList(self):
+        return MethodWhat.prepare_next_link(self, CollectionMethodWhat, (What.AsList,))
+
+    def asLong(self):
+        return MethodWhat.prepare_next_link(self, MethodWhat, (What.AsLong,))
+
+    def asSet(self):
+        return MethodWhat.prepare_next_link(self, CollectionMethodWhat, (What.AsSet,))
+
+    def asString(self):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.AsString,))
+
+    def convert(self, to):
+        # TODO Map to chainer type for type 'to'
+        pass
+
+    def format(self, format_str):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.FormatMethod, (format_str,)))
+
+    def javaType(self):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.JavaType,))
+
+    def type(self):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Type,))
+
+class RecordMethodMixin(object):
+    def toJSON(self, format_rules=None):
+        # TODO Figure out the structure of format_rules
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.ToJSON,))
+
+class StringMethodMixin(object):
+    def charAt(self, position):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.CharAt, (position,)))
+
+    def hash(self, hash_alg):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Hash, (hash_alg,)))
+
+    def indexOf(self, needle, begin=0):
+        return MethodWhat.prepare_next_link(self, MethodWhat, (What.IndexOf, (needle, begin)))
+
+    def left(self, length):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Left, (length,)))
+
+    def length(self):
+        return MethodWhat.prepare_next_link(self, MethodWhat, (What.Length,tuple()))
+
+    def normalize(self, form, pattern_matching):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Normalize, (form, pattern_matching)))
+
+    def prefix(self, pre):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Prefix, (pre,)))
+
+    def replace(self, old, new):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Replace, (old, new)))
+
+    def right(self, length):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Right, (length,)))
+
+    def subString(self, begin, length):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.SubString, (begin, length)))
+
+    def trim(self):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Trim, tuple()))
+
+    def toLowerCase(self):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.ToLowerCase, tuple()))
+
+    def toUpperCase(self):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.ToUpperCase, tuple()))
+
+class CollectionMethodMixin(object):
+    def asMap(self):
+        return MethodWhat.prepare_next_link(self, MapMethodWhat, (What.AsMap, tuple()))
+
+    def remove(self, *items):
+        # Disable further chaining
+        return MethodWhat.prepare_next_link(self, ChainableWhat, (What.Remove, items))
+
+    def removeAll(self, *items):
+        # Disable further chaining
+        return MethodWhat.prepare_next_link(self, ChainableWhat, (What.RemoveAll, items))
+
+    def size(self):
+        return MethodWhat.prepare_next_link(self, MethodWhat, (What.Size,))
+
+class MapMethodMixin(CollectionMethodMixin):
+    def keys(self):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Keys,))
+
+    def values(self):
+        return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Values,))
+
+class ElementWhat(RecordMethodMixin, ChainableWhat):
+    def __getattr__(self, attr):
+        # Prevent further chaining or use as record
+        self = AnyPropertyWhat(self.chain, self.props)
+        return self.__getattr__(attr)
 
     def __call__(self):
         raise TypeError(
             '{} is not callable here.'.format(
                 repr(self.props[-1]) if self.props else 'Query function'))
 
+    def __getitem__(self, filter_exp):
+        self.chain.append((What.WhatFilter, filter_exp))
+        return self
+
+class PropertyWhat(MethodWhatMixin, Operand, ChainableWhat):
+    def __init__(self, chain, props):
+        super(PropertyWhat, self).__init__(chain, props)
+
+    def __getattr__(self, attr):
+        self.props.append(attr)
+        # Subsequent methods acting on props, not on chain
+        self.method_chain = self.props
+        return self
+
+# Can't make assumptions about type of property
+# Provide all method mixins, and assume user knows what they're doing
+class AnyPropertyWhat(StringMethodMixin, MapMethodMixin, PropertyWhat):
+    pass
 
 class VertexWhat(ElementWhat):
     def __init__(self, chain):
@@ -269,3 +425,59 @@ outE = EdgeWhatBegin(What.OutE)
 inE = EdgeWhatBegin(What.InE)
 bothE = EdgeWhatBegin(What.BothE)
 
+# Concrete method chaining types
+class MethodWhat(MethodWhatMixin, Operand, ChainableWhat):
+    def __init__(self, chain=[], props=[]):
+        super(MethodWhat, self).__init__(chain, props)
+        # Methods can also be chained to props
+        self.method_chain = self.chain
+
+    @staticmethod
+    def prepare_next_link(current, chainer_type, link):
+        current_type = type(current)
+        if issubclass(current_type, ChainableWhat):
+            current.method_chain.append(link)
+            if current_type is not chainer_type:
+                # Constrain next link to type-compatible methods
+                return chainer_type(current.chain, current.props)
+        else:
+            return chainer_type([current, link], [])
+
+        return current
+
+class StringMethodWhat(StringMethodMixin, MethodWhat):
+    pass
+
+class CollectionMethodWhat(CollectionMethodMixin, MethodWhat):
+    pass
+
+class MapMethodWhat(MapMethodMixin, MethodWhat):
+    pass
+
+
+class FunctionWhat(MethodWhat):
+    def __init__(self, func, args):
+        super(FunctionWhat, self).__init__([], [])
+        self.func = func
+        self.args = args
+
+# Record attributes
+
+class RecordAttribute(object):
+    pass
+
+class AtThis(RecordAttribute, InstanceOfMixin, RecordMethodMixin, StringMethodWhat):
+    def __str__(self):
+        return '@this'
+
+class AtClass(RecordAttribute, InstanceOfMixin, RecordMethodMixin, StringMethodWhat):
+    def __str__(self):
+        return '@class'
+
+class AtRid(RecordAttribute, StringMethodWhat):
+    def __str__(self):
+        return '@rid'
+
+at_this = AtThis()
+at_class = AtClass()
+at_rid = AtRid()
