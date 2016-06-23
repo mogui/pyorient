@@ -203,6 +203,7 @@ class OrientVersion(object):
 
     def _parse_version( self, string_release ):
 
+        import re
         if not isinstance(string_release, str):
             string_release = string_release.decode()
 
@@ -214,23 +215,27 @@ class OrientVersion(object):
         except IndexError:
             pass
 
-        if "-" in self.minor:
+        regx = re.match('.*([0-9]+).*', self.major )
+        self.major = regx.group(1)
+
+        try:
             _temp = self.minor.split( "-" )
             self.minor = _temp[0]
-            self.build = '0'
             self.subversion = _temp[1]
+        except IndexError:
+            pass
 
-        if "-" in self.build:
-            import re
-            preg = re.match( '([0-9])[\.\- ]*(.*)', self.build )
-            self.build = preg.group(1)
-            self.subversion = preg.group(2)
-        else:
-            self.build = self.build[0]
+        try:
+            regx = re.match( '([0-9]+)[\.\- ]*(.*)', self.build )
+            self.build = regx.group(1)
+            self.subversion = regx.group(2)
+        except TypeError:
+            pass
 
         self.major = int( self.major )
         self.minor = int( self.minor )
-        self.build = int( self.build )
+        self.build = 0 if self.build is None else int( self.build )
+        self.subversion = '' if self.subversion is None else str( self.subversion )
 
     def __str__(self):
         return self.release

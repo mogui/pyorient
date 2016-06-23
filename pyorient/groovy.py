@@ -58,12 +58,10 @@ class Scanner(object):
         sub_pattern.flags = flags
         for phrase, action in self.lexicon:
             patterns.append(sre_parse.SubPattern(sub_pattern, [
-                (SUBPATTERN, (len(patterns) + 1
-                    , sre_parse.parse(phrase, flags))),
+                (SUBPATTERN, (len(patterns) + 1, sre_parse.parse(phrase, flags))),
                 ]))
-        sub_pattern.groups = len(patterns) + 1
-        group_pattern = sre_parse.SubPattern(sub_pattern
-                                             , [(BRANCH, (None, patterns))])
+        #sub_pattern.groups = len(patterns) + 1
+        group_pattern = sre_parse.SubPattern(sub_pattern, [(BRANCH, (None, patterns))])
         return sre_compile.compile(group_pattern)
 
     def get_multiline(self,f,m):
