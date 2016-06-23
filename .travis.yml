@@ -33,7 +33,7 @@ deploy:
     secure: BpKTrn4PdKZi7Ykq/8gfuzQ5DcrSjEccbljKfS0IQG+9Pp4yeI28DTm8BtCk6Oq+Nj2MtxQnn2m1Uxju7RBsGdblv8YuVhDlFyMqG4zUXECU29Uo0wqP3sCIlClVCoMHeSzi2L7SxPKyx6UvQccEW076z9ZP07uzqjACeGfPcfc=
   on:
     tags: true
-    branch: master
+    all_branches: true
 
 branches:
   except:
