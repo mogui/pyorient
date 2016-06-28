@@ -195,10 +195,11 @@ class Query(object):
                                 for name in prop_names))
                             for record in response]
                     else:
+                        prop_name = prop_names[0]
                         return [
                             self.parse_record_prop(
-                                record.oRecordData[prop_names[0]])
-                            for record in response]
+                                record.oRecordData[prop_name])
+                            for record in response if record.oRecordData[prop_name]]
                 else:
                     if self._params.get('reify', False) and len(response) == 1:
                         # Simplify query for subsequent uses

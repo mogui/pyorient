@@ -111,7 +111,7 @@ class Batch(object):
 
     def commit(self, retries=None):
         """Commit batch with no return value."""
-        self.commands += 'COMMIT' + ' RETRY {}'.format(retries) if retries else ''
+        self.commands += 'COMMIT' + (' RETRY {}'.format(retries) if retries else '')
 
         g = self.graph
         g.client.batch(self.commands)
