@@ -44,11 +44,14 @@ class SerializationTestCase(unittest.TestCase):
         DB = binary_db_connect()
         DB.command( "CREATE CLASS MyModel EXTENDS V" )[0]
         cluster_id = DB.command("select classes[name='MyModel']"+\
-                        ".defaultClusterId from 0:1")[0].oRecordData['classes']
-        data = {'key': long(-1)}
+                                ".defaultClusterId from 0:1")[0].oRecordData['classes']
+        import sys
+        if sys.version_info[0] < 3:
+            data = {'key': long(-1)}
+        else:
+            data = {'key': int(-1)}
         DB.record_create( cluster_id, {'@MyModel': data} )
 
-        import sys
         if sys.version_info[0] >= 3 and isinstance( cluster_id, bytes ):
             _n_rid = cluster_id.decode()
         else:
@@ -79,7 +82,7 @@ class SerializationTestCase(unittest.TestCase):
         cluster_id = DB.command("select classes[name='MyModel']"+\
                         ".defaultClusterId from 0:1")[0].oRecordData['classes']
         
-        data = {'key': [1,'a',long(3),4.0, [42,27]]}
+        data = {'key': [1,'a',3,4.0, [42,27]]}
         DB.record_create( cluster_id, {'@MyModel': data} )
 
         import sys
@@ -157,6 +160,8 @@ class SerializationTestCase(unittest.TestCase):
         else:
             _n_rid = str(cluster_id)
 
+            
+            
         rec = DB.record_load( "#" + _n_rid + ":0" )
         assert rec.oRecordData == data
 
@@ -169,7 +174,7 @@ class SerializationTestCase(unittest.TestCase):
         
         dt =  datetime.datetime.now()
         # OrientDB datetime has millisecond precision
-        dt = dt.replace(microsecond=(dt.microsecond/1000)*1000)
+        dt = dt.replace(microsecond=int(dt.microsecond/1000)*1000)
         data = {'key': dt}
         DB.record_create( cluster_id, {'@MyModel': data} )
 
