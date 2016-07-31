@@ -129,7 +129,8 @@ class SerializationTestCase(unittest.TestCase):
             _n_rid = cluster_id.decode()
         else:
             _n_rid = str(cluster_id)
-            
+
+        DB.command( "CREATE CLASS test EXTENDS E" )
         DB.command("create edge test from %s to %s" % ("#" + _n_rid + ":0" ,
                                                        "#" + _n_rid + ":1" ))
         rec0 = DB.record_load( "#" + _n_rid + ":0" )
