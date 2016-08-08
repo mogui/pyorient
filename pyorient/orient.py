@@ -416,10 +416,7 @@ class OrientDB(object):
 
         # store property id->property name, type map for binary serialization
         
-        if self._serialization_type==OrientSerialization.Binary:
-            self._connection._props = {x['id']:[x['name'], type_map[x['type']]] for x in
-                        self.command("select from #0:1")[0].oRecordData['globalProperties']}
-        
+        self.update_properties()
         
         return self.clusters
 
@@ -432,8 +429,22 @@ class OrientDB(object):
         self.clusters = self.get_message("DbReloadMessage") \
             .prepare([]).send().fetch_response()
         self._reload_clusters()
+        self.update_properties()
         return self.clusters
 
+        
+    def update_properties(self):
+        '''
+        This method fetches the global Properties from the server. The properties are used
+        for deserializing based on propery index if using binary serialization. This method
+        should be called after any manual command that may result in modifications to the
+        properties table, for example, "Create property ... " or "Create class .." followed
+        by "Create vertex set ... "
+        '''
+        if self._serialization_type==OrientSerialization.Binary:
+            self._connection._props = {x['id']:[x['name'], type_map[x['type']]] for x in
+                        self.command("select from #0:1")[0].oRecordData['globalProperties']}
+        
     def shutdown(self, *args):
         return self.get_message("ShutdownMessage") \
             .prepare(args).send().fetch_response()
