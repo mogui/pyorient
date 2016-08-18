@@ -19,6 +19,10 @@ Pyorient works with orientdb version 1.7 and later.
 
 	pip install pyorient
 
+## Documentation
+
+  [OrientDB PyOrient Python Driver](http://orientdb.com/docs/last/PyOrient.html)
+
 ## How to contribute
 
 - Fork the project
