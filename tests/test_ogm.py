@@ -4,7 +4,7 @@ import decimal
 import os.path
 from datetime import datetime
 
-from pyorient import PyOrientCommandException
+from pyorient import PyOrientCommandException, PyOrientSQLParsingException
 from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
 
@@ -572,19 +572,28 @@ class OGMEmbeddedDefaultsTestCase(unittest.TestCase):
         g = self.g = Graph(Config.from_url('test_embedded_defaults', 'root', 'root',
                                            initial_drop=True))
 
+    def testDefaultData(self):
+        g = self.g
+
         g.client.command('CREATE CLASS DefaultEmbeddedNode EXTENDS V')
         g.client.command('CREATE CLASS DefaultData')
         g.client.command('CREATE PROPERTY DefaultData.normal Boolean')
-        g.client.command('ALTER PROPERTY DefaultData.normal DEFAULT 0')
         g.client.command('CREATE PROPERTY DefaultEmbeddedNode.name String')
         g.client.command('CREATE PROPERTY DefaultEmbeddedNode.info EmbeddedList DefaultData')
+
+        try:
+            g.client.command('ALTER PROPERTY DefaultData.normal DEFAULT 0')
+        except PyOrientSQLParsingException as e:
+            if "Unknown property attribute 'DEFAULT'" in e.errors[0]:
+                # The current OrientDB version (<2.1) doesn't allow default values.
+                # Simply skip this test, there's nothing we can test here.
+                return
+            else:
+                raise
 
         base_node = declarative_node()
         base_relationship = declarative_relationship()
         g.include(g.build_mapping(base_node, base_relationship, auto_plural=True))
-
-    def testDefaultData(self):
-        g = self.g
 
         node = g.DefaultEmbeddedNode.create(name='default_embedded')
         node.info = [{}]
@@ -593,7 +602,8 @@ class OGMEmbeddedDefaultsTestCase(unittest.TestCase):
             node.save()
         except PyOrientCommandException as e:
             if 'incompatible type is used.' in e.errors[0]:
-                # The current OrientDB version doesn't allow embedded classes, only primitives.
+                # The current OrientDB version (<2.1.5) doesn't allow embedded classes,
+                # only embedded primitives (e.g. String or Int).
                 # Simply skip this test, there's nothing we can test here.
                 return
             else:
