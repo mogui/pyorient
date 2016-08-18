@@ -4,7 +4,7 @@ import decimal
 import os.path
 from datetime import datetime
 
-from pyorient import PyOrientCommandException
+from pyorient import PyOrientCommandException, PyOrientSQLParsingException
 from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
 
@@ -565,6 +565,55 @@ class OGMEmbeddedTestCase(unittest.TestCase):
         for alternate in alias:
             received = g.query(element_cls).filter(element_cls.alias.contains(alternate)).one()
             self.assertEqual(canonical_result, received)
+
+
+class OGMEmbeddedDefaultsTestCase(unittest.TestCase):
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('test_embedded_defaults', 'root', 'root',
+                                           initial_drop=True))
+
+    def testDefaultData(self):
+        g = self.g
+
+        g.client.command('CREATE CLASS DefaultEmbeddedNode EXTENDS V')
+        g.client.command('CREATE CLASS DefaultData')
+        g.client.command('CREATE PROPERTY DefaultData.normal Boolean')
+        g.client.command('CREATE PROPERTY DefaultEmbeddedNode.name String')
+        g.client.command('CREATE PROPERTY DefaultEmbeddedNode.info EmbeddedList DefaultData')
+
+        try:
+            g.client.command('ALTER PROPERTY DefaultData.normal DEFAULT 0')
+        except PyOrientSQLParsingException as e:
+            if "Unknown property attribute 'DEFAULT'" in e.errors[0]:
+                # The current OrientDB version (<2.1) doesn't allow default values.
+                # Simply skip this test, there's nothing we can test here.
+                return
+            else:
+                raise
+
+        base_node = declarative_node()
+        base_relationship = declarative_relationship()
+        g.include(g.build_mapping(base_node, base_relationship, auto_plural=True))
+
+        node = g.DefaultEmbeddedNode.create(name='default_embedded')
+        node.info = [{}]
+
+        try:
+            node.save()
+        except PyOrientCommandException as e:
+            if 'incompatible type is used.' in e.errors[0]:
+                # The current OrientDB version (<2.1.5) doesn't allow embedded classes,
+                # only embedded primitives (e.g. String or Int).
+                # Simply skip this test, there's nothing we can test here.
+                return
+            else:
+                raise
+
+        # On the next load, the node should have:
+        # 'info' = [{'normal': False}]
+        node = g.DefaultEmbeddedNode.query().one()
+        self.assertIn('normal', node.info[0])
+        self.assertIs(node.info[0]['normal'], False)
 
 
 if sys.version_info[0] < 3:
