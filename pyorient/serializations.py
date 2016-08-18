@@ -475,7 +475,7 @@ class OrientSerializationCSV(object):
             key = chunk[0]
             content = chunk[1]
 
-        chunk = self._parse_key(content)
+        chunk = self._parse_value(content)
         value = chunk[0]
         content = chunk[1].lstrip(' ')
 
