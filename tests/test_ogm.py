@@ -588,9 +588,19 @@ class OGMEmbeddedDefaultsTestCase(unittest.TestCase):
 
         node = g.DefaultEmbeddedNode.create(name='default_embedded')
         node.info = [{}]
-        node.save()
 
-        # On the next load, the node should have the mapping 'foo' -> {'normal': False} in 'info'.
+        try:
+            node.save()
+        except PyOrientCommandException as e:
+            if 'incompatible type is used.' in e.errors[0]:
+                # The current OrientDB version doesn't allow embedded classes, only primitives.
+                # Simply skip this test, there's nothing we can test here.
+                return
+            else:
+                raise
+
+        # On the next load, the node should have:
+        # 'info' = [{'normal': False}]
         node = g.DefaultEmbeddedNode.query().one()
         self.assertIn('normal', node.info[0])
         self.assertIs(node.info[0]['normal'], False)
