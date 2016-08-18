@@ -567,6 +567,35 @@ class OGMEmbeddedTestCase(unittest.TestCase):
             self.assertEqual(canonical_result, received)
 
 
+class OGMEmbeddedDefaultsTestCase(unittest.TestCase):
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('test_embedded_defaults', 'root', 'root',
+                                           initial_drop=True))
+
+        g.client.command('CREATE CLASS DefaultEmbeddedNode EXTENDS V')
+        g.client.command('CREATE CLASS DefaultData')
+        g.client.command('CREATE PROPERTY DefaultData.normal Boolean')
+        g.client.command('ALTER PROPERTY DefaultData.normal DEFAULT 0')
+        g.client.command('CREATE PROPERTY DefaultEmbeddedNode.name String')
+        g.client.command('CREATE PROPERTY DefaultEmbeddedNode.info EmbeddedMap DefaultData')
+
+        base_node = declarative_node()
+        base_relationship = declarative_relationship()
+        g.include(g.build_mapping(base_node, base_relationship, auto_plural=True))
+
+    def testDefaultData(self):
+        g = self.g
+
+        node = g.DefaultEmbeddedNode.create(name='default_embedded')
+        node.info = {'foo': {}}
+        node.save()
+
+        # On the next load, the node should have the mapping 'foo' -> {'normal': False} in 'info'.
+        node = g.DefaultEmbeddedNode.query().one()
+        self.assertIn('normal', node.info['foo'])
+        self.assertIs(node.info['foo']['normal'], False)
+
+
 if sys.version_info[0] < 3:
     def to_unicode(x):
         return str(x).decode('utf-8')
