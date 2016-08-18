@@ -577,7 +577,7 @@ class OGMEmbeddedDefaultsTestCase(unittest.TestCase):
         g.client.command('CREATE PROPERTY DefaultData.normal Boolean')
         g.client.command('ALTER PROPERTY DefaultData.normal DEFAULT 0')
         g.client.command('CREATE PROPERTY DefaultEmbeddedNode.name String')
-        g.client.command('CREATE PROPERTY DefaultEmbeddedNode.info EmbeddedMap DefaultData')
+        g.client.command('CREATE PROPERTY DefaultEmbeddedNode.info EmbeddedList DefaultData')
 
         base_node = declarative_node()
         base_relationship = declarative_relationship()
@@ -587,13 +587,13 @@ class OGMEmbeddedDefaultsTestCase(unittest.TestCase):
         g = self.g
 
         node = g.DefaultEmbeddedNode.create(name='default_embedded')
-        node.info = {'foo': {}}
+        node.info = [{}]
         node.save()
 
         # On the next load, the node should have the mapping 'foo' -> {'normal': False} in 'info'.
         node = g.DefaultEmbeddedNode.query().one()
-        self.assertIn('normal', node.info['foo'])
-        self.assertIs(node.info['foo']['normal'], False)
+        self.assertIn('normal', node.info[0])
+        self.assertIs(node.info[0]['normal'], False)
 
 
 if sys.version_info[0] < 3:
