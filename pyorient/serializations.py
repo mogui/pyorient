@@ -4,21 +4,48 @@ from datetime import date, datetime
 from decimal import Decimal
 from .otypes import OrientRecordLink, OrientRecord, OrientBinaryObject
 from .exceptions import PyOrientBadMethodCallException
-
+try:
+    import pyorient_native
+    binary_support=True
+except:
+    binary_support=False
 
 class OrientSerializationBinary(object):
-    def __init__(self):
+    def __init__(self, props):
         self.className = None
         self.data = {}
         self.type = OrientSerialization.Binary
-
+        self.props = props
+        self._writer = None
+        
     def decode(self, content):
-        raise NotImplementedError
+        if not binary_support:
+            raise Exception("To support Binary Serialization,\
+                            pyorient_native must be installed")
+        clsname, data = pyorient_native.deserialize(content,
+                                    content.__sizeof__(), self.props)
+        rels = [k for k in data.keys() if ('in_' in k or 'out_' in k
+                                       or k=='in' or k=='out')] 
+        for k in rels:
+            if isinstance(data[k],list):
+                for i in range(len(data[k])):
+                    data[k][i] = OrientRecordLink(str(data[k][i][1]) + ':' +
+                                                  str(data[k][i][2]))
+            elif isinstance(data[k],tuple):
+                data[k] = OrientRecordLink(str(data[k][1]) + ':' +
+                                                  str(data[k][2]))
+        return [clsname, data]
 
     def encode(self, record):
-        raise NotImplementedError
-
-
+        if not binary_support:
+            raise Exception("To support Binary Serialization,\
+                            pyorient_native must be installed")
+        if record:
+            return pyorient_native.serialize(record)
+        else:
+            return None
+            
+            
 class OrientSerializationCSV(object):
     def __init__(self):
         self.className = None
@@ -557,7 +584,7 @@ class OrientSerialization(object):
     Binary = "ORecordSerializerBinary"
 
     @classmethod
-    def get_impl(cls, impl):
+    def get_impl(cls, impl, props=None):
         impl_map = {
             cls.CSV: OrientSerializationCSV,
             cls.Binary: OrientSerializationBinary,
@@ -567,4 +594,7 @@ class OrientSerialization(object):
             raise PyOrientBadMethodCallException(
                 impl + ' is not an availableserialization type', []
             )
-        return implementation()
+        if impl == cls.Binary:
+            return implementation(props)
+        else:
+            return implementation()
