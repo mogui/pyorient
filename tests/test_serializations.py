@@ -15,8 +15,8 @@ def test_mixed_list():
 
 
 class SerializationTestCase(unittest.TestCase):
-    
-    def test_binary_string():
+
+    def test_binary_string(self):
         DB = binary_db_connect()
         DB.command("CREATE CLASS MyModel EXTENDS V")[0]
 
