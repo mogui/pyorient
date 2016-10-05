@@ -169,10 +169,8 @@ class OrientSerializationCSV(object):
                 if issubclass(base_cls, OrientRecordLink):
                     elements = [elem.get_hash() for elem in value]
                 else:
-                    try:
-                        elements = [ self._encode_value( base_cls( elem ) ) for elem in value ]
-                    except ValueError as e:
-                        raise Exception("Wrong type commistion")
+                    elements = [self._encode_value(elem) for elem in value]
+
             ret = "[" + ",".join(elements) + "]"
         elif isinstance(value, dict):
             ret = "{" + ','.join( map( lambda elem: '"' + elem + '":' + self._encode_value(value[elem]), value ) ) + '}'
@@ -502,7 +500,7 @@ class OrientSerializationCSV(object):
             key = chunk[0]
             content = chunk[1]
 
-        chunk = self._parse_key(content)
+        chunk = self._parse_value(content)
         value = chunk[0]
         content = chunk[1].lstrip(' ')
 

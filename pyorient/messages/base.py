@@ -355,7 +355,6 @@ class BaseMessage(object):
         # read buffer length and decode value by field definition
         if _type['bytes'] is not None:
             _value = self._orientSocket.read( _type['bytes'] )
-
         # if it is a string decode first 4 Bytes as INT
         # and try to read the buffer
         if _type['type'] == STRING or _type['type'] == BYTES:
@@ -378,7 +377,7 @@ class BaseMessage(object):
 
             rid = "#" + str( self._decode_field( _type['struct'][1] ) )
             rid += ":" + str( self._decode_field( _type['struct'][2] ) )
-
+            
             version = self._decode_field( _type['struct'][3] )
             content = self._decode_field( _type['struct'][4] )
             return {'rid': rid, 'record_type': record_type,
@@ -469,9 +468,12 @@ class BaseMessage(object):
         else:
             # read record
             __res = self._decode_field( FIELD_RECORD )
-
-            # bug in orientdb csv serialization in snapshot 2.0
-            class_name, data = self.get_serializer().decode(__res['content'].rstrip())
+            
+            if self._orientSocket.serialization_type==OrientSerialization.Binary:
+                class_name, data = self.get_serializer().decode(__res['content'])
+            else:
+                # bug in orientdb csv serialization in snapshot 2.0
+                class_name, data = self.get_serializer().decode(__res['content'].rstrip())
 
 
             res = OrientRecord(
