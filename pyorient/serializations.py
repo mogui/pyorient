@@ -2,7 +2,7 @@ import re
 import sys
 import time
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from .otypes import OrientRecordLink, OrientRecord, OrientBinaryObject
 from .exceptions import PyOrientBadMethodCallException
 try:
@@ -188,25 +188,24 @@ class OrientSerializationCSV(object):
         if isinstance(value, str):
             ret = '"' + value + '"'
         elif isinstance(value, float):
-            ret = str(value) + 'd'
-
+            with localcontext() as ctx:
+                ctx.prec = 20  # floats are max 80-bits wide = 20 significant digits
+                ret = '{:f}d'.format(Decimal(value))
         elif sys.version_info[0] >= 3 and isinstance(value, int):
             if value > 2147483647:
                 ret = str(value) + 'l'
             else:
                 ret = str(value)
-
         elif sys.version_info[0] < 3 and isinstance(value, long):
             ret = str(value) + 'l'
         elif isinstance(value, int):
             ret = str(value)
-
         elif isinstance(value, datetime):
             ret = str(int(time.mktime(value.timetuple())) * 1000) + 't'
         elif isinstance(value, date):
             ret = str(int(time.mktime(value.timetuple())) * 1000) + 'a'
         elif isinstance(value, Decimal):
-            ret = str(value) + 'c'
+            ret = '{:f}c'.format(value)
         elif isinstance(value, list):
             try:
                 base_cls = type(value[0])

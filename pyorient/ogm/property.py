@@ -98,7 +98,11 @@ class PropertyEncoder:
     @staticmethod
     def encode_value(value):
         if isinstance(value, decimal.Decimal):
-            return repr(str(value))
+            return u'"{:f}"'.format(value)
+        elif isinstance(value, float):
+            with decimal.localcontext() as ctx:
+                ctx.prec = 20  # floats are max 80-bits wide = 20 significant digits
+                return u'"{:f}"'.format(decimal.Decimal(value))
         elif isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
             return u'"{}"'.format(value)
         elif isinstance(value, str):
