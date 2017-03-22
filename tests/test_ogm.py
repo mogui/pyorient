@@ -10,7 +10,7 @@ from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
-    String, Date, DateTime, Decimal, Integer, EmbeddedMap, EmbeddedSet, Float,
+    String, Date, DateTime, Decimal, Double, Integer, EmbeddedMap, EmbeddedSet,
     Link, UUID)
 from pyorient.ogm.what import expand, in_, out, distinct, sysdate
 
@@ -233,7 +233,7 @@ class Wallet(MoneyNode):
     element_plural = 'wallets'
 
     amount_precise = Decimal(name='amount', nullable=False)
-    amount_imprecise = Float()
+    amount_imprecise = Double()
 
 class Carries(MoneyRelationship):
     # No label set on relationship; Broker will not be attached to graph.
@@ -250,6 +250,30 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         g.create_all(MoneyNode.registry)
         g.create_all(MoneyRelationship.registry)
+
+    def testDoubleSerialization(self):
+        # Using str() on a float object in Python 2 sometimes 
+        # returns scientific notation, which causes queries to be misapplied.
+        # Similarly, many alternative approaches of turning floats to strings
+        # in Python can cause loss of precision.
+        g = self.g
+
+        # Try very large values, very small values, and values with a lot of decimals.
+        target_values = [1e50, 1e-50, 1.23456789012]
+
+        for value in target_values:
+            amount_imprecise = value
+            amount_precise = decimal.Decimal(amount_imprecise)
+
+            original_wallet = g.wallets.create(amount_imprecise=amount_imprecise, 
+                                               amount_precise=amount_precise)
+            wallet = g.query(Wallet).filter(
+                (Wallet.amount_imprecise > (value * (1 - 1e-6))) & 
+                (Wallet.amount_imprecise < (value * (1 + 1e+6)))
+            ).one()
+
+            assert wallet.amount_imprecise == original_wallet.amount_imprecise
+            assert wallet.amount_precise == original_wallet.amount_precise
 
     def testMoney(self):
         assert len(MoneyNode.registry) == 2
@@ -337,7 +361,7 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         # Original property name, amount_precise, lost-in-translation
         assert type(WalletType.amount) == Decimal
-        assert type(WalletType.amount_imprecise) == Float
+        assert type(WalletType.amount_imprecise) == Double
         g.include(schema_registry)
 
         debt = decimal.Decimal(-42.0)
