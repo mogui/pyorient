@@ -543,7 +543,7 @@ class OrientDB(object):
                 return message_instance
 
         except KeyError as e:
-            self._connection.close()
+            self.close()
             raise PyOrientBadMethodCallException(
                 "Unable to find command " + str(e), []
             )
