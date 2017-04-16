@@ -450,10 +450,10 @@ class Graph(object):
 
     def create_function(self, name, code, parameters=None, idempotent=False, language='javascript'):
         parameter_str = ' PARAMETERS [' + ','.join(parameters) + ']' if parameters else ''
-        
+
         self.client.command(
             u'CREATE FUNCTION {} \'{}\' {} IDEMPOTENT {} LANGUAGE {}'.format(
-                name, code, parameter_str, idempotent, language))
+                name, code, parameter_str, 'true' if idempotent else 'false', language))
 
     def get_vertex(self, vertex_id):
         record = self.client.command('SELECT FROM {}'.format(vertex_id))
