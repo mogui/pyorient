@@ -76,7 +76,7 @@ class Query(object):
             optional_clauses = self.build_optional_clauses(params, None)
 
             prop_names = []
-            props = self.build_props(params, prop_names, for_iterator=True)
+            props, lets = self.build_props(params, prop_names, for_iterator=True)
             if len(prop_names) > 1:
                 prop_prefix = self.source_name.translate(sanitise_ids)
 
@@ -91,7 +91,8 @@ class Query(object):
                 where = u'WHERE {0}'.format(
                     u' and '.join(
                         [self.rid_lower(current_skip)] + wheres))
-                select = self.build_select(props, [where] + optional_clauses)
+
+                select = self.build_select(props, lets + [where] + optional_clauses)
 
                 response = g.client.command(select)
                 if response:
@@ -148,15 +149,15 @@ class Query(object):
             return response[0] if response else None
 
     def __str__(self):
-        props, where, optional_clauses = self.prepare()
-        return self.build_select(props, where + optional_clauses)
+        props, lets, where, optional_clauses = self.prepare()
+        return self.build_select(props, lets + where + optional_clauses)
 
     def __len__(self):
         return self.count()
 
     def prepare(self, prop_names=None):
         params = self._params
-        props = self.build_props(params, prop_names)
+        props, lets = self.build_props(params, prop_names)
         skip = params.get('skip')
         if skip and ':' in str(skip):
             rid_clause = [self.rid_lower(skip)]
@@ -168,18 +169,18 @@ class Query(object):
         wheres = rid_clause + self.build_wheres(params)
         where = [u'WHERE {0}'.format(u' and '.join(wheres))] if wheres else []
 
-        return props, where, optional_clauses
+        return props, lets, where, optional_clauses
 
     def all(self):
         prop_names = []
-        props, where, optional_clauses = self.prepare(prop_names)
+        props, lets, where, optional_clauses = self.prepare(prop_names)
         if len(prop_names) > 1:
             prop_prefix = self.source_name.translate(sanitise_ids)
 
             selectuple = namedtuple(prop_prefix + '_props',
                 [Query.sanitise_prop_name(name)
                     for name in prop_names])
-        select = self.build_select(props, where + optional_clauses)
+        select = self.build_select(props, lets + where + optional_clauses)
 
         g = self._graph
 
@@ -435,13 +436,23 @@ class Query(object):
 
 
     def build_props(self, params, prop_names=None, for_iterator=False):
+        let = params.get('let')
+        if let:
+            lets = ['LET {}'.format(
+                ','.join('${} = {}'.format(
+                    PropertyEncoder.encode_name(k),
+                    u'({})'.format(v) if isinstance(v, Query) else
+                    self.build_what(v)) for k,v in let.items()))]
+        else:
+            lets = []
+
         count_field = params.get('count')
         if count_field:
             if isinstance(count_field, Property):
                 count_field = count_field.context_name()
 
             # Record response will use the same (lower-)case as the request
-            return ['count({})'.format(count_field or '*')]
+            return ['count({})'.format(count_field or '*')], lets
 
         whats = params.get('what')
         if whats:
@@ -461,7 +472,7 @@ class Query(object):
         if props and for_iterator:
             props[0:0] = ['@rid']
 
-        return props
+        return props, lets
 
     def build_wheres(self, params):
         kw_filters = params.get('kw_filters')
@@ -478,16 +489,9 @@ class Query(object):
         return '@rid > {}'.format(skip)
 
     def build_optional_clauses(self, params, skip):
+        '''LET, while being an optional clause, must precede WHERE
+        and is therefore handled separately.'''
         optional_clauses = []
-
-        let = params.get('let')
-        if let:
-            let_clause = 'LET {}'.format(
-                ','.join('${} = {}'.format(
-                    PropertyEncoder.encode_name(k),
-                    u'({})'.format(v) if isinstance(v, Query) else
-                    self.build_what(v)) for k,v in let.items()))
-            optional_clauses.append(let_clause)
 
         group_by = params.get('group_by')
         if group_by:
