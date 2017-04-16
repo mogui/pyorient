@@ -1,4 +1,4 @@
-from .property import Property
+import pyorient.ogm.property
 
 class GraphElement(object):
     def __init__(self, **kwargs):
@@ -26,7 +26,7 @@ class GraphElement(object):
     def __setattr__(self, key, value):
         # Check if the attribute is actually a property of the OGM type
         if (hasattr(type(self), key) and
-            isinstance(getattr(type(self), key), Property)):
+            isinstance(getattr(type(self), key), pyorient.ogm.property.Property)):
                 self._props[key] = value
                 return
 
@@ -38,7 +38,7 @@ class GraphElement(object):
         except:
             attr = super(GraphElement, self).__getattribute__(key)
             # Make sure to never return properties as instance attributes
-            if isinstance(attr, Property):
+            if isinstance(attr, pyorient.ogm.property.Property):
                 return None
             else:
                 return attr

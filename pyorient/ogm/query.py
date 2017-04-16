@@ -3,7 +3,7 @@ from .operators import (Operator, IdentityOperand, Operand,
 from .property import Property, PropertyEncoder
 from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
-from .what import What, FunctionWhat, ChainableWhat, RecordAttribute
+from .what import What, FunctionWhat, ChainableWhat, RecordAttribute, QV
 from .query_utils import ArgConverter
 
 #from .traverse import Traverse
@@ -12,12 +12,19 @@ import pyorient
 
 from collections import namedtuple
 from keyword import iskeyword
+import json
 
 import sys
 if sys.version < '3':
     from itertools import izip_longest as zip_longest
+    import string
+    sanitise_ids = string.maketrans('#:', '__')
 else:
     from itertools import zip_longest
+    sanitise_ids = {
+        ord('#'): '_'
+        , ord(':'): '_'
+    }
 
 class Query(object):
     def __init__(self, graph, entities):
@@ -47,11 +54,19 @@ class Query(object):
             self.source_name = first_entity.source_name
             self._class_props = tuple()
             pass
+        elif isinstance(first_entity, QV):
+            self.source_name = self.build_what(first_entity)
+            self._class_props = tuple()
         else:
             self.source_name = first_entity.registry_name
             self._class_props = tuple(entities[1:])
 
         self._params = {}
+
+    @classmethod
+    def sub(cls, source):
+        """Shorthand for defining a sub-query, which does not need a Graph"""
+        return cls(None, (source, ))
 
     def __iter__(self):
         params = self._params
@@ -63,8 +78,10 @@ class Query(object):
             prop_names = []
             props = self.build_props(params, prop_names, for_iterator=True)
             if len(prop_names) > 1:
-                selectuple = namedtuple(self.source_name + '_props',
-                    [name + '_' if iskeyword(name) else name
+                prop_prefix = self.source_name.translate(sanitise_ids)
+
+                selectuple = namedtuple(prop_prefix + '_props',
+                    [Query.sanitise_prop_name(name)
                         for name in prop_names])
             wheres = self.build_wheres(params)
 
@@ -157,24 +174,10 @@ class Query(object):
         prop_names = []
         props, where, optional_clauses = self.prepare(prop_names)
         if len(prop_names) > 1:
-            sanitise_ids = {
-                ord('#'): '_'
-                , ord(':'): '_'
-            }
             prop_prefix = self.source_name.translate(sanitise_ids)
 
-            used_names = {}
-            def unique_prop(name):
-                used = used_names.get(name, None)
-                if used is None:
-                    used_names[name] = 1
-                    return name
-                else:
-                    used_names[name] += 1
-                    return name + str(used_names[name])
-
             selectuple = namedtuple(prop_prefix + '_props',
-                [unique_prop(name + '_' if iskeyword(name) else name)
+                [Query.sanitise_prop_name(name)
                     for name in prop_names])
         select = self.build_select(props, where + optional_clauses)
 
@@ -199,7 +202,7 @@ class Query(object):
                         return [
                             self.parse_record_prop(
                                 record.oRecordData[prop_name])
-                            for record in response if record.oRecordData[prop_name]]
+                            for record in response]
                 else:
                     if self._params.get('reify', False) and len(response) == 1:
                         # Simplify query for subsequent uses
@@ -256,6 +259,10 @@ class Query(object):
         self._params['what'] = whats
         return self
 
+    def let(self, **kwargs):
+        self._params['let'] = kwargs
+        return self
+
     def filter(self, expression):
         self._params['filter'] = expression
         return self
@@ -305,7 +312,8 @@ class Query(object):
     def lock(self):
         self._params['lock'] = True
 
-    def filter_string(self, expression_root):
+    @classmethod
+    def filter_string(cls, expression_root):
         op = expression_root.operator
 
         left = expression_root.operands[0]
@@ -314,37 +322,37 @@ class Query(object):
             if isinstance(left, Property):
                 left_str = left.context_name()
             elif isinstance(left, ArithmeticOperation):
-                left_str = u'({})'.format(self.arithmetic_string(left))
+                left_str = u'({})'.format(cls.arithmetic_string(left))
             elif isinstance(left, ChainableWhat):
-                left_str = self.build_what(left)
+                left_str = cls.build_what(left)
             else:
                 raise ValueError(
                     'Operator {} not supported as a filter'.format(op))
 
             if op is Operator.Equal:
                 return u'{0} = {1}'.format(
-                    left_str, ArgConverter.convert_to(ArgConverter.Value
-                                                      , right, self))
+                    left_str, ArgConverter.convert_to(ArgConverter.Vertex
+                                                      , right, cls))
             elif op is Operator.GreaterEqual:
                 return u'{0} >= {1}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
-                                                      , right, self))
+                                                      , right, cls))
             elif op is Operator.Greater:
                 return u'{0} > {1}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
-                                                      , right, self))
+                                                      , right, cls))
             elif op is Operator.LessEqual:
                 return u'{0} <= {1}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
-                                                      , right, self))
+                                                      , right, cls))
             elif op is Operator.Less:
                 return u'{0} < {1}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
-                                                      , right, self))
+                                                      , right, cls))
             elif op is Operator.NotEqual:
                 return u'{0} <> {1}'.format(
-                    left_str, ArgConverter.convert_to(ArgConverter.Value
-                                                      , right, self))
+                    left_str, ArgConverter.convert_to(ArgConverter.Vertex
+                                                      , right, cls))
             elif op is Operator.Between:
                 far_right = PropertyEncoder.encode_value(expression_root.operands[2])
                 return u'{0} BETWEEN {1} and {2}'.format(
@@ -352,7 +360,7 @@ class Query(object):
             elif op is Operator.Contains:
                 if isinstance(right, LogicalConnective):
                     return u'{0} contains({1})'.format(
-                        left_str, self.filter_string(right))
+                        left_str, cls.filter_string(right))
                 else:
                     return u'{} in {}'.format(
                         PropertyEncoder.encode_value(right), left_str)
@@ -380,11 +388,12 @@ class Query(object):
                 raise AssertionError('Unhandled Operator type: {}'.format(op))
         else:
             return u'{0} {1} {2}'.format(
-                self.filter_string(left)
+                cls.filter_string(left)
                 , 'and' if op is Operator.And else 'or'
-                , self.filter_string(right))
+                , cls.filter_string(right))
 
-    def arithmetic_string(self, operation_root):
+    @classmethod
+    def arithmetic_string(cls, operation_root):
         if isinstance(operation_root, ArithmeticOperation):
             op = operation_root.operator
             if operation_root.paren:
@@ -399,24 +408,24 @@ class Query(object):
 
             if op is Operator.Add:
                 exp = '{} + {}'.format(
-                        self.arithmetic_string(left)
-                        , self.arithmetic_string(right))
+                        cls.arithmetic_string(left)
+                        , cls.arithmetic_string(right))
             elif op is Operator.Sub:
                 exp = '{} - {}'.format(
-                        self.arithmetic_string(left)
-                        , self.arithmetic_string(right))
+                        cls.arithmetic_string(left)
+                        , cls.arithmetic_string(right))
             elif op is Operator.Mul:
                 exp = '{} * {}'.format(
-                        self.arithmetic_string(left)
-                        , self.arithmetic_string(right))
+                        cls.arithmetic_string(left)
+                        , cls.arithmetic_string(right))
             elif op is Operator.Div:
                 exp = '{} / {}'.format(
-                        self.arithmetic_string(left)
-                        , self.arithmetic_string(right))
+                        cls.arithmetic_string(left)
+                        , cls.arithmetic_string(right))
             elif op is Operator.Mod:
                 exp = '{} % {}'.format(
-                        self.arithmetic_string(left)
-                        , self.arithmetic_string(right))
+                        cls.arithmetic_string(left)
+                        , cls.arithmetic_string(right))
 
             return '{}{}{}'.format(lp,exp,rp)
         elif isinstance(operation_root, Property):
@@ -436,9 +445,14 @@ class Query(object):
 
         whats = params.get('what')
         if whats:
-            # FIXME prop_names are incorrectly generated when
-            # multiple, distinct what's alias to the same name
             props = [self.build_what(what, prop_names) for what in whats]
+
+            if prop_names is not None:
+                # Multiple, distinct what's can alias to the same name
+                # Make unique; consistent with what OrientDB assumes
+                used_names = {}
+                for idx, name in enumerate(prop_names):
+                    prop_names[idx] = Query.unique_prop_name(name, used_names)
         else:
             props = [e.context_name() for e in self._class_props]
             if prop_names is not None:
@@ -465,6 +479,15 @@ class Query(object):
 
     def build_optional_clauses(self, params, skip):
         optional_clauses = []
+
+        let = params.get('let')
+        if let:
+            let_clause = 'LET {}'.format(
+                ','.join('${} = {}'.format(
+                    PropertyEncoder.encode_name(k),
+                    u'({})'.format(v) if isinstance(v, Query) else
+                    self.build_what(v)) for k,v in let.items()))
+            optional_clauses.append(let_clause)
 
         group_by = params.get('group_by')
         if group_by:
@@ -617,74 +640,126 @@ class Query(object):
         , What.ToUpperCase: WhatFunction(0, 'toUpperCase()', tuple())
         , What.Type: WhatFunction(0, 'type()', tuple())
         , What.Values: WhatFunction(0, 'values()', tuple())
+        , What.WhatLet: WhatFunction(1, '${}', (ArgConverter.Name, ))
+        , What.AtThis: WhatFunction(0, '@this', tuple())
+        , What.AtRid: WhatFunction(0, '@rid', tuple())
+        , What.AtClass: WhatFunction(0, '@class', tuple())
+        , What.AtVersion: WhatFunction(0, '@version', tuple())
+        , What.AtSize: WhatFunction(0, '@size', tuple())
+        , What.AtType: WhatFunction(0, '@type', tuple())
     }
 
-    def append_what_function(self, chain, func_key, func_args):
+    @classmethod
+    def append_what_function(cls, chain, func_key, func_args):
         what_function = Query.WhatFunctions[func_key]
         max_args = what_function.max_args
         if max_args > 0 or max_args is None:
             chain.append(
                 what_function.fmt.format(
-                    ','.join(self.what_args(what_function.expected,
+                    ','.join(cls.what_args(what_function.expected,
                                             func_args[1]))))
         else:
             chain.append(what_function.fmt)
 
-    def build_what(self, what, prop_names=None):
+    @classmethod
+    def build_what(cls, what, prop_names=None):
         if isinstance(what, Property):
             prop_name = what.context_name()
             if prop_names is not None:
                 prop_names.append(prop_name)
             return prop_name
-        elif isinstance(what, RecordAttribute):
-            return str(what)
+        elif not isinstance(what, What):
+            if isinstance(what, str):
+                what_str = json.dumps(what)
+            else:
+                what_str = str(what)
+
+            if prop_names is not None:
+                period = what_str.find('.')
+                if period >= 0:
+                    prop_names.append(what_str[0:period])
+                else:
+                    prop_names.append(what_str.replace('"', ''))
+            return what_str
 
         name_override = what.name_override
         as_str = ' AS {}'.format(name_override) if name_override else ''
 
         if isinstance(what, FunctionWhat):
-            what_function = Query.WhatFunctions[what.func]
+            func = what.chain[0][0]
+            what_function = Query.WhatFunctions[func]
 
             if prop_names is not None:
                 # Projections not allowed with Expand
-                counted = what.func is not What.Expand
+                counted = func is not What.Expand
                 if counted:
                     prop_names.append(
-                        Query.parse_prop_name(what_function.fmt, name_override))
+                        cls.parse_prop_name(what_function.fmt, name_override))
 
             return '{}{}'.format(
                 what_function.fmt.format(
-                    ','.join(self.what_args(what_function.expected,
-                                            what.args))), as_str)
+                    ','.join(cls.what_args(what_function.expected,
+                                            what.chain[0][1]))), as_str)
         elif isinstance(what, ChainableWhat):
             chain = []
             for func_args in what.chain:
                 func_key = func_args[0]
                 if func_key == What.WhatFilter:
-                    chain[-1] += '[{}]'.format(self.filter_string(func_args[1]))
+                    filter_exp = func_args[1]
+                    chain[-1] += '[{}]'.format(ArgConverter.convert_to(ArgConverter.Filter, filter_exp, cls))
+                    continue
+                elif func_key == What.WhatCustom:
+                    chain.append('{}({})'.format(func_args[1], ','.join(cls.what_args(func_args[2], func_args[3]))))
                     continue
 
-                self.append_what_function(chain, func_key, func_args)
+                cls.append_what_function(chain, func_key, func_args)
 
             for prop in what.props:
                 if isinstance(prop, tuple):
                     func_key = prop[0]
-                    self.append_what_function(chain, func_key, prop)
+                    cls.append_what_function(chain, func_key, prop)
                 else:
                     chain.append(prop)
 
             if prop_names is not None:
                 prop_names.append(
-                    Query.parse_prop_name(chain[0], name_override))
+                    cls.parse_prop_name(chain[0], name_override))
             return '{}{}'.format('.'.join(chain), as_str)
 
     @staticmethod
-    def parse_prop_name(from_str, override):
-        return override if override else from_str[:from_str.index('(')]
+    def unique_prop_name(name, used_names):
+        used = used_names.get(name, None)
+        if used is None:
+            used_names[name] = 1
+            return name
+        else:
+            used_names[name] += 1
+            return name + str(used_names[name])
 
-    def what_args(self, expected, args):
+    @staticmethod
+    def sanitise_prop_name(name):
+        if iskeyword(name):
+            return name + '_'
+        elif name[0] == '$':
+            return 'qv_'+ name[1:]
+        else:
+            return name
+
+    @staticmethod
+    def parse_prop_name(from_str, override):
+        if override:
+            return override
+        else:
+            paren_idx = from_str.find('(')
+            if paren_idx < 0:
+                return from_str
+            else:
+                return from_str[:paren_idx]
+
+    @classmethod
+    def what_args(cls, expected, args):
         if args:
-            return [ArgConverter.convert_to(conversion, arg, self)
+            return [ArgConverter.convert_to(conversion, arg, cls)
                     for arg, conversion in
                         zip_longest(args, expected
                                     , fillvalue=expected[-1])
@@ -710,12 +785,7 @@ class Query(object):
     def parse_record_prop(self, prop):
         if isinstance(prop, list):
             g = self._graph
-            if len(prop) > 1:
-                return g.elements_from_links(prop) if isinstance(prop[0], pyorient.OrientRecordLink) else prop
-            elif len(prop) == 1:
-                return g.element_from_link(prop[0]) if isinstance(prop[0], pyorient.OrientRecordLink) else prop[0]
-            else:
-                return None
+            return g.elements_from_links(prop) if len(prop) > 0 and isinstance(prop[0], pyorient.OrientRecordLink) else prop
         elif isinstance(prop, pyorient.OrientRecordLink):
             return self._graph.element_from_link(prop)
         return prop

@@ -6,7 +6,7 @@ from .edge import Edge
 from .broker import get_broker
 from .query import Query
 from .batch import Batch
-from .commands import CreateVertexCommand, CreateEdgeCommand
+from .commands import VertexCommand, CreateEdgeCommand
 from ..utils import to_unicode
 
 import pyorient
@@ -392,8 +392,36 @@ class Graph(object):
         else:
             set_clause = u''
 
-        return CreateVertexCommand(
+        return VertexCommand(
             u'CREATE VERTEX {}{}'.format(class_name, set_clause))
+
+    def delete_vertex(self, vertex, where = None, limit=None, batch=None):
+        # TODO FIXME Parse delete result
+        result = self.client.command(to_unicode(self.delete_vertex_command(vertex, where, limit, batch)))
+
+    def delete_vertex_command(self, vertex, where=None, limit=None, batch=None):
+        vertex_clause = getattr(vertex, 'registry_name', None) or vertex
+
+        delete_clause = ''
+        if where is not None:
+            where_clause = ''
+            if isinstance(where, dict):
+                where_clause = u' and '.join(u'{0}={1}'
+                    .format(PropertyEncoder.encode_name(k)
+                            , PropertyEncoder.encode_value(v))
+                    for k,v in where.items())
+            else:
+                where_clause = Query.filter_string(where)
+
+            delete_clause += ' WHERE {}'.format(where_clause)
+        if limit is not None:
+            delete_clause += ' LIMIT {}'.format(limit)
+        if batch is not None:
+            delete_clause += ' BATCH {}'.format(batch)
+
+        return VertexCommand(
+            u'DELETE VERTEX {}{}'.format(
+                vertex_clause, delete_clause))
 
     def create_edge(self, edge_cls, from_vertex, to_vertex, **kwargs):
         result = self.client.command(
@@ -419,6 +447,13 @@ class Graph(object):
         return CreateEdgeCommand(
             u'CREATE EDGE {} FROM {} TO {}{}'.format(
                 class_name, from_vertex._id, to_vertex._id, set_clause))
+
+    def create_function(self, name, code, parameters=None, idempotent=False, language='javascript'):
+        parameter_str = ' PARAMETERS [' + ','.join(parameters) + ']' if parameters else ''
+        
+        self.client.command(
+            u'CREATE FUNCTION {} \'{}\' {} IDEMPOTENT {} LANGUAGE {}'.format(
+                name, code, parameter_str, idempotent, language))
 
     def get_vertex(self, vertex_id):
         record = self.client.command('SELECT FROM {}'.format(vertex_id))

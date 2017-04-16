@@ -1,4 +1,5 @@
 from pyorient.ogm.operators import (IdentityOperand, RelativeOperand, Operand, InstanceOfMixin)
+from pyorient.ogm.query_utils import ArgConverter
 
 class What(object):
     """Specify 'what' a Query retrieves."""
@@ -87,6 +88,17 @@ class What(object):
     Values = 81
     # Filter
     WhatFilter = 82
+    # Custom functions
+    WhatCustom = 83
+    # Let
+    WhatLet = 84
+    # Record attributes
+    AtThis = 85
+    AtRid = 86
+    AtClass = 87
+    AtVersion = 88
+    AtSize = 89
+    AtType = 90
 
     def __init__(self):
         self.name_override = None
@@ -326,7 +338,42 @@ class MapMethodMixin(CollectionMethodMixin):
     def values(self):
         return MethodWhat.prepare_next_link(self, StringMethodWhat, (What.Values,))
 
-class ElementWhat(RecordMethodMixin, ChainableWhat):
+class WhatFilterMixin(object):
+    def __getitem__(self, filter_exp):
+        self.chain.append((What.WhatFilter, filter_exp))
+        return self
+
+# Concrete method chaining types
+class MethodWhat(MethodWhatMixin, Operand, ChainableWhat):
+    def __init__(self, chain=[], props=[]):
+        super(MethodWhat, self).__init__(chain, props)
+        # Methods can also be chained to props
+        self.method_chain = self.chain
+
+    @staticmethod
+    def prepare_next_link(current, chainer_type, link):
+        current_type = type(current)
+        if issubclass(current_type, ChainableWhat):
+            if current_type is not chainer_type:
+                # Constrain next link to type-compatible methods
+                try:
+                    current.__getattribute__('_immutable')
+                    next_link = chainer_type(current.chain[:], current.props[:])
+                except:
+                    next_link = chainer_type(current.chain, current.props)
+                next_link.method_chain.append(link)
+                return next_link
+            else:
+                current.method_chain.append(link)
+        else:
+            return chainer_type([current, link], [])
+
+        return current
+
+class ElementWhat(RecordMethodMixin, WhatFilterMixin, MethodWhat):
+    def at_rid(self):
+        return MethodWhat.prepare_next_link(self, AtRid, (What.AtRid,))
+
     def __getattr__(self, attr):
         # Prevent further chaining or use as record
         self = AnyPropertyWhat(self.chain, self.props)
@@ -336,10 +383,6 @@ class ElementWhat(RecordMethodMixin, ChainableWhat):
         raise TypeError(
             '{} is not callable here.'.format(
                 repr(self.props[-1]) if self.props else 'Query function'))
-
-    def __getitem__(self, filter_exp):
-        self.chain.append((What.WhatFilter, filter_exp))
-        return self
 
 class PropertyWhat(MethodWhatMixin, Operand, ChainableWhat):
     def __init__(self, chain, props):
@@ -356,10 +399,7 @@ class PropertyWhat(MethodWhatMixin, Operand, ChainableWhat):
 class AnyPropertyWhat(StringMethodMixin, MapMethodMixin, PropertyWhat):
     pass
 
-class VertexWhat(ElementWhat):
-    def __init__(self, chain):
-        super(VertexWhat, self).__init__(chain, [])
-
+class VertexWhatMixin(object):
     def out(self, *labels):
         self.chain.append((What.Out, labels))
         return self
@@ -387,6 +427,11 @@ class VertexWhat(ElementWhat):
         chain.append((What.BothE, labels))
         return EdgeWhat(chain)
 
+class VertexWhat(VertexWhatMixin, ElementWhat):
+    def __init__(self, chain):
+        super(VertexWhat, self).__init__(chain, [])
+
+
 class VertexWhatBegin(object):
     def __init__(self, func):
         self.func = func
@@ -400,10 +445,7 @@ both = VertexWhatBegin(What.Both)
 outV = VertexWhatBegin(What.OutV)
 inV = VertexWhatBegin(What.InV)
 
-class EdgeWhat(ElementWhat):
-    def __init__(self, chain):
-        super(EdgeWhat, self).__init__(chain, [])
-
+class EdgeWhatMixin(object):
     def outV(self):
         chain = self.chain
         chain.append((What.OutV,))
@@ -413,6 +455,11 @@ class EdgeWhat(ElementWhat):
         chain = self.chain
         chain.append((What.InV,))
         return VertexWhat(chain)
+
+class EdgeWhat(EdgeWhatMixin, ElementWhat):
+    def __init__(self, chain):
+        super(EdgeWhat, self).__init__(chain, [])
+
 
 class EdgeWhatBegin(object):
     def __init__(self, func):
@@ -425,26 +472,6 @@ outE = EdgeWhatBegin(What.OutE)
 inE = EdgeWhatBegin(What.InE)
 bothE = EdgeWhatBegin(What.BothE)
 
-# Concrete method chaining types
-class MethodWhat(MethodWhatMixin, Operand, ChainableWhat):
-    def __init__(self, chain=[], props=[]):
-        super(MethodWhat, self).__init__(chain, props)
-        # Methods can also be chained to props
-        self.method_chain = self.chain
-
-    @staticmethod
-    def prepare_next_link(current, chainer_type, link):
-        current_type = type(current)
-        if issubclass(current_type, ChainableWhat):
-            current.method_chain.append(link)
-            if current_type is not chainer_type:
-                # Constrain next link to type-compatible methods
-                return chainer_type(current.chain, current.props)
-        else:
-            return chainer_type([current, link], [])
-
-        return current
-
 class StringMethodWhat(StringMethodMixin, MethodWhat):
     pass
 
@@ -454,30 +481,70 @@ class CollectionMethodWhat(CollectionMethodMixin, MethodWhat):
 class MapMethodWhat(MapMethodMixin, MethodWhat):
     pass
 
+class QV(VertexWhatMixin, EdgeWhatMixin, WhatFilterMixin, RecordMethodMixin, StringMethodMixin, MapMethodMixin, MethodWhat):
+    def __init__(self, name):
+        super(QV, self).__init__([(What.WhatLet, (name,))], [])
+
+    def QV(self, name):
+        self.chain.append((What.WhatLet, (name,)))
+        return self
+
+    @classmethod
+    def parent(cls):
+        return cls('parent')
+
+    @classmethod
+    def parent_current(cls):
+        return cls('parent').QV('current')
 
 class FunctionWhat(MethodWhat):
     def __init__(self, func, args):
-        super(FunctionWhat, self).__init__([], [])
-        self.func = func
-        self.args = args
+        super(FunctionWhat, self).__init__([(func, args)], [])
 
+class CustomFunction(MethodWhat):
+    """Call custom server-side functions from queries."""
+    def __init__(self, name, expected, *args):
+        super(CustomFunction, self).__init__([(What.WhatCustom, name, expected, args)], [])
+
+def custom_function_handle(name, expected=(ArgConverter.Value,)):
+    return lambda *args: CustomFunction(name, expected, *args)
 # Record attributes
 
 class RecordAttribute(object):
-    pass
+    @classmethod
+    def create_immutable(cls):
+        attribute = cls()
+        setattr(attribute, '_immutable', True)
+        return attribute
 
 class AtThis(RecordAttribute, InstanceOfMixin, RecordMethodMixin, StringMethodWhat):
-    def __str__(self):
-        return '@this'
+    def __init__(self, chain=[(What.AtThis, tuple())], props=[]):
+        super(AtThis, self).__init__(chain, props)
 
-class AtClass(RecordAttribute, InstanceOfMixin, RecordMethodMixin, StringMethodWhat):
-    def __str__(self):
-        return '@class'
 
 class AtRid(RecordAttribute, StringMethodWhat):
-    def __str__(self):
-        return '@rid'
+    def __init__(self, chain=[(What.AtRid, tuple())], props=[]):
+        super(AtRid, self).__init__(chain, props)
 
-at_this = AtThis()
-at_class = AtClass()
-at_rid = AtRid()
+class AtClass(RecordAttribute, InstanceOfMixin, RecordMethodMixin, StringMethodWhat):
+    def __init__(self, chain=[(What.AtClass, tuple())], props=[]):
+        super(AtClass, self).__init__(chain, props)
+
+class AtVersion(RecordAttribute, MethodWhat):
+    def __init__(self, chain=[(What.AtVersion, tuple())], props=[]):
+        super(AtVersion, self).__init__(chain, props)
+
+class AtSize(RecordAttribute, MethodWhat):
+    def __init__(self, chain=[(What.AtSize, tuple())], props=[]):
+        super(AtSize, self).__init__(chain, props)
+
+class AtType(RecordAttribute, StringMethodWhat):
+    def __init__(self, chain=[(What.AtType, tuple())], props=[]):
+        super(AtType, self).__init__(chain, props)
+
+at_this = AtThis.create_immutable()
+at_class = AtClass.create_immutable()
+at_rid = AtRid.create_immutable()
+at_version = AtVersion.create_immutable()
+at_size = AtSize.create_immutable()
+at_type = AtType.create_immutable()

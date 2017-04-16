@@ -6,6 +6,7 @@ from .what import (
     , MapMethodMixin
     , PropertyWhat
 )
+from .element import GraphElement
 
 import json
 import datetime
@@ -120,8 +121,10 @@ class PropertyEncoder:
                 for k, v in value.items()
             ])
             return u'{{ {} }}'.format(contents)
-        elif isinstance(value, FunctionWhat) and value.func == What.SysDate:
-            return 'sysdate({})'.format(','.join([PropertyEncoder.encode_value(v) for v in value.args if v is not None]))
+        elif isinstance(value, FunctionWhat) and value.chain[0][0] == What.SysDate:
+            return 'sysdate({})'.format(','.join([PropertyEncoder.encode_value(v) for v in value.chain[0][1] if v is not None]))
+        elif isinstance(value, GraphElement):
+            return value._id
         else:
             # returning the same object will cause repr(value) to be used
             return value
