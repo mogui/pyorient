@@ -4,13 +4,13 @@ import decimal
 import os.path
 from datetime import datetime
 
-from pyorient import PyOrientCommandException
+from pyorient import PyOrientCommandException, PyOrientSQLParsingException
 from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
-    String, Date, DateTime, Decimal, Integer, EmbeddedMap, EmbeddedSet, Float,
+    String, Date, DateTime, Decimal, Double, Integer, EmbeddedMap, EmbeddedSet,
     Link, UUID)
 from pyorient.ogm.what import expand, in_, out, distinct, sysdate
 
@@ -233,7 +233,7 @@ class Wallet(MoneyNode):
     element_plural = 'wallets'
 
     amount_precise = Decimal(name='amount', nullable=False)
-    amount_imprecise = Float()
+    amount_imprecise = Double()
 
 class Carries(MoneyRelationship):
     # No label set on relationship; Broker will not be attached to graph.
@@ -250,6 +250,30 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         g.create_all(MoneyNode.registry)
         g.create_all(MoneyRelationship.registry)
+
+    def testDoubleSerialization(self):
+        # Using str() on a float object in Python 2 sometimes 
+        # returns scientific notation, which causes queries to be misapplied.
+        # Similarly, many alternative approaches of turning floats to strings
+        # in Python can cause loss of precision.
+        g = self.g
+
+        # Try very large values, very small values, and values with a lot of decimals.
+        target_values = [1e50, 1e-50, 1.23456789012]
+
+        for value in target_values:
+            amount_imprecise = value
+            amount_precise = decimal.Decimal(amount_imprecise)
+
+            original_wallet = g.wallets.create(amount_imprecise=amount_imprecise, 
+                                               amount_precise=amount_precise)
+            wallet = g.query(Wallet).filter(
+                (Wallet.amount_imprecise > (value * (1 - 1e-6))) & 
+                (Wallet.amount_imprecise < (value * (1 + 1e+6)))
+            ).one()
+
+            assert wallet.amount_imprecise == original_wallet.amount_imprecise
+            assert wallet.amount_precise == original_wallet.amount_precise
 
     def testMoney(self):
         assert len(MoneyNode.registry) == 2
@@ -337,7 +361,7 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         # Original property name, amount_precise, lost-in-translation
         assert type(WalletType.amount) == Decimal
-        assert type(WalletType.amount_imprecise) == Float
+        assert type(WalletType.amount_imprecise) == Double
         g.include(schema_registry)
 
         debt = decimal.Decimal(-42.0)
@@ -565,6 +589,55 @@ class OGMEmbeddedTestCase(unittest.TestCase):
         for alternate in alias:
             received = g.query(element_cls).filter(element_cls.alias.contains(alternate)).one()
             self.assertEqual(canonical_result, received)
+
+
+class OGMEmbeddedDefaultsTestCase(unittest.TestCase):
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('test_embedded_defaults', 'root', 'root',
+                                           initial_drop=True))
+
+    def testDefaultData(self):
+        g = self.g
+
+        g.client.command('CREATE CLASS DefaultEmbeddedNode EXTENDS V')
+        g.client.command('CREATE CLASS DefaultData')
+        g.client.command('CREATE PROPERTY DefaultData.normal Boolean')
+        g.client.command('CREATE PROPERTY DefaultEmbeddedNode.name String')
+        g.client.command('CREATE PROPERTY DefaultEmbeddedNode.info EmbeddedList DefaultData')
+
+        try:
+            g.client.command('ALTER PROPERTY DefaultData.normal DEFAULT 0')
+        except PyOrientSQLParsingException as e:
+            if "Unknown property attribute 'DEFAULT'" in e.errors[0]:
+                # The current OrientDB version (<2.1) doesn't allow default values.
+                # Simply skip this test, there's nothing we can test here.
+                return
+            else:
+                raise
+
+        base_node = declarative_node()
+        base_relationship = declarative_relationship()
+        g.include(g.build_mapping(base_node, base_relationship, auto_plural=True))
+
+        node = g.DefaultEmbeddedNode.create(name='default_embedded')
+        node.info = [{}]
+
+        try:
+            node.save()
+        except PyOrientCommandException as e:
+            if 'incompatible type is used.' in e.errors[0]:
+                # The current OrientDB version (<2.1.5) doesn't allow embedded classes,
+                # only embedded primitives (e.g. String or Int).
+                # Simply skip this test, there's nothing we can test here.
+                return
+            else:
+                raise
+
+        # On the next load, the node should have:
+        # 'info' = [{'normal': False}]
+        node = g.DefaultEmbeddedNode.query().one()
+        self.assertIn('normal', node.info[0])
+        self.assertIs(node.info[0]['normal'], False)
 
 
 if sys.version_info[0] < 3:

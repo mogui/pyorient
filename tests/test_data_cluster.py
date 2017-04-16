@@ -1,4 +1,3 @@
-__author__ = 'Ostico <ostico@gmail.com>'
 
 import os
 import sys
@@ -10,6 +9,8 @@ from pyorient.messages.database import DbOpenMessage, DbReloadMessage
 from pyorient.messages.cluster import DataClusterDataRangeMessage, \
     DataClusterDropMessage, DataClusterAddMessage
 from pyorient import OrientSocket
+
+__author__ = 'Ostico <ostico@gmail.com>'
 
 
 os.environ['DEBUG'] = "1"

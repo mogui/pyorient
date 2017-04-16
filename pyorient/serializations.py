@@ -1,25 +1,99 @@
+import re
 import sys
 import time
 from datetime import date, datetime
-from decimal import Decimal
+from decimal import Decimal, localcontext
 from .otypes import OrientRecordLink, OrientRecord, OrientBinaryObject
 from .exceptions import PyOrientBadMethodCallException
-
+try:
+    import pyorient_native
+    binary_support=True
+except:
+    binary_support=False
 
 class OrientSerializationBinary(object):
-    def __init__(self):
+    def __init__(self, props):
         self.className = None
         self.data = {}
         self.type = OrientSerialization.Binary
-
+        self.props = props
+        self._writer = None
+        
     def decode(self, content):
-        raise NotImplementedError
+        if not binary_support:
+            raise Exception("To support Binary Serialization,\
+                            pyorient_native must be installed")
+        clsname, data = pyorient_native.deserialize(content,
+                                    content.__sizeof__(), self.props)
+        rels = [k for k in data.keys() if ('in_' in k or 'out_' in k
+                                       or k=='in' or k=='out')] 
+        for k in rels:
+            if isinstance(data[k],list):
+                for i in range(len(data[k])):
+                    data[k][i] = OrientRecordLink(str(data[k][i][1]) + ':' +
+                                                  str(data[k][i][2]))
+            elif isinstance(data[k],tuple):
+                data[k] = OrientRecordLink(str(data[k][1]) + ':' +
+                                                  str(data[k][2]))
+        return [clsname, data]
 
     def encode(self, record):
-        raise NotImplementedError
+        if not binary_support:
+            raise Exception("To support Binary Serialization,\
+                            pyorient_native must be installed")
+        if record:
+            return pyorient_native.serialize(record)
+        else:
+            return None
+
+
+###########################################################
+# Regular expressions to speed up OrientSerializationCSV  #
+###########################################################
+
+# number, possibly floating point, possibly floating with exponent:
+numRegex = re.compile('^-?[0-9]+(\.[0-9]+)?(E-?[0-9]+)?')
+# ^              starts with
+# -?             optional minus sign
+# [0-9]+         one or more digits
+# (\.[0-9]+)?    optional decimal and digits
+#     \.             decimal point
+#     [0-9]+         one or more digits
+# (E-?[0-9]+)?   optional exponent
+#     E              E
+#     -?             optional minus sign
+#     [0-9]+         one or more digits
+
+# RID in the form of number:number
+ridRegex = re.compile('^-?[0-9]+:[0-9]+')
+# ^                 starts with
+# -?                optional minus sign
+# [0-9]+            one or more digits
+# :                 colon
+# [0-9]+            one or more digits
+
+# characters leading up to (but not including) the first quote that isn't escaped:
+strRegex = re.compile(r'(?s)(^(\\\\)*(?="))|(^.*?[^\\](\\\\)*(?="))') 
+# (?s)                      single line mode, dot matches everything including newlines
+# (^(\\\\)*(?="))           even number of backslashes followed by quote
+#     ^                     starts with
+#    (\\\\)*                two backslashes, zero or more times
+#    (?=")                  lookahead to see next character is a quote, but don't include in match
+# |                         or
+# (^.*?[^\\](\\\\)*(?="))   any number of characters, even num backslash, followed by a quote
+#    ^.*?                   starts with, any character, any number of times, smallest match instead of greedy
+#    [^\\]                  any character that is not a backslash
+#    (\\\\)*                two backslashes, zero or more times
+#    (?=")                  lookahead to see next character is a quote, but don't include in match
+
+# escaped character
+escRegex = re.compile(r'(?s)\\.')
+# (?s)                      single line mode, dot matches everything including newlines
+# \\.                       single backslash followed by any character
 
 
 class OrientSerializationCSV(object):
+
     def __init__(self):
         self.className = None
         self.data = {}
@@ -114,25 +188,24 @@ class OrientSerializationCSV(object):
         if isinstance(value, str):
             ret = '"' + value + '"'
         elif isinstance(value, float):
-            ret = str(value) + 'd'
-
+            with localcontext() as ctx:
+                ctx.prec = 20  # floats are max 80-bits wide = 20 significant digits
+                ret = '{:f}d'.format(Decimal(value))
         elif sys.version_info[0] >= 3 and isinstance(value, int):
             if value > 2147483647:
                 ret = str(value) + 'l'
             else:
                 ret = str(value)
-
         elif sys.version_info[0] < 3 and isinstance(value, long):
             ret = str(value) + 'l'
         elif isinstance(value, int):
             ret = str(value)
-
         elif isinstance(value, datetime):
             ret = str(int(time.mktime(value.timetuple())) * 1000) + 't'
         elif isinstance(value, date):
             ret = str(int(time.mktime(value.timetuple())) * 1000) + 'a'
         elif isinstance(value, Decimal):
-            ret = str(value) + 'c'
+            ret = '{:f}c'.format(value)
         elif isinstance(value, list):
             try:
                 base_cls = type(value[0])
@@ -142,10 +215,8 @@ class OrientSerializationCSV(object):
                 if issubclass(base_cls, OrientRecordLink):
                     elements = [elem.get_hash() for elem in value]
                 else:
-                    try:
-                        elements = [ self._encode_value( base_cls( elem ) ) for elem in value ]
-                    except ValueError as e:
-                        raise Exception("Wrong type commistion")
+                    elements = [self._encode_value(elem) for elem in value]
+
             ret = "[" + ",".join(elements) + "]"
         elif isinstance(value, dict):
             ret = "{" + ','.join( map( lambda elem: '"' + elem + '":' + self._encode_value(value[elem]), value ) ) + '}'
@@ -244,7 +315,7 @@ class OrientSerializationCSV(object):
             return self._parse_bag( content[1:] )
         elif c == '_':
             return self._parse_binary( content[1:] )
-        elif c == '-' or self._is_numeric( c ):
+        elif c in '-0123456789':
             return self._parse_number( content )
         elif c == 'n' and content[ 0:4 ] == 'null':
             return [ None, content[ 4: ] ]
@@ -270,25 +341,15 @@ class OrientSerializationCSV(object):
             :param content str The input to consume
             :return: list The collected string and any remaining content.
         """
-        length = len( content )
         collected = ''
-        i = 0
-        while i < length:
-            c = content[ i ]
-            if c == '\\':
-                # escape, skip to the next character
-                i += 1
-                collected += content[ i ]
-                # increment again to pass over
-                i += 1
-                continue
-            elif c == '"':
-                break
-            else:
-                i += 1
-                collected += c
-
-        return [ collected, content[ ( i + 1 ): ] ]
+        match = strRegex.match(content)
+        if match:
+            collected = match.group(0)
+            content = content[len(collected)+1:]
+            # replace escape+character with just the character:
+            collected = escRegex.sub(lambda m: m.group(0)[-1:], collected)
+            return [ collected, content ]
+        return [content, '']
 
     def _parse_number(self, content):
         """
@@ -298,23 +359,13 @@ class OrientSerializationCSV(object):
            :param content str The content to consume
            :return: list The collected number and any remaining content.
         """
-        length = len(content)
         collected = ''
-        is_float = False
-        i = 0
-        for i in range(0, length):
-            c = content[i]
-            if c == '-' or self._is_numeric(c):
-                collected += c
-            elif c == '.':
-                is_float = True
-                collected += c
-            elif c == 'E' and is_float:
-                collected += c
-            else:
-                break
-
-        content = content[i:]
+        match = numRegex.match(content)
+        if match:
+            collected = match.group(0)
+        is_float = '.' in collected
+        content = content[len(collected):]
+        
         c = ''
         try:
             c = content[ 0 ]  # string index out of range 0
@@ -357,21 +408,12 @@ class OrientSerializationCSV(object):
           :param content str The input to consume
           :return: list The collected RID and any remaining content.
         """
-        length = len(content)
         collected = ''
-        cluster = None
-        i = 0
-        for i in range(0, length):
-            c = content[i]
-            if cluster is None and c == ':':
-                cluster = collected
-                collected = ''
-            elif self._is_numeric(c):
-                collected += c
-            else:
-                break
-
-        return [ OrientRecordLink( cluster + ":" + collected ), content[i:]]
+        match = ridRegex.match(content)
+        if match:
+            collected = match.group(0)
+        content = content[len(collected):]
+        return [ OrientRecordLink( collected ), content]
 
     def _parse_collection(self, content):
         """
@@ -475,7 +517,7 @@ class OrientSerializationCSV(object):
             key = chunk[0]
             content = chunk[1]
 
-        chunk = self._parse_key(content)
+        chunk = self._parse_value(content)
         value = chunk[0]
         content = chunk[1].lstrip(' ')
 
@@ -557,7 +599,7 @@ class OrientSerialization(object):
     Binary = "ORecordSerializerBinary"
 
     @classmethod
-    def get_impl(cls, impl):
+    def get_impl(cls, impl, props=None):
         impl_map = {
             cls.CSV: OrientSerializationCSV,
             cls.Binary: OrientSerializationBinary,
@@ -567,4 +609,7 @@ class OrientSerialization(object):
             raise PyOrientBadMethodCallException(
                 impl + ' is not an availableserialization type', []
             )
-        return implementation()
+        if impl == cls.Binary:
+            return implementation(props)
+        else:
+            return implementation()
