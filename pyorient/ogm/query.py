@@ -383,7 +383,7 @@ class Query(object):
                 return u'{0} like {1}'.format(
                     left_str, PropertyEncoder.encode_value(right + '%'))
             elif op is Operator.InstanceOf:
-                return u'{0] instanceof {1}'.format(
+                return u'{0} instanceof {1}'.format(
                     left_str, repr(right.registry_name))
             else:
                 raise AssertionError('Unhandled Operator type: {}'.format(op))
