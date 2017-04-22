@@ -7,9 +7,10 @@ from .otypes import OrientRecordLink, OrientRecord, OrientBinaryObject
 from .exceptions import PyOrientBadMethodCallException
 try:
     import pyorient_native
-    binary_support=True
+    binary_support = True
 except:
-    binary_support=False
+    binary_support = False
+
 
 class OrientSerializationBinary(object):
     def __init__(self, props):
@@ -52,8 +53,7 @@ class OrientSerializationBinary(object):
 ###########################################################
 
 # number, possibly floating point, possibly floating with exponent:
-numRegex = re.compile('^-?[0-9]+(\.[0-9]+)?(E-?[0-9]+)?')
-# ^              starts with
+numRegex = re.compile('-?[0-9]+(\.[0-9]+)?(E-?[0-9]+)?')
 # -?             optional minus sign
 # [0-9]+         one or more digits
 # (\.[0-9]+)?    optional decimal and digits
@@ -65,23 +65,21 @@ numRegex = re.compile('^-?[0-9]+(\.[0-9]+)?(E-?[0-9]+)?')
 #     [0-9]+         one or more digits
 
 # RID in the form of number:number
-ridRegex = re.compile('^-?[0-9]+:[0-9]+')
-# ^                 starts with
+ridRegex = re.compile('-?[0-9]+:[0-9]+')
 # -?                optional minus sign
 # [0-9]+            one or more digits
 # :                 colon
 # [0-9]+            one or more digits
 
 # characters leading up to (but not including) the first quote that isn't escaped:
-strRegex = re.compile(r'(?s)(^(\\\\)*(?="))|(^.*?[^\\](\\\\)*(?="))') 
+strRegex = re.compile(r'(?s)((\\\\)*(?="))|(.*?[^\\](\\\\)*(?="))') 
 # (?s)                      single line mode, dot matches everything including newlines
-# (^(\\\\)*(?="))           even number of backslashes followed by quote
-#     ^                     starts with
+# ((\\\\)*(?="))            even number of backslashes followed by quote
 #    (\\\\)*                two backslashes, zero or more times
 #    (?=")                  lookahead to see next character is a quote, but don't include in match
 # |                         or
-# (^.*?[^\\](\\\\)*(?="))   any number of characters, even num backslash, followed by a quote
-#    ^.*?                   starts with, any character, any number of times, smallest match instead of greedy
+# (.*?[^\\](\\\\)*(?="))    any number of characters, even num backslash, followed by a quote
+#    .*?                    any character, any number of times, smallest match instead of greedy
 #    [^\\]                  any character that is not a backslash
 #    (\\\\)*                two backslashes, zero or more times
 #    (?=")                  lookahead to see next character is a quote, but don't include in match
@@ -91,6 +89,18 @@ escRegex = re.compile(r'(?s)\\.')
 # (?s)                      single line mode, dot matches everything including newlines
 # \\.                       single backslash followed by any character
 
+# bag data
+bagRegex = re.compile('[^;]*')
+# [^                        exclude the following characters
+#   ;                       exclude semicolon
+# ]*                        match any number of characters that are not excluded
+
+# binary data
+binRegex = re.compile('[^_,)>\}\]]*')
+# [^                        exclude the following characters
+#   _,)>\}\]                characters to exclude (backslash escapes curly brace and square brace)
+# ]*                        match any number of characters that are not excluded
+
 
 class OrientSerializationCSV(object):
 
@@ -99,7 +109,7 @@ class OrientSerializationCSV(object):
         self.data = {}
         self.type = OrientSerialization.CSV
 
-    def decode(self, content ):
+    def decode(self, content):
         """
          Deserialize a record.
            :param content str The input to un-serialize.
@@ -114,41 +124,31 @@ class OrientSerializationCSV(object):
 
         content = content.strip()
 
-        chunk = self._parse_first_key( content )
+        collected, offset, is_class_name = self._parse_first_key(content, offset=0)
 
-        if chunk[2]:
+        if is_class_name:
             # this is actually a class name.
-            self.className = chunk[0]
-            content = chunk[1]
-            chunk = self._parse_key(content)
-            key = chunk[0]
-            content = chunk[1]
+            self.className = collected
+            key, offset = self._parse_key(content, offset)
         else:
-            key = chunk[0]
-            content = chunk[1]
+            key = collected
 
-        if not key and not content:
+        if not key and not (offset < len(content)):
             return self.className, self.data
 
-        chunk = self._parse_value(content)
-        value = chunk[0]
-        content = chunk[1]
-
+        value, offset = self._parse_value(content, offset)
+        
         self.data[key] = value
 
-        while len(content) != 0:
-            if content[0] == ',':
-                content = content[1:]
+        while offset < len(content):
+            if content[offset] == ',':
+                offset += 1
             else:
                 break
 
-            chunk = self._parse_key(content)
-            key = chunk[0]
-            content = chunk[1]
-            if len(content) > 0:
-                chunk = self._parse_value(content)
-                value = chunk[0]
-                content = chunk[1]
+            key, offset = self._parse_key(content, offset)
+            if offset < len(content):
+                value, offset = self._parse_value(content, offset)
                 self.data[key] = value
             else:
                 self.data[key] = None
@@ -219,7 +219,7 @@ class OrientSerializationCSV(object):
 
             ret = "[" + ",".join(elements) + "]"
         elif isinstance(value, dict):
-            ret = "{" + ','.join( map( lambda elem: '"' + elem + '":' + self._encode_value(value[elem]), value ) ) + '}'
+            ret = "{" + ','.join(map(lambda elem: '"' + elem + '":' + self._encode_value(value[elem]), value)) + '}'
         elif isinstance(value, OrientRecord):
             ret = "(" + self.encode(value.oRecordData) + ")"
         elif isinstance(value, OrientRecordLink):
@@ -234,358 +234,329 @@ class OrientSerializationCSV(object):
     # DECODING STUFF
     #
 
-    # Consume the first field key, which could be a class name.
-    # :param content str The input to consume
-    # :return: list The collected string and any remaining content,
-    # followed by a boolean indicating whether this is a class name.
-    def _parse_first_key(self, content):
+    def _parse_first_key(self, content, offset):
+        """
+          Consume the first field key, which could be a class name.
+            :param content str The input to consume
+            :param offset int Offset into content indicating where to parse
+            :return: The collected string, updated offset for subsequent parsing, 
+             and a boolean indicating whether this is a class name.
+        """
 
-        length = len(content)
-        collected = ''
+        length = len(content) - offset
         is_class_name = False
-        if content[0] == '"':
-            result = self._parse_string(content[1:])
-            return [result[0], result[1][1:]]
+        if content[offset] == '"':
+            collected, offset = self._parse_string(content, offset+1)
+            return collected, offset+1, is_class_name
 
         i = 0
-        for i in range(0, length):
-            c = content[i]
-            if c == '@':
+        while i < length:
+            if content[offset+i] == '@':
                 is_class_name = True
                 break
-            elif c == ':':
+            elif content[offset+i] == ':':
                 break
-            else:
-                collected += c
+            i += 1
 
-        return [collected, content[( i + 1 ):], is_class_name]
+        return content[offset:offset+i], offset+i+1, is_class_name
 
-    def _parse_key( self, content ):
+    def _parse_key(self, content, offset):
         """
           Consume a field key, which may or may not be quoted.
             :param content str The input to consume
-            :return: dict The collected string and any remaining content.
+            :param offset int Offset into content indicating where to parse
+            :return: The collected string and updated offset for subsequent parsing
         """
-        length = len(content)
-        if length == 0:
-            return [None, None]
-        collected = ''
-        if content[ 0 ] == '"':
-            result = self._parse_string( content[1:] )
-            return [ result[ 0 ], result[1][1:] ]
+        if offset >= len(content):
+            return None, offset
+        if content[offset] == '"':
+            collected, offset = self._parse_string(content, offset+1)
+            return collected, offset+1
 
-        i = 0
-        for i in range(0, length):
-            c = content[i]
-            if c == ':':
-                break
-            else:
-                collected += c
+        collected = content[offset:content.find(':', offset)]
 
-        return [ collected, content[( i + 1 ):] ]
+        return collected, offset+len(collected)+1
 
-    def _parse_value( self, content ):
+    def _parse_value(self, content, offset):
         """
           Consume a field value.
             :param: content str The input to consume
-            :return: list The collected value and any remaining content.
+            :param offset int Offset into content indicating where to parse
+            :return: The collected value and updated offset for subsequent parsing
         """
         c = ''
-        content = content.lstrip( " " )
+        
+        while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
         try:
-            c = content[ 0 ]  # string index out of range 0
+            c = content[offset]  # string index out of range 0
         except IndexError:
             pass
 
-        if len( content ) == 0 or c == ',':
-            return [ None, content ]
-        elif c == '"':
-            return self._parse_string( content[1:] )
-        elif c == '#':
-            return self._parse_rid( content[1:] )
-        elif c == '[':
-            return self._parse_collection( content[1:] )
-        elif c == '<':
-            return self._parse_set( content[1:] )
-        elif c == '{':
-            return self._parse_map( content[1:] )
-        elif c == '(':
-            return self._parse_record( content[1:] )
-        elif c == '%':
-            return self._parse_bag( content[1:] )
-        elif c == '_':
-            return self._parse_binary( content[1:] )
+        if offset >= len(content) or c == ',':
+            return None, offset
         elif c in '-0123456789':
-            return self._parse_number( content )
-        elif c == 'n' and content[ 0:4 ] == 'null':
-            return [ None, content[ 4: ] ]
-        elif c == 't' and content[ 0:4 ] == 'true':
-            return [ True, content[ 4: ] ]
-        elif c == 'f' and content[ 0:5 ] == 'false':
-            return [ False, content[ 5: ] ]
+            return self._parse_number(content, offset)
+        elif c == '#':
+            return self._parse_rid(content, offset+1)
+        elif c == '"':
+            return self._parse_string(content, offset+1)
+        elif c == '[':
+            return self._parse_collection(content, offset+1)
+        elif c == '<':
+            return self._parse_set(content, offset+1)
+        elif c == '{':
+            return self._parse_map(content, offset+1)
+        elif c == '(':
+            return self._parse_record(content, offset+1)
+        elif c == '%':
+            return self._parse_bag(content, offset+1)
+        elif c == '_':
+            return self._parse_binary(content, offset+1)
+        elif c == 'n' and content[offset:offset+4] == 'null':
+            return None, offset+4
+        elif c == 't' and content[offset:offset+4] == 'true':
+            return True, offset+4
+        elif c == 'f' and content[offset:offset+5] == 'false':
+            return False, offset+5
         else:
-            return [ None, content ]
+            return None, offset
 
     @staticmethod
-    def _is_numeric( content ):
-        try:
-            float( content )
-            return True
-        except ValueError:
-            return False
-
-    @staticmethod
-    def _parse_string( content ):
+    def _parse_string(content, offset):
         """
           Consume a string.
             :param content str The input to consume
-            :return: list The collected string and any remaining content.
+            :param offset int Offset into content indicating where to parse
+            :return: The collected string and updated offset for subsequent parsing
         """
         collected = ''
-        match = strRegex.match(content)
+        match = strRegex.match(content, offset)
         if match:
             collected = match.group(0)
-            content = content[len(collected)+1:]
+            offset += len(collected)+1
             # replace escape+character with just the character:
             collected = escRegex.sub(lambda m: m.group(0)[-1:], collected)
-            return [ collected, content ]
-        return [content, '']
+        return collected, offset
 
-    def _parse_number(self, content):
+    @staticmethod
+    def _parse_number(content, offset):
         """
-           Consume a number.
-           If the number has a suffix, consume it also and instantiate the
-            right type, e.g. for dates
-           :param content str The content to consume
-           :return: list The collected number and any remaining content.
+          Consume a number.
+            If the number has a suffix, consume it also and instantiate the
+             right type, e.g. for dates
+            :param content str The content to consume
+            :param offset int Offset into content indicating where to parse
+            :return: The collected number and updated offset for subsequent parsing
         """
         collected = ''
-        match = numRegex.match(content)
+        match = numRegex.match(content, offset)
         if match:
             collected = match.group(0)
+            offset += len(collected)
         is_float = '.' in collected
-        content = content[len(collected):]
         
         c = ''
         try:
-            c = content[ 0 ]  # string index out of range 0
+            c = content[offset]  # string index out of range 0
         except IndexError:
             pass
 
-        if c == 'a':
+        if c == 'c':
+            collected = Decimal(collected)
+            offset += 1
+        elif c == 'd' or c == 'f':
+            # double or float
+            collected = float(collected)
+            offset += 1
+        elif c == 'a':
             collected = date.fromtimestamp(float(collected) / 1000)
-            content = content[1:]
+            offset += 1
         elif c == 't':
             # date
             collected = datetime.fromtimestamp(float(collected) / 1000)
-            content = content[1:]
-        elif c == 'f' or c == 'd':
-            # float # double
-            collected = float(collected)
-            content = content[1:]
-        elif c == 'c':
-            collected = Decimal(collected)
-            content = content[1:]
+            offset += 1
         elif c == 'b' or c == 's':
             collected = int(collected)
-            content = content[1:]
+            offset += 1
         elif c == 'l':
             if sys.version_info[0] < 3:
                 collected = long(collected)  # python 2.x long type
             else:
                 collected = int(collected)
-            content = content[1:]
+            offset += 1
         elif is_float:
             collected = float(collected)
         else:
             collected = int(collected)
 
-        return [collected, content]
+        return collected, offset
 
-    def _parse_rid(self, content):
+    @staticmethod
+    def _parse_rid(content, offset):
         """
           Consume a Record ID.
-          :param content str The input to consume
-          :return: list The collected RID and any remaining content.
+            :param content str The input to consume
+            :param offset int Offset into content indicating where to parse
+            :return: The collected RID and updated offset for subsequent parsing
         """
         collected = ''
-        match = ridRegex.match(content)
+        match = ridRegex.match(content, offset)
         if match:
             collected = match.group(0)
-        content = content[len(collected):]
-        return [ OrientRecordLink( collected ), content]
+            offset += len(collected)
+        return OrientRecordLink(collected), offset
 
-    def _parse_collection(self, content):
+    def _parse_collection(self, content, offset):
         """
             Consume an array of values.
             :param content str The input to consume
-            :return: list The collected array and any remaining content.
+            :param offset int Offset into content indicating where to parse
+            :return: The collected array and updated offset for subsequent parsing
         """
         collection = []
-        while len(content) != 0:
-            c = content[0]
+        while offset < len(content):
+            c = content[offset]
             if c == ',':
-                content = content[1:]
+                offset += 1
             elif c == ']':
-                content = content[1:]
+                offset += 1
                 break
 
-            chunk = self._parse_value(content)
-            collection.append(chunk[0])
-            content = chunk[1]
+            collected, offset = self._parse_value(content, offset)
+            collection.append(collected)
 
-        return [collection, content]
+        return collection, offset
 
-    def _parse_set(self, content):
+    def _parse_set(self, content, offset):
         """
-           Consume a set of values.
-           :param content str The input to consume
-           :return: list The collected set and any remaining content.
+          Consume a set of values.
+            :param content str The input to consume
+            :param offset int Offset into content indicating where to parse
+            :return: The collected set (as a list) and updated offset for subsequent parsing
         """
         list_set = []
-        while len(content) != 0:
-            c = content[0]
+        while offset < len(content):
+            c = content[offset]
             if c == ',':
-                content = content[1:]
+                offset += 1
             elif c == '>':
-                content = content[1:]
+                offset += 1
                 break
 
-            chunk = self._parse_value(content)
-            list_set.append(chunk[0])
-            content = chunk[1]
+            collected, offset = self._parse_value(content, offset)
+            list_set.append(collected)
 
-        return [list_set, content]
-
-    def _parse_map( self, content ):
+        return list_set, offset
+        
+    def _parse_map(self, content, offset):
         """
-            Consume a map of keys to values.
+          Consume a map of keys to values.
             :param content str The input to consume
-            :return: list The collected map and any remaining content.
+            :param offset int Offset into content indicating where to parse
+            :return: The collected map and updated offset for subsequent parsing
         """
         _map = {}
-        content = content.lstrip(' ')
-        while len(content) != 0:
-            c = content[0]
-            if c == ' ':
-                content = content[1:].lstrip(' ')
-                continue
-            elif c == ',':
-                content = content[1:].lstrip(' ')
+        
+        while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
+        
+        while offset < len(content):
+            c = content[offset]
+            
+            if c == ',':
+                offset += 1
+                while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
             elif c == '}':
-                content = content[1:]
+                offset += 1 
                 break
-
-            chunk = self._parse_key(content)
-            key = chunk[0]
-            content = chunk[1].lstrip(' ')
-            if len(content) != 0:
-                chunk = self._parse_value(content)
-                _map[key] = chunk[0]
-                content = chunk[1].lstrip(' ')
+            elif c == ' ':
+                offset += 1
+                while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
+                continue
+                
+            key, offset = self._parse_key(content, offset)
+            while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
+            if offset < len(content):
+                _map[key], offset = self._parse_value(content, offset)
+                while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
             else:
                 _map[key] = None
                 break
 
-        return [_map, content]
+        return _map, offset
 
-    def _parse_record(self, content):
+    def _parse_record(self, content, offset):
         """
           Consume an embedded record.
-           :param content str The content to unserialize.
-           :return: list The collected record and any remaining content.
+            :param content str The content to unserialize.
+            :param offset int Offset into content indicating where to parse
+            :return: The collected record and updated offset for subsequent parsing
         """
         record = {}
 
-        content = content.lstrip(' ')
-        if content[0] == ')':
+        while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
+        if content[offset] == ')':
             # this is an empty record.
-            return [record, content[1:]]
+            return record, offset+1
 
-        chunk = self._parse_first_key(content)
-        if chunk[2]:
+        collected, offset, is_class_name = self._parse_first_key(content, offset)
+        if is_class_name:
             # this is actually a class name.
-            record['o_class'] = chunk[0]
-            content = chunk[1].lstrip(' ')
-            if content[0] == ')':
-                return [record, content[1:]]
+            record['o_class'] = collected
+            while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
+            if content[offset] == ')':
+                return record, offset+1
 
-            chunk = self._parse_key(content)
-            key = chunk[0]
-            content = chunk[1]
+            key, offset = self._parse_key(content, offset)
         else:
-            key = chunk[0]
-            content = chunk[1]
+            key = collected
 
-        chunk = self._parse_value(content)
-        value = chunk[0]
-        content = chunk[1].lstrip(' ')
+        value, offset = self._parse_value(content, offset)
+        while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
 
         record[key] = value
 
-        while len(content) > 0:
-            if content[0] == ',':
-                content = content[1:].lstrip(' ')
-            elif content[0] == ')':
-                content = content[1:].lstrip(' ')
+        while offset <= len(content):
+            if content[offset] == ',':
+                offset += 1
+                while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
+            elif content[offset] == ')':
+                offset += 1
+                while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
                 break
 
-            chunk = self._parse_key(content)
-            key = chunk[0]
-            content = chunk[1].lstrip(' ')
-            if len(content) > 0:
-                chunk = self._parse_value(content)
-                value = chunk[0]
-                content = chunk[1]
+            key, offset = self._parse_key(content, offset)
+            while offset < len(content) and content[offset] == ' ': offset += 1  # skip leading space
+            if offset < len(content):
+                value, offset = self._parse_value(content, offset)
                 record[key] = value
             else:
                 record[key] = None
 
-        return [record, content]
+        return record, offset
 
     @staticmethod
-    def _parse_bag(content):
+    def _parse_bag(content, offset):
         """
-         Consume a record id bag.
-           :param content str The content to consume
-           :return: list The collected record id bag and any remaining content.
+          Consume a record id bag.
+            :param content str The content to consume
+            :param offset int Offset into content indicating where to parse
+            :return: The collected record id bag and updated offset for subsequent parsing
         """
-        length = len(content)
-        collected = ''
-        i = 0
-        for i in range(0, length):
-            c = content[i]
-            if c == ';':
-                break
-            else:
-                collected += c
 
-        return [OrientBinaryObject(collected), content[( i + 1 ):]]
-
+        collected = bagRegex.match(content, offset).group(0)
+        return OrientBinaryObject(collected), offset + len(collected) + 1
+        
     @staticmethod
-    def _parse_binary(content):
+    def _parse_binary(content, offset):
         """
           Consume a binary field.
             :param content str The content to consume
-            :return: list The collected binary and any remaining content.
+            :param offset int Offset into content indicating where to parse
+            :return: The collected binary and updated offset for subsequent parsing
         """
-        length = len(content)
-        collected = ''
-        i = 0
-        for i in range(0, length):
-            c = content[i]
-            if c == '_' \
-                    or c == ',' \
-                    or c == ')' \
-                    or c == '>' \
-                    or c == '}' \
-                    or c == ']':
-                break
-            else:
-                collected += c
 
-        return [collected, content[( i + 1 ):]]
-
+        collected = binRegex.match(content, offset).group(0)
+        return collected, offset + len(collected) + 1
 
 
 class OrientSerialization(object):
@@ -607,7 +578,7 @@ class OrientSerialization(object):
         implementation = impl_map.get(impl, False)
         if not implementation:
             raise PyOrientBadMethodCallException(
-                impl + ' is not an availableserialization type', []
+                impl + ' is not an available serialization type', []
             )
         if impl == cls.Binary:
             return implementation(props)
