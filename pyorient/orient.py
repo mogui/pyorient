@@ -85,7 +85,6 @@ class OrientSocket(object):
         '''
         dlog("Trying to connect...")
         try:
-            self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
             self._socket.settimeout( SOCK_CONN_TIMEOUT )  # 30 secs of timeout
             self._socket.connect( (self.host, self.port) )
             _value = self._socket.recv( FIELD_SHORT['bytes'] )
@@ -253,7 +252,10 @@ class OrientDB(object):
         self._cluster_reverse_map = None
         self._connection = connection
         self._serialization_type = serialization_type
-        
+
+    def close(self):
+        self._connection.close()
+
     def __getattr__(self, item):
 
         # No special handling for private attributes/methods.
@@ -541,7 +543,7 @@ class OrientDB(object):
                 return message_instance
 
         except KeyError as e:
-            self._connection.close()
+            self.close()
             raise PyOrientBadMethodCallException(
                 "Unable to find command " + str(e), []
             )
