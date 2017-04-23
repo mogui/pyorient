@@ -252,7 +252,7 @@ class OGMMoneyTestCase(unittest.TestCase):
         g.create_all(MoneyRelationship.registry)
 
     def testDoubleSerialization(self):
-        # Using str() on a float object in Python 2 sometimes 
+        # Using str() on a float object in Python 2 sometimes
         # returns scientific notation, which causes queries to be misapplied.
         # Similarly, many alternative approaches of turning floats to strings
         # in Python can cause loss of precision.
@@ -265,10 +265,10 @@ class OGMMoneyTestCase(unittest.TestCase):
             amount_imprecise = value
             amount_precise = decimal.Decimal(amount_imprecise)
 
-            original_wallet = g.wallets.create(amount_imprecise=amount_imprecise, 
+            original_wallet = g.wallets.create(amount_imprecise=amount_imprecise,
                                                amount_precise=amount_precise)
             wallet = g.query(Wallet).filter(
-                (Wallet.amount_imprecise > (value * (1 - 1e-6))) & 
+                (Wallet.amount_imprecise > (value * (1 - 1e-6))) &
                 (Wallet.amount_imprecise < (value * (1 + 1e+6)))
             ).one()
 
@@ -861,13 +861,21 @@ class OGMTestClassField(unittest.TestCase):
             declarative_node(), declarative_relationship(), auto_plural=True)
         g.clear_registry()
         g.include(database_registry)
-        self.assertEquals(
-            {'test_field_1': 'test_string_one', 'test_field_2': '"test string two"'},
-            g.registry['classfieldvertex'].class_fields)
+        if g.server_version > (2,2,0): # Ugly! TODO Isolate version at which behaviour was changed
+            self.assertEquals(
+                {'test_field_1': 'test_string_one', 'test_field_2': 'test string two'},
+                g.registry['classfieldvertex'].class_fields)
+            self.assertEquals(
+                {'test_field_1': 'test string two'},
+                g.registry['classfieldedge'].class_fields)
+        else:
+            self.assertEquals(
+                {'test_field_1': 'test_string_one', 'test_field_2': '"test string two"'},
+                g.registry['classfieldvertex'].class_fields)
+            self.assertEquals(
+                {'test_field_1': '"test string two"'},
+                g.registry['classfieldedge'].class_fields)
         self.assertEquals({}, g.registry['classfieldvertex2'].class_fields)
-        self.assertEquals(
-            {'test_field_1': '"test string two"'},
-            g.registry['classfieldedge'].class_fields)
 
 
 class OGMTestAbstractField(unittest.TestCase):
