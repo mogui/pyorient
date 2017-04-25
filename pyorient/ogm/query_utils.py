@@ -40,7 +40,7 @@ class ArgConverter(object):
             if isinstance(arg, GraphElement):
                 return arg._id
             else:
-                return arg
+                return pyorient.ogm.property.PropertyEncoder.encode_value(arg)
         elif conversion is ArgConverter.Value:
             if isinstance(arg, pyorient.ogm.property.Property):
                 return arg.context_name()

@@ -16,12 +16,20 @@ class GraphElement(object):
 
         return elem
 
+    @property
+    def context(self):
+        """Get containing (graph) context"""
+        return self._graph
+
     def save(self):
         """:returns: True if successful, False otherwise"""
         if not self._graph:
             raise RuntimeError(
                 'Can not save() element: it has no corresponding Graph')
         return self._graph.save_element(self.__class__, self._props, self._id)
+
+    def query(self):
+        return self._graph.query(self)
 
     def __setattr__(self, key, value):
         # Check if the attribute is actually a property of the OGM type
