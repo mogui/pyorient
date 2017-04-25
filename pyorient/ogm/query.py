@@ -68,6 +68,11 @@ class Query(object):
         """Shorthand for defining a sub-query, which does not need a Graph"""
         return cls(None, (source, ))
 
+    def query(self):
+        """Create a query, with current query as a subquery.
+        Serves as a useful shorthand for chaining sub-queries."""
+        return Query(self._graph, (self, ))
+
     def __iter__(self):
         params = self._params
 
@@ -276,8 +281,11 @@ class Query(object):
         self._params['group_by'] = criteria
         return self
 
-    def order_by(self, *criteria, **kwargs):
-        self._params['order_by'] = (criteria, kwargs.get('reverse', False))
+    def order_by(self, *criteria):
+        """:param criteria: A projection field, or a 2-tuple of the form
+        (<projection field>, <reverse>), where <reverse> is a bool which
+        - if True - results in a descending order for the field"""
+        self._params['order_by'] = criteria
         return self
 
     def unwind(self, field):
@@ -488,6 +496,13 @@ class Query(object):
     def rid_lower(self, skip):
         return '@rid > {}'.format(skip)
 
+    def build_order_expression(self, order_by):
+        if isinstance(order_by, tuple):
+            return '{} {}'.format(
+                ArgConverter.convert_to(ArgConverter.Field, order_by[0], self),
+                'DESC' if order_by[1] else 'ASC')
+        return ArgConverter.convert_to(ArgConverter.Field, order_by)
+
     def build_optional_clauses(self, params, skip):
         '''LET, while being an optional clause, must precede WHERE
         and is therefore handled separately.'''
@@ -501,9 +516,8 @@ class Query(object):
 
         order_by = params.get('order_by')
         if order_by:
-            order_clause = 'ORDER BY {0} {1}'.format(
-                ','.join([by.context_name() for by in order_by[0]])
-                , 'DESC' if order_by[1] else 'ASC')
+            order_clause = 'ORDER BY {0}'.format(
+                ','.join([self.build_order_expression(by) for by in order_by]))
             optional_clauses.append(order_clause)
 
         unwind = params.get('unwind')
