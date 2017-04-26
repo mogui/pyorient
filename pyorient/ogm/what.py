@@ -378,7 +378,7 @@ class MethodWhat(MethodWhatMixin, Operand, ChainableWhat):
 
         return current
 
-class ElementWhat(RecordMethodMixin, WhatFilterMixin, MethodWhat):
+class ElementWhat(RecordMethodMixin, CollectionMethodMixin, WhatFilterMixin, MethodWhat):
     def at_rid(self):
         return MethodWhat.prepare_next_link(self, AtRid, (What.AtRid,))
 
