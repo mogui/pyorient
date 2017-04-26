@@ -21,84 +21,86 @@ class What(object):
     Count = 15
     Min = 16
     Max = 17
-    Avg = 18
-    Mode = 19
-    Median = 20
-    Percentile = 21
-    Variance = 22
-    StdDev = 23
-    Sum = 24
-    Date = 25
-    SysDate = 26
-    Format = 27
-    Dijkstra = 28
-    ShortestPath = 29
-    Distance = 30
-    Distinct = 31
-    UnionAll = 32
-    Intersect = 33
-    Difference = 34
-    SymmetricDifference = 35
-    Set = 36
-    List = 37
-    Map = 38
-    TraversedElement = 39
-    TraversedEdge = 40
-    TraversedVertex = 41
-    Any = 42
-    All = 43
+    Abs = 18
+    Avg = 19
+    Mode = 20
+    Median = 21
+    Percentile = 22
+    Variance = 23
+    StdDev = 24
+    Sum = 25
+    Date = 26
+    SysDate = 27
+    Format = 28
+    AStar = 29
+    Dijkstra = 30
+    ShortestPath = 31
+    Distance = 32
+    Distinct = 33
+    UnionAll = 34
+    Intersect = 35
+    Difference = 36
+    SymmetricDifference = 37
+    Set = 38
+    List = 39
+    Map = 40
+    TraversedElement = 41
+    TraversedEdge = 42
+    TraversedVertex = 43
+    Any = 44
+    All = 45
     # Methods
-    Subscript = 44
-    Append = 45
-    AsBoolean = 46
-    AsDate = 47
-    AsDatetime = 48
-    AsDecimal = 49
-    AsFloat = 50
-    AsInteger = 51
-    AsList = 52
-    AsLong = 53
-    AsMap = 54
-    AsSet = 55
-    AsString = 56
-    CharAt = 57
-    Convert = 58
-    Exclude = 59
-    FormatMethod = 60
-    Hash = 61
-    Include = 62
-    IndexOf = 63
-    JavaType = 64
-    Keys = 65
-    Left = 66
-    Length = 67
-    Normalize = 68
-    Prefix = 69
-    Remove = 70
-    RemoveAll = 71
-    Replace = 72
-    Right = 73
-    Size = 74
-    SubString = 75
-    Trim = 76
-    ToJSON = 77
-    ToLowerCase = 78
-    ToUpperCase = 79
-    Type = 80
-    Values = 81
+    Subscript = 46
+    Append = 47
+    AsBoolean = 48
+    AsDate = 49
+    AsDatetime = 50
+    AsDecimal = 51
+    AsFloat = 52
+    AsInteger = 53
+    AsList = 54
+    AsLong = 55
+    AsMap = 56
+    AsSet = 57
+    AsString = 58
+    CharAt = 59
+    Convert = 60
+    Exclude = 61
+    FormatMethod = 62
+    Hash = 63
+    Include = 64
+    IndexOf = 65
+    JavaType = 66
+    Keys = 67
+    Left = 68
+    Length = 69
+    Normalize = 70
+    Prefix = 71
+    Remove = 72
+    RemoveAll = 73
+    Replace = 74
+    Right = 75
+    Size = 76
+    SubString = 77
+    Trim = 78
+    ToJSON = 79
+    ToLowerCase = 80
+    ToUpperCase = 81
+    Type = 82
+    Values = 83
     # Filter
-    WhatFilter = 82
+    WhatFilter = 84
     # Custom functions
-    WhatCustom = 83
+    WhatCustom = 85
     # Let
-    WhatLet = 84
+    WhatLet = 86
     # Record attributes
-    AtThis = 85
-    AtRid = 86
-    AtClass = 87
-    AtVersion = 88
-    AtSize = 89
-    AtType = 90
+    AtThis = 87
+    AtRid = 88
+    AtClass = 89
+    AtVersion = 90
+    AtSize = 91
+    AtType = 92
 
     def __init__(self):
         self.name_override = None
@@ -137,6 +139,9 @@ def min(field, *more):
 def max(field, *more):
     return FunctionWhat(What.Max, [field] + [f for f in more])
 
+def abs(field):
+    return FunctionWhat(What.Abs, (field,))
+
 def avg(field):
     return FunctionWhat(What.Avg, (field,))
 
@@ -172,11 +177,14 @@ class EdgeDirection(object):
     IN = 0
     BOTH = 0
 
+def astar(src, dst, weight_field, options=None):
+    return FunctionWhat(What.AStar, (src, dst, weight_field, options))
+
 def dijkstra(src, dst, weight_field, direction=EdgeDirection.OUT):
     return FunctionWhat(What.Dijkstra, (src, dst, weight_field, direction))
 
-def shortest_path(src, dst, direction=EdgeDirection.BOTH, edge_class=None):
-    return FunctionWhat(What.ShortestPath, (src, dst, direction, edge_class))
+def shortest_path(src, dst, direction=EdgeDirection.BOTH, edge_class=None, additional=None):
+    return FunctionWhat(What.ShortestPath, (src, dst, direction, edge_class, additional))
 
 def distance(x_field, y_field, x_value, y_value):
     return FunctionWhat(What.Distance, (x_field, y_field, x_value, y_value))

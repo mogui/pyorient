@@ -567,6 +567,7 @@ class Query(object):
         , What.Count: WhatFunction(1, 'count({})', (ArgConverter.Field,))
         , What.Min: WhatFunction(None, 'min({})', (ArgConverter.Field,))
         , What.Max: WhatFunction(None, 'max({})', (ArgConverter.Field,))
+        , What.Abs: WhatFunction(1, 'abs({})', (ArgConverter.Field,))
         , What.Avg: WhatFunction(1, 'avg({})', (ArgConverter.Field,))
         , What.Mode: WhatFunction(1, 'mode({})', (ArgConverter.Field,))
         , What.Median: WhatFunction(1, 'median({})', (ArgConverter.Field,))
@@ -583,14 +584,19 @@ class Query(object):
                                         , ArgConverter.String))
         , What.Format: WhatFunction(None, 'format({})'
                                     , (ArgConverter.Format, ArgConverter.Field))
+        , What.AStar:
+            WhatFunction(4, 'astar({}'
+                         , (ArgConverter.Vertex, ArgConverter.Vertex
+                            , ArgConverter.Label, ArgConverter.Label))
         , What.Dijkstra:
             WhatFunction(4, 'dijkstra({})'
                          , (ArgConverter.Vertex, ArgConverter.Vertex
                          , ArgConverter.Label, ArgConverter.Value))
         , What.ShortestPath:
-            WhatFunction(4, 'shortestPath({})'
+            WhatFunction(5, 'shortestPath({})'
                          , (ArgConverter.Vertex, ArgConverter.Vertex
-                            , ArgConverter.Value, ArgConverter.Label))
+                            , ArgConverter.Value, ArgConverter.Label
+                            , ArgConverter.Label))
         , What.Distance:
             WhatFunction(4, 'distance({})'
                          , (ArgConverter.Field, ArgConverter.Field
