@@ -109,7 +109,7 @@ class What(object):
         self.name_override = name_override
         return self
 
-def eval_(exp):
+def eval(exp):
     return FunctionWhat(What.Eval, (exp,))
 
 def coalesce(*params):
@@ -378,20 +378,6 @@ class MethodWhat(MethodWhatMixin, Operand, ChainableWhat):
 
         return current
 
-class ElementWhat(RecordMethodMixin, CollectionMethodMixin, WhatFilterMixin, MethodWhat):
-    def at_rid(self):
-        return MethodWhat.prepare_next_link(self, AtRid, (What.AtRid,))
-
-    def __getattr__(self, attr):
-        # Prevent further chaining or use as record
-        self = AnyPropertyWhat(self.chain, self.props)
-        return self.__getattr__(attr)
-
-    def __call__(self):
-        raise TypeError(
-            '{} is not callable here.'.format(
-                repr(self.props[-1]) if self.props else 'Query function'))
-
 class PropertyWhat(MethodWhatMixin, Operand, ChainableWhat):
     def __init__(self, chain, props):
         super(PropertyWhat, self).__init__(chain, props)
@@ -406,6 +392,21 @@ class PropertyWhat(MethodWhatMixin, Operand, ChainableWhat):
 # Provide all method mixins, and assume user knows what they're doing
 class AnyPropertyWhat(StringMethodMixin, MapMethodMixin, PropertyWhat):
     pass
+
+class AnyPropertyMixin(object):
+    def __getattr__(self, attr):
+        # Prevent further chaining or use as record
+        self = AnyPropertyWhat(self.chain, self.props)
+        return self.__getattr__(attr)
+
+class ElementWhat(RecordMethodMixin, CollectionMethodMixin, WhatFilterMixin, MethodWhat, AnyPropertyMixin):
+    def at_rid(self):
+        return MethodWhat.prepare_next_link(self, AtRid, (What.AtRid,))
+
+    def __call__(self):
+        raise TypeError(
+            '{} is not callable here.'.format(
+                repr(self.props[-1]) if self.props else 'Query function'))
 
 class VertexWhatMixin(object):
     def out(self, *labels):
@@ -489,7 +490,7 @@ class CollectionMethodWhat(CollectionMethodMixin, MethodWhat):
 class MapMethodWhat(MapMethodMixin, MethodWhat):
     pass
 
-class QV(VertexWhatMixin, EdgeWhatMixin, WhatFilterMixin, RecordMethodMixin, StringMethodMixin, MapMethodMixin, MethodWhat):
+class QV(VertexWhatMixin, EdgeWhatMixin, WhatFilterMixin, RecordMethodMixin, StringMethodMixin, MapMethodMixin, MethodWhat, AnyPropertyMixin):
     def __init__(self, name):
         super(QV, self).__init__([(What.WhatLet, (name,))], [])
 
