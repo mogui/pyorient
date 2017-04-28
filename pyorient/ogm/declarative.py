@@ -16,6 +16,13 @@ class DeclarativeMeta(type):
         if not hasattr(cls, 'registry'):
             cls.registry = OrderedDict()
             cls.decl_root = cls
+
+            cls.Abstract = DeclarativeMeta.__new__(DeclarativeMeta,
+                                                   class_name + '.Abstract',
+                                                   bases,
+                                                   dict(attrs, abstract = True))
+            cls.Abstract.registry = cls.registry
+            cls.Abstract.decl_root = cls
         else:
             decl_bases = set(
                 base.decl_root for base in bases

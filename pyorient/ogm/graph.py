@@ -418,7 +418,9 @@ class Graph(object):
         #        .format(cls_name)):
         try:
             self.client.command(
-                'CREATE CLASS {0} EXTENDS {1}'.format(cls_name, extends))
+                'CREATE CLASS {} EXTENDS {}{}'.format(
+                    cls_name, extends,
+                    " ABSTRACT" if getattr(cls, 'abstract', False) else ''))
         except pyorient.PyOrientSchemaException:
             # Class already exists
             pass
