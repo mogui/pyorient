@@ -648,7 +648,7 @@ class Graph(object):
                     'Class \'{}\' not registered with graph.'.format(name))
 
         if props:
-            db_props = Graph.props_to_db(element_class, props, self.strict)
+            db_props = Graph.props_to_db(element_class, props, self.strict, skip_if='readonly')
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
                     PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v))
@@ -876,7 +876,7 @@ class Graph(object):
                 if k in db_to_element }
 
     @staticmethod
-    def props_to_db(element_class, props, strict):
+    def props_to_db(element_class, props, strict, skip_if=None):
         db_props = {}
         for k, v in props.items():
             # sanitize the property name -- this line
@@ -885,6 +885,8 @@ class Graph(object):
 
             if hasattr(element_class, k):
                 prop = getattr(element_class, k)
+                if skip_if is not None and getattr(prop, skip_if, False):
+                    continue
                 db_props[prop.name or k] = v
             elif strict:
                 raise AttributeError('Class {} has no property {}'.format(
