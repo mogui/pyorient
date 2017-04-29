@@ -32,6 +32,14 @@ ODB_LAUNCHER_SYML="${CI_DIR}/orientdb_current/bin/server.sh"
 
 echo "=== Initializing CI environment ==="
 
+if [ -d "/usr/lib/jvm/java-8-oracle/jre" ]; then
+    export JAVA_HOME="/usr/lib/jvm/java-8-oracle/jre"
+fi
+
+echo `java -version`
+echo `javac -version`
+echo `mvn -version`
+
 cd "$PARENT_DIR"
 
 . "$PARENT_DIR/ci/_bash_utils.sh"
