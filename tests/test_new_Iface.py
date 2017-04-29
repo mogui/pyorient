@@ -214,7 +214,7 @@ class CommandTestCase(unittest.TestCase):
         # in OrientDB version 2.2.9 transactions are executed in reverse order ( list pop )
         # in previous versions, instead, transaction are executed in crescent order ( list shift )
         assert len(res) == 3
-        if client.version.major == 2 and client.version.minor >= 2 and client.version.build < 9:
+        if client.version.major >= 2 and client.version.minor >= 2 and client.version.build < 9:
             assert res["#3:1"].vacanza == 'mare'
             assert res["#3:2"].vacanza == 'mare'
             assert res["#3:3"].vacanza == 'lago'
