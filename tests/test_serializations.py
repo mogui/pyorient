@@ -3,19 +3,57 @@ from pyorient.serializations import OrientSerialization
 from pyorient.otypes import OrientBinaryObject, OrientRecord
 
 
-def test_mixed_list():
-    rec = OrientRecord({
-        '__o_class': 'ListTest',
-        'list': [1, 'a']
-    })
+def binary_db_connect():
+    import pyorient
+    DB = pyorient.OrientDB("localhost", 2424, OrientSerialization.Binary)
+    DB.connect("root", "root")
 
-    serializer = OrientSerialization.get_impl(OrientSerialization.CSV)
-    raw = serializer.encode(rec)
-    assert raw == 'ListTest@list:[1,"a"]'
+    db_name = "binary_test"
+    try:
+        DB.db_drop(db_name)
+    except pyorient.PyOrientCommandException as e:
+        print(e)
+    finally:
+        db = DB.db_create(db_name, pyorient.DB_TYPE_GRAPH,
+                          pyorient.STORAGE_TYPE_MEMORY)
+        pass
+
+    cluster_info = DB.db_open(
+        db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
+    )
+
+    return DB
+
+
+def skip_binary_if_pyorient_native_not_installed( func ):
+    from pyorient.serializations import binary_support
+    from os import sys
+    import types
+
+    if sys.version_info[ 0 ] < 3:
+        test_instance = isinstance( func, ( type, types.ClassType ) )
+    else:
+        test_instance = isinstance( func, type )
+    if not test_instance:
+        if not binary_support:
+            func.__unittest_skip__ = True
+            func.__unittest_skip_why__ = "pyorient_native not installed."
+    return func
 
 
 class SerializationTestCase(unittest.TestCase):
 
+    def test_mixed_list(self):
+        rec = OrientRecord( {
+            '__o_class': 'ListTest',
+            'list': [ 1, 'a' ]
+        } )
+
+        serializer = OrientSerialization.get_impl( OrientSerialization.CSV )
+        raw = serializer.encode( rec )
+        assert raw == 'ListTest@list:[1,"a"]'
+
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_string(self):
         DB = binary_db_connect()
         DB.command("CREATE CLASS MyModel EXTENDS V")[0]
@@ -34,6 +72,7 @@ class SerializationTestCase(unittest.TestCase):
         rec = DB.record_load("#" + _n_rid + ":0")
         assert rec.oRecordData == data
 
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_int(self):
         DB = binary_db_connect()
         DB.command("CREATE CLASS MyModel EXTENDS V")[0]
@@ -51,6 +90,7 @@ class SerializationTestCase(unittest.TestCase):
         rec = DB.record_load("#" + _n_rid + ":0")
         assert rec.oRecordData == data
 
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_long(self):
         DB = binary_db_connect()
         DB.command("CREATE CLASS MyModel EXTENDS V")[0]
@@ -70,6 +110,7 @@ class SerializationTestCase(unittest.TestCase):
         rec = DB.record_load("#" + _n_rid + ":0")
         assert rec.oRecordData == data
 
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_float(self):
         DB = binary_db_connect()
         DB.command("CREATE CLASS MyModel EXTENDS V")[0]
@@ -87,6 +128,7 @@ class SerializationTestCase(unittest.TestCase):
         rec = DB.record_load("#" + _n_rid + ":0")
         assert rec.oRecordData == data
 
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_list(self):
         DB = binary_db_connect()
         DB.command("CREATE CLASS MyModel EXTENDS V")[0]
@@ -105,6 +147,7 @@ class SerializationTestCase(unittest.TestCase):
         rec = DB.record_load("#" + _n_rid + ":0")
         assert rec.oRecordData == data
 
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_dict(self):
         DB = binary_db_connect()
         DB.command("CREATE CLASS MyModel EXTENDS V")[0]
@@ -124,6 +167,7 @@ class SerializationTestCase(unittest.TestCase):
         rec = DB.record_load("#" + _n_rid + ":0")
         assert rec.oRecordData == data
 
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_link(self):
         from pyorient.otypes import OrientRecordLink
         DB = binary_db_connect()
@@ -154,6 +198,7 @@ class SerializationTestCase(unittest.TestCase):
         assert rec0.oRecordData['out_test'][0].get_hash() == \
                rec1.oRecordData['in_test'][0].get_hash()
 
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_date(self):
         import datetime
         DB = binary_db_connect()
@@ -173,6 +218,7 @@ class SerializationTestCase(unittest.TestCase):
         rec = DB.record_load("#" + _n_rid + ":0")
         assert rec.oRecordData == data
 
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_datetime(self):
         import datetime
         DB = binary_db_connect()
@@ -195,6 +241,7 @@ class SerializationTestCase(unittest.TestCase):
         rec = DB.record_load("#" + _n_rid + ":0")
         assert rec.oRecordData == data
 
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_none(self):
         DB = binary_db_connect()
         DB.command("CREATE CLASS MyModel EXTENDS V")[0]
@@ -306,25 +353,3 @@ class SerializationTestCase(unittest.TestCase):
         rec5 = DB.record_load("#" + _n_rid + ":5")
         # assert rec5._class == "MyModel"
         assert rec5.oRecordData == data5
-
-
-def binary_db_connect():
-    import pyorient
-    DB = pyorient.OrientDB("localhost", 2424, OrientSerialization.Binary)
-    DB.connect("root", "root")
-
-    db_name = "binary_test"
-    try:
-        DB.db_drop(db_name)
-    except pyorient.PyOrientCommandException as e:
-        print(e)
-    finally:
-        db = DB.db_create(db_name, pyorient.DB_TYPE_GRAPH,
-                          pyorient.STORAGE_TYPE_MEMORY)
-        pass
-
-    cluster_info = DB.db_open(
-        db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
-    )
-
-    return DB

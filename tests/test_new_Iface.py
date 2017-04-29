@@ -176,7 +176,7 @@ class CommandTestCase(unittest.TestCase):
             db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
         )
 
-            #######################################
+        #######################################
 
         # execute real create
         rec = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
@@ -189,33 +189,39 @@ class CommandTestCase(unittest.TestCase):
 
         # prepare for an update
         rec3 = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
-        update_success = client.record_update( 3, rec_position._rid, rec3,
+        tx_update1 = client.record_update( 3, rec_position._rid, rec3,
                                   rec_position._version )
 
         # prepare transaction
         rec1 = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
-        rec_position1 = client.record_create( -1, rec1 )
+        tx_create_1 = client.record_create( -1, rec1 )
 
         rec2 = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
-        rec_position2 = client.record_create( -1, rec2 )
+        tx_create_2 = client.record_create( -1, rec2 )
 
-        delete_msg = client.record_delete( 3, rec_position._rid )
+        tx_delete_1 = client.record_delete( 3, rec_position._rid )
 
-
-        tx.attach( rec_position1 )
-        tx.attach( rec_position1 )
-        tx.attach( rec_position2 )
-        tx.attach( update_success )
-        tx.attach( delete_msg )
+        tx.attach( tx_create_1 )
+        tx.attach( tx_create_1 )
+        tx.attach( tx_create_2 )
+        tx.attach( tx_update1 )
+        tx.attach( tx_delete_1 )
         res = tx.commit()
 
         for k, v in res.items():
             print(k + " -> " + v.vacanza)
 
+        # in OrientDB version 2.2.9 transactions are executed in reverse order ( list pop )
+        # in previous versions, instead, transaction are executed in crescent order ( list shift )
         assert len(res) == 3
-        assert res["#3:1"].vacanza == 'mare'
-        assert res["#3:2"].vacanza == 'mare'
-        assert res["#3:3"].vacanza == 'lago'
+        if client.version.major >= 2 and client.version.minor >= 2 and client.version.build < 9:
+            assert res["#3:1"].vacanza == 'mare'
+            assert res["#3:2"].vacanza == 'mare'
+            assert res["#3:3"].vacanza == 'lago'
+        else:
+            assert res["#3:1"].vacanza == 'lago'
+            assert res["#3:2"].vacanza == 'mare'
+            assert res["#3:3"].vacanza == 'mare'
 
         client.connect( "root", "root" )
         client.db_drop( db_name, pyorient.STORAGE_TYPE_MEMORY )

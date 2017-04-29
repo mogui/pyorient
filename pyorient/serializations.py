@@ -21,9 +21,6 @@ class OrientSerializationBinary(object):
         self._writer = None
         
     def decode(self, content):
-        if not binary_support:
-            raise Exception("To support Binary Serialization,\
-                            pyorient_native must be installed")
         clsname, data = pyorient_native.deserialize(content,
                                     content.__sizeof__(), self.props)
         rels = [k for k in data.keys() if ('in_' in k or 'out_' in k
@@ -39,9 +36,6 @@ class OrientSerializationBinary(object):
         return [clsname, data]
 
     def encode(self, record):
-        if not binary_support:
-            raise Exception("To support Binary Serialization,\
-                            pyorient_native must be installed")
         if record:
             return pyorient_native.serialize(record)
         else:
@@ -581,6 +575,8 @@ class OrientSerialization(object):
                 impl + ' is not an available serialization type', []
             )
         if impl == cls.Binary:
+            if not binary_support:
+                raise Exception( "To support Binary Serialization, pyorient_native must be installed" )
             return implementation(props)
         else:
             return implementation()

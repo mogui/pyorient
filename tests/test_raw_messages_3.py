@@ -147,7 +147,7 @@ class RawMessages_5_TestCase(unittest.TestCase):
 
         # create another real record
         rec = { 'alloggio': 'bim', 'lavoro': 'bum', 'vacanza': 'bam' }
-        real_record1 = ( RecordCreateMessage(connection) )\
+        real_record2 = ( RecordCreateMessage(connection) )\
             .prepare( ( 3, rec ) )\
             .send().fetch_response()
 
@@ -162,9 +162,15 @@ class RawMessages_5_TestCase(unittest.TestCase):
         for k, v in res.items():
             print(k + " -> " + v.vacanza)
 
+        # in OrientDB version 2.2.9 transactions are executed in reverse order ( list pop )
+        # in previous versions, instead, transaction are executed in crescent order ( list shift )
         assert len(res) == 2
-        assert res["#3:2"].vacanza == 'mare'
-        assert res["#3:3"].vacanza == 'lago'
+        if cluster_info[ 0 ].major >= 2 and cluster_info[ 0 ].minor >= 2 and cluster_info[ 0 ].build < 9:
+            assert res["#3:2"].vacanza == 'mare'
+            assert res["#3:3"].vacanza == 'lago'
+        else:
+            assert res["#3:2"].vacanza == 'lago'
+            assert res["#3:3"].vacanza == 'mare'
 
         sid = ( ConnectMessage( connection ) ).prepare( ("root", "root") )\
             .send().fetch_response()
