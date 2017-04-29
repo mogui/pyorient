@@ -42,6 +42,7 @@ branches:
 
 env:
   matrix:
+    - ORIENTDB_VERSION=2.2.19
     - ORIENTDB_VERSION=2.2.9
     - ORIENTDB_VERSION=2.1.23
   global:
