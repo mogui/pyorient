@@ -19,6 +19,10 @@ Pyorient works with orientdb version 1.7 and later.
 
 	pip install pyorient
 
+## Documentation
+
+  [OrientDB PyOrient Python Driver](http://orientdb.com/docs/last/PyOrient.html)
+
 ## How to contribute
 
 - Fork the project
@@ -32,7 +36,7 @@ Pyorient works with orientdb version 1.7 and later.
 ## How to run tests
 
 - ensure you have `ant` and `nose` installed properly
-- bootsrap orient by running `./ci/ci-start.sh` from project directory   
+- bootstrap orient by running `./ci/ci-start.sh` from project directory   
   *it will download latest orient and make some change on config and database for the tests*
 - run with `nosetests`
 
