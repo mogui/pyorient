@@ -6,7 +6,7 @@ from ..constants import CONNECT_OP, FIELD_BYTE, FIELD_INT, FIELD_SHORT, \
     FIELD_STRINGS, FIELD_BOOLEAN, FIELD_STRING, NAME, SUPPORTED_PROTOCOL, \
     VERSION, SHUTDOWN_OP
 from ..utils import need_connected
-from ..serializations import OrientSerialization
+#from ..serializations import OrientSerialization
 
 #
 # Connect
@@ -19,7 +19,6 @@ class ConnectMessage(BaseMessage):
         self._user = ''
         self._pass = ''
         self._client_id = ''
-        self._serialization_type = OrientSerialization.CSV
         self._need_token = False
         self._append( ( FIELD_BYTE, CONNECT_OP ) )
 
@@ -40,11 +39,8 @@ class ConnectMessage(BaseMessage):
 
         self._append( ( FIELD_STRING, self._client_id ) )
 
-        # Set the serialization type on the shared socket object
-        self._orientSocket.serialization_type = self._serialization_type
-
         if self.get_protocol() > 21:
-            self._append( ( FIELD_STRING, self._serialization_type ) )
+            self._append( ( FIELD_STRING, self._orientSocket.serialization_type ) )
             if self.get_protocol() > 26:
                 self._append( ( FIELD_BOOLEAN, self._request_token ) )
                 if self.get_protocol() > 32:

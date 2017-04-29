@@ -86,7 +86,6 @@ class CommandTestCase(unittest.TestCase):
             .prepare(['demo_db', pyorient.STORAGE_TYPE_MEMORY])\
             .send().fetch_response()
 
-
         assert len( clusters ) != 0
         assert isinstance( sql_insert_result, list )
         assert len( sql_insert_result ) == 1
@@ -125,56 +124,64 @@ class CommandTestCase(unittest.TestCase):
             (db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, "")
         ).send().fetch_response()
 
-            #######################################
+        #######################################
 
         # execute real create
         rec = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
-        rec_position = ( factory.get_message(pyorient.RECORD_CREATE) )\
+        real_create_1 = ( factory.get_message(pyorient.RECORD_CREATE) )\
+            .prepare( ( 3, rec ) )\
+            .send().fetch_response()
+
+        # create another real record
+        rec = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'deserto' }
+        real_create_2 = ( factory.get_message(pyorient.RECORD_CREATE) )\
             .prepare( ( 3, rec ) )\
             .send().fetch_response()
 
         # prepare for an update
         rec3 = { 'alloggio': 'albergo', 'lavoro': 'ufficio', 'vacanza': 'montagna' }
-        update_success = ( factory.get_message(pyorient.RECORD_UPDATE) )\
-            .prepare( ( 3, rec_position._rid, rec3, rec_position._version ) )
+        tx_update_1 = ( factory.get_message(pyorient.RECORD_UPDATE) )\
+            .prepare( ( 3, real_create_1._rid, rec3, real_create_1._version ) )
 
         # prepare transaction
         rec1 = { 'alloggio': 'casa', 'lavoro': 'ufficio', 'vacanza': 'mare' }
-        rec_position1 = ( factory.get_message(pyorient.RECORD_CREATE) )\
+        tx_create_1 = ( factory.get_message(pyorient.RECORD_CREATE) )\
             .prepare( ( -1, rec1 ) )
 
         rec2 = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
-        rec_position2 = ( factory.get_message(pyorient.RECORD_CREATE) )\
+        tx_create_2 = ( factory.get_message(pyorient.RECORD_CREATE) )\
             .prepare( ( -1, rec2 ) )
 
-
-        # create another real record
-        rec = { 'alloggio': 'baita', 'lavoro': 'no', 'vacanza': 'lago' }
-        rec_position = ( factory.get_message(pyorient.RECORD_CREATE) )\
-            .prepare( ( 3, rec ) )\
-            .send().fetch_response()
-
-        delete_msg = ( factory.get_message(pyorient.RECORD_DELETE) )
-        delete_msg.prepare( ( 3, rec_position._rid ) )
-
+        tx_delete_1_for_real_create_2 = ( factory.get_message(pyorient.RECORD_DELETE) )
+        tx_delete_1_for_real_create_2.prepare( ( 3, real_create_2._rid ) )
 
         tx = ( factory.get_message(pyorient.TX_COMMIT) )
         tx.begin()
-        tx.attach( rec_position1 )
-        tx.attach( rec_position1 )
-        tx.attach( rec_position2 )
-        tx.attach( update_success )
-        tx.attach( delete_msg )
+        tx.attach( tx_create_1 )
+        tx.attach( tx_create_1 )
+        tx.attach( tx_create_2 )
+        tx.attach( tx_update_1 )
+        tx.attach( tx_delete_1_for_real_create_2 )
         res = tx.commit()
 
         for k, v in res.items():
             print(k + " -> " + v.vacanza)
 
+        # in OrientDB version 2.2.9 transactions are executed in reverse order ( list pop )
+        # in previous versions, instead, transaction are executed in crescent order ( list shift )
         assert len(res) == 4
-        assert res["#3:0"].vacanza == 'montagna'
-        assert res["#3:2"].vacanza == 'mare'
-        assert res["#3:3"].vacanza == 'mare'
-        assert res["#3:4"].vacanza == 'lago'
+        if cluster_info[ 0 ].major >= 2 \
+                and cluster_info[ 0 ].minor >= 2 \
+                and cluster_info[ 0 ].build < 9:
+            assert res["#3:0"].vacanza == 'montagna'
+            assert res["#3:2"].vacanza == 'mare'
+            assert res["#3:3"].vacanza == 'mare'
+            assert res["#3:4"].vacanza == 'lago'
+        else:
+            assert res["#3:0"].vacanza == 'montagna'
+            assert res["#3:2"].vacanza == 'lago'
+            assert res["#3:3"].vacanza == 'mare'
+            assert res["#3:4"].vacanza == 'mare'
 
         sid = ( factory.get_message(pyorient.CONNECT) ).prepare( ("root", "root") )\
             .send().fetch_response()

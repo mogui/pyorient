@@ -40,3 +40,4 @@ wiki
 /ci/environment
 *.zip
 cover
+env

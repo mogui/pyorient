@@ -1,5 +1,5 @@
 from .broker import get_broker
-from .commands import CreateVertexCommand
+from .commands import VertexCommand
 
 from .vertex import VertexVector
 
@@ -41,7 +41,7 @@ class Batch(object):
             self.commands += 'LET {} = {}\n'.format(key, command)
 
             VarType = BatchVariable
-            if isinstance(value, CreateVertexCommand):
+            if isinstance(value, VertexCommand):
                 VarType = BatchVertexVariable
             self.variables[key] = VarType('${}'.format(key), value)
 
@@ -111,7 +111,7 @@ class Batch(object):
 
     def commit(self, retries=None):
         """Commit batch with no return value."""
-        self.commands += 'COMMIT' + ' RETRY {}'.format(retries) if retries else ''
+        self.commands += 'COMMIT' + (' RETRY {}'.format(retries) if retries else '')
 
         g = self.graph
         g.client.batch(self.commands)

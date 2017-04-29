@@ -6,11 +6,12 @@ from .edge import Edge
 from .broker import get_broker
 from .query import Query
 from .batch import Batch
-from .commands import CreateVertexCommand, CreateEdgeCommand
+from .commands import VertexCommand, CreateEdgeCommand
 from ..utils import to_unicode
 
 import pyorient
 from collections import namedtuple
+from os.path import isfile
 
 ServerVersion = namedtuple('orientdb_version', ['major', 'minor', 'build'])
 
@@ -27,7 +28,7 @@ class Graph(object):
         :note: user only meaningful when cred also provided.
         """
 
-        self.client = pyorient.OrientDB(config.host, config.port)
+        self.client = pyorient.OrientDB(config.host, config.port, config.serialization_type)
         self.client.connect(config.user, config.cred)
 
         self.config = config
@@ -206,6 +207,174 @@ class Graph(object):
                 non_graph_properties[class_name] = props
 
         return registry
+
+    _GROOVY_GET_DB = \
+    '''def db = new com.orientechnologies.orient.core.db.document.ODatabaseDocumentTx("remote:{}:{}/{}");
+    db.open("{}", "{}");
+    '''
+
+    _GROOVY_NULL_LISTENER = \
+    '''def listener = new com.orientechnologies.orient.core.command.OCommandOutputListener() {
+        @Override
+        public void onMessage(String iText) {}
+    };
+    '''
+
+    _GROOVY_TRY = \
+    '''try {{
+    {}
+    {}
+    }} finally {{
+        db.close();
+    }}
+    '''
+
+    def populate(self, load_path, fmt=None
+                 , preserve_cluster_ids=None, delete_rid_mapping=None
+                 , merge=None, migrate_links=None, rebuild_indexes=None):
+        """Populate graph from a database export file.
+           :param fmt: One of 'orientdb', 'graphml', 'graphson'
+           :param preserve_cluster_ids: bool. Otherwise temporary cluster ids
+           can sometimes fail. Only valid for plocal storage.
+           :param delete_rid_mapping: bool. Preserve dictionary mapping old to
+           new rids.
+           :param merge: bool. Merge with current data, or overwrite.
+           :param migrate_links: bool. Update references from old links to new
+           rids.
+           :param rebuild_indexes: bool. Only disable when import doesn't
+           affect indexes.
+        """
+        if not isfile(load_path):
+            return
+
+        import_optionals = ''
+
+        if preserve_cluster_ids is not None:
+            import_optionals += 'dbImport.setPreserveClusterIDs({});'.format('true' if preserve_cluster_ids else 'false')
+        if delete_rid_mapping is not None:
+            import_optionals += 'dbImport.setDeleteRIDMapping({});'.format('true' if delete_rid_mapping else 'false')
+        if self.server_version >= (1, 6, 1):
+            if merge is not None:
+                import_optionals += 'dbImport.setMerge({});'.format('true' if merge else 'false')
+            if migrate_links is not None:
+                import_optionals += 'dbImport.setMigrateLinks({});'.format('true' if migrate_links else 'false')
+            if rebuild_indexes is not None:
+                import_optionals += 'dbImport.setRebuildIndexes({});'.format('true' if rebuild_indexes else 'false')
+
+        def_import = \
+            'def dbImport = new com.orientechnologies.orient.core.db.tool.ODatabaseImport(db, "{}", listener);'
+
+        import_commands = \
+        '''{}
+        {}
+        dbImport.importDatabase();
+        dbImport.close();
+        '''.format(def_import.format(load_path), import_optionals)
+
+        config = self.config
+        import_groovy = \
+            self._GROOVY_GET_DB.format(config.host, config.port, config.db_name, config.user, config.cred) + \
+            self._GROOVY_TRY.format(self._GROOVY_NULL_LISTENER, import_commands)
+
+        self.client.gremlin(import_groovy)
+
+    def export(self, save_path, exclude_all=None, include_classes=None
+               , exclude_classes=None, include_clusters=None, exclude_clusters=None
+               , include_info=None, cluster_definitions=None, schema=None
+               , security=None, records=None, index_defs=None
+               , manual_indexes=None, compression_level=None, buffer_size=None):
+        """Export graph to a (compressed zip) file, without locking the database.
+           :param exclude_all: bool. Blacklist everything from export, unless
+           included by later parameters.
+           :param include_classes: List of strings naming exported classes
+           :param exclude_classes: List of strings naming skipped classes
+           :param include_clusters: List of strings exported clusters
+           :param exclude_clusters: List of strings nameing skipped clusters
+           :param include_info: bool. Whether export includes database info
+           :param cluster_definitions: bool. Whether export defines clusters
+           :param schema: bool. Whether export includes graph schema.
+           :param security: bool. Whether export includes DB security params
+           :param records: bool. Whether export includes record contents
+           :param index_defs: bool. Whether export includes indes definitions
+           :param manual_indexes: bool. Whether export includes manual index
+           contents
+           :param compression_level: In range [0,9], min to max compression.
+           :param buffer_size: Compression buffer size, in bytes.
+        """
+        export_optionals = ''
+        options_str = ''
+        if exclude_all:
+            options_str += ' -excludeAll'
+
+        if include_classes is not None:
+            ic = ' '.join(['ic.add("{}");'.format(c) for c in include_classes])
+            export_optionals += 'def ic = new HashSet<String>(); {} export.setIncludeClasses(ic);'.format(ic)
+        if exclude_classes is not None:
+            ec = ' '.join(['ec.add("{}");'.format(c) for c in exclude_classes])
+            export_optionals += 'def ec = new HashSet<String>(); {} export.setExcludeClusters(ec);'.format(ec)
+        if include_clusters is not None:
+            ic = ' '.join(['icx.add("{}");'.format(c) for c in include_clusters])
+            export_optionals += 'def icx = new HashSet<String>(); {} export.setIncludeClusters(icx);'.format(ic)
+        if exclude_clusters is not None:
+            ec = ' '.join(['ecx.add("{}");'.format(c) for c in exclude_clusters])
+            export_optionals += 'def ecx = new HashSet<String>(); {} export.setExcludeClusters(ecx);'.format(ec)
+        if include_info is not None:
+            export_optionals += 'export.setIncludeInfo({});'.format('true' if include_info else 'false')
+        if cluster_definitions is not None:
+            export_optionals += 'export.setIncludeClusterDefinitions({});'.format('true' if cluster_definitions else 'false')
+        if schema is not None:
+            export_optionals += 'export.setIncludeSchema({});'.format('true' if schema else 'false')
+        if security is not None:
+            export_optionals += 'export.setIncludeSecurity({});'.format('true' if security else 'false')
+        if records is not None:
+            export_optionals += 'export.setIncludeRecords({});'.format('true' if records else 'false')
+        if index_defs is not None:
+            export_optionals += 'export.setIncludeIndexDefinitions({});'.format('true' if index_defs else 'false')
+        if manual_indexes is not None:
+            export_optionals += 'export.setIncludeManualIndexes({});'.format('true' if manual_indexes else 'false')
+        if self.server_version >= (1, 7, 6):
+            # No mutators for these, an attempt to dissuade usage?
+            if compression_level is not None:
+                options_str += ' -compressionLevel={}'.format(compression_level)
+            if buffer_size is not None:
+                options_str += ' -compressionBuffer={}'.format(buffer_size)
+
+        def_export = \
+            'def export = new com.orientechnologies.orient.core.db.tool.ODatabaseExport(db, "{}", listener);'
+
+        export_commands = \
+        '''{}
+        {} {}
+        export.exportDatabase();
+        export.close();
+        '''.format(def_export.format(save_path),
+                   'export.setOptions("{}");'.format(options_str) if options_str else '',
+                   export_optionals)
+
+        config = self.config
+        export_groovy = \
+            self._GROOVY_GET_DB.format(config.host, config.port, config.db_name, config.user, config.cred) + \
+            self._GROOVY_TRY.format(self._GROOVY_NULL_LISTENER, export_commands)
+
+        self.client.gremlin(export_groovy)
+
+    # TODO FIXME
+    # def restore(self, load_path):
+    #     """Restore graph from backup.
+    #        :param load_path: Pass directory path to restore incremental backups
+    #     """
+    #     pass
+
+    # def backup(self, save_path, incremental=False, compression_level=None, buffer_size=None):
+    #     """Backup opened graph to (compressed zip) file.
+    #        During a backup, the database remains in read-only mode.
+    #
+    #        :param incremental: If true, backups changes since the last backup.
+    #        :param compression_level: In range [0,9], min to max compression
+    #        :param buffer_size: Compression buffer size, in bytes
+    #     """
+    #     pass
+
 
     def clear_registry(self):
         """Clear the registry and associated brokers.
@@ -392,8 +561,36 @@ class Graph(object):
         else:
             set_clause = u''
 
-        return CreateVertexCommand(
+        return VertexCommand(
             u'CREATE VERTEX {}{}'.format(class_name, set_clause))
+
+    def delete_vertex(self, vertex, where = None, limit=None, batch=None):
+        # TODO FIXME Parse delete result
+        result = self.client.command(to_unicode(self.delete_vertex_command(vertex, where, limit, batch)))
+
+    def delete_vertex_command(self, vertex, where=None, limit=None, batch=None):
+        vertex_clause = getattr(vertex, 'registry_name', None) or vertex
+
+        delete_clause = ''
+        if where is not None:
+            where_clause = ''
+            if isinstance(where, dict):
+                where_clause = u' and '.join(u'{0}={1}'
+                    .format(PropertyEncoder.encode_name(k)
+                            , PropertyEncoder.encode_value(v))
+                    for k,v in where.items())
+            else:
+                where_clause = Query.filter_string(where)
+
+            delete_clause += ' WHERE {}'.format(where_clause)
+        if limit is not None:
+            delete_clause += ' LIMIT {}'.format(limit)
+        if batch is not None:
+            delete_clause += ' BATCH {}'.format(batch)
+
+        return VertexCommand(
+            u'DELETE VERTEX {}{}'.format(
+                vertex_clause, delete_clause))
 
     def create_edge(self, edge_cls, from_vertex, to_vertex, **kwargs):
         result = self.client.command(
@@ -419,6 +616,13 @@ class Graph(object):
         return CreateEdgeCommand(
             u'CREATE EDGE {} FROM {} TO {}{}'.format(
                 class_name, from_vertex._id, to_vertex._id, set_clause))
+
+    def create_function(self, name, code, parameters=None, idempotent=False, language='javascript'):
+        parameter_str = ' PARAMETERS [' + ','.join(parameters) + ']' if parameters else ''
+
+        self.client.command(
+            u'CREATE FUNCTION {} \'{}\' {} IDEMPOTENT {} LANGUAGE {}'.format(
+                name, code, parameter_str, 'true' if idempotent else 'false', language))
 
     def get_vertex(self, vertex_id):
         record = self.client.command('SELECT FROM {}'.format(vertex_id))
@@ -474,13 +678,10 @@ class Graph(object):
         :param from_: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT outE({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(from_)))
-        return [self.get_edge(e) for e in records[0].oRecordData['outE']] \
+        records = self.client.query('SELECT EXPAND( outE({0}) ) FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(from_)), -1)
+        return [self.edge_from_record(r) for r in records] \
             if records else []
 
     def inE(self, to, *edge_classes):
@@ -489,12 +690,10 @@ class Graph(object):
         :param to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT inE({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(to)))
-        return [self.get_edge(e) for e in records[0].oRecordData['inE']] \
+        records = self.client.query('SELECT EXPAND( inE({0}) ) FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(to)), -1)
+        return [self.edge_from_record(r) for r in records] \
             if records else []
 
     def bothE(self, from_to, *edge_classes):
@@ -503,13 +702,10 @@ class Graph(object):
         :param from_to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT bothE({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(from_to)))
-        return [self.get_edge(e) for e in records[0].oRecordData['bothE']] \
+        records = self.client.query('SELECT EXPAND( bothE({0}) ) FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(from_to)), -1)
+        return [self.edge_from_record(r) for r in records] \
             if records else []
 
     def out(self, from_, *edge_classes):
@@ -518,13 +714,10 @@ class Graph(object):
         :param from_: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT out({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(from_)))
-        return [self.get_vertex(v) for v in records[0].oRecordData['out']] \
+        records = self.client.query('SELECT EXPAND( out({0}) ) FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(from_)), -1)
+        return [self.vertex_from_record(v) for v in records] \
             if records else []
 
     def in_(self, to, *edge_classes):
@@ -533,13 +726,10 @@ class Graph(object):
         :param to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT in({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(to)))
-        return [self.get_vertex(v) for v in records[0].oRecordData['in']] \
+        records = self.client.query('SELECT EXPAND( in({0}) ) FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(to)), -1)
+        return [self.vertex_from_record(v) for v in records] \
             if records else []
 
     def both(self, from_to, *edge_classes):
@@ -548,13 +738,10 @@ class Graph(object):
         :param from_to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-
-        edge_classes_quoted = \
-            ['"%s"' % s for s in self.coerce_class_names(edge_classes)]
-        records = self.client.command('SELECT both({0}) FROM {1}'
-            .format(','.join(edge_classes_quoted),
-                    self.coerce_class_names(from_to)))
-        return [self.get_vertex(v) for v in records[0].oRecordData['both']] \
+        records = self.client.query('SELECT EXPAND( both({0}) )FROM {1}'
+            .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
+                    , self.coerce_class_names(from_to)), -1)
+        return [self.vertex_from_record(v) for v in records] \
             if records else []
 
     # The following mostly intended for internal use

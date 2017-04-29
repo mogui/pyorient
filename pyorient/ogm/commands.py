@@ -1,7 +1,6 @@
 from ..utils import to_str
 
-
-class CreateVertexCommand(object):
+class VertexCommand(object):
     def __init__(self, command_text):
         self.command_text = command_text
 
@@ -10,7 +9,6 @@ class CreateVertexCommand(object):
 
     def __unicode__(self):
         return u'{}'.format(self.command_text)
-
 
 class CreateEdgeCommand(object):
     def __init__(self, command_text):

@@ -2,8 +2,7 @@ import os
 import sys
 import unittest
 
-from pyorient.exceptions import PyOrientCommandException, PyOrientSecurityAccessException, \
-    PyOrientConnectionException, PyOrientException
+from pyorient.exceptions import PyOrientCommandException, PyOrientException, PyOrientDatabaseException
 from pyorient import OrientSocket
 from pyorient.messages.connection import ConnectMessage, ShutdownMessage
 from pyorient.messages.database import DbExistsMessage, DbOpenMessage, DbCreateMessage,\
@@ -157,9 +156,12 @@ class RawMessages_1_TestCase(unittest.TestCase):
             ( DbCreateMessage( connection ) ).prepare(
                 (db_name, DB_TYPE_DOCUMENT, STORAGE_TYPE_PLOCAL)
             ).send().fetch_response()
-        except PyOrientCommandException as e:
+        except PyOrientDatabaseException as e:
             assert True
             print(str(e))
+        except Exception as e:
+            print(str(e))
+            assert False
 
         print("Creation: %r" % response)
         assert len(response) is 0

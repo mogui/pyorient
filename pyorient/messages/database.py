@@ -51,7 +51,6 @@ class DbOpenMessage(BaseMessage):
         self._client_id = ''
         self._db_name = ''
         self._db_type = DB_TYPE_DOCUMENT
-        self._serialization_type = OrientSerialization.CSV
         self._append(( FIELD_BYTE, DB_OPEN_OP ))
         self._need_token = False
 
@@ -64,8 +63,7 @@ class DbOpenMessage(BaseMessage):
                 self._pass = params[2]
                 self.set_db_type(params[3])
                 self._client_id = params[4]
-                self._serialization_type = params[5]
-
+                
             except IndexError:
                 # Use default for non existent indexes
                 pass
@@ -74,11 +72,9 @@ class DbOpenMessage(BaseMessage):
         self._append(( FIELD_SHORT, SUPPORTED_PROTOCOL ))
         self._append(( FIELD_STRING, self._client_id ))
 
-        # Set the serialization type on the shared socket object
-        self._orientSocket.serialization_type = self._serialization_type
 
         if self.get_protocol() > 21:
-            self._append(( FIELD_STRING, self._serialization_type ))
+            self._append(( FIELD_STRING, self._orientSocket.serialization_type ))
             if self.get_protocol() > 26:
                 self._append(( FIELD_BOOLEAN, self._request_token ))
                 if self.get_protocol() >= 36:
@@ -151,9 +147,6 @@ class DbOpenMessage(BaseMessage):
 
         # set database opened
         self._orientSocket.db_opened = self._db_name
-
-        # set serialization type, as global in the orient socket class
-        self._orientSocket.serialization_type = self._serialization_type
 
         return info, clusters, self._node_list
         # self._cluster_map = self._orientSocket.cluster_map = \
