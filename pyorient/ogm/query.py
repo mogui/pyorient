@@ -222,11 +222,20 @@ class Query(object):
             return []
 
     def first(self, reify=False):
+        """Get the first query match.
+        If expecting a single edge or vertex and this returns a list,
+        you likely intended to expand() your what() argument.
+        """
         with TempParams(self._params, limit=1, reify=reify):
             response = self.all()
             return response[0] if response else None
 
     def one(self, reify=False):
+        """Raises exception when there's anything but a single match, otherwise
+        returns match.
+        If expecting a single edge or vertex and this returns a list,
+        you likely intended to expand() your what() argument.
+        """
         with TempParams(self._params, limit=2):
             responses = self.all()
             num_responses = len(responses)
@@ -809,6 +818,7 @@ class Query(object):
     def parse_record_prop(self, prop):
         if isinstance(prop, list):
             g = self._graph
+            # NOTE For 'ridbags', even of length 1, returns a list.
             return g.elements_from_links(prop) if len(prop) > 0 and isinstance(prop[0], pyorient.OrientRecordLink) else prop
         elif isinstance(prop, pyorient.OrientRecordLink):
             return self._graph.element_from_link(prop)
