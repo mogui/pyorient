@@ -36,6 +36,7 @@ class Query(object):
         """
         self._graph = graph
         self._subquery = None
+        self._params = {}
 
         first_entity = entities[0]
 
@@ -53,15 +54,16 @@ class Query(object):
             self._subquery = first_entity
             self.source_name = first_entity.source_name
             self._class_props = tuple()
-            pass
         elif isinstance(first_entity, QV):
             self.source_name = self.build_what(first_entity)
+            self._class_props = tuple()
+        elif isinstance(first_entity, What):
+            self._params['what'] = [first_entity]
+            self.source_name = None
             self._class_props = tuple()
         else:
             self.source_name = first_entity.registry_name
             self._class_props = tuple(entities[1:])
-
-        self._params = {}
 
     @classmethod
     def sub(cls, source):
@@ -72,6 +74,11 @@ class Query(object):
         """Create a query, with current query as a subquery.
         Serves as a useful shorthand for chaining sub-queries."""
         return Query(self._graph, (self, ))
+
+    @property
+    def graph(self):
+        """Get graph being queried. May be None for subqueries"""
+        return self._graph
 
     def __iter__(self):
         params = self._params
@@ -274,8 +281,19 @@ class Query(object):
         self._params['what'] = whats
         return self
 
-    def let(self, **kwargs):
-        self._params['let'] = kwargs
+    def let(self, *ordered, **kwargs):
+        """Define LET block for query, setting context variables.
+        :param ordered: When context variables have dependencies, order
+        matters. In Python < 3.6, OrderedDict will not retain order as kwargs,
+        pass them here. See PEP 468.
+        :param kwargs: Conveniently specify context variables.
+        """
+        if ordered:
+            if kwargs is not None:
+                ordered[0].update(kwargs)
+            self._params['let'] = ordered[0]
+        else:
+            self._params['let'] = kwargs
         return self
 
     def filter(self, expression):
@@ -810,8 +828,8 @@ class Query(object):
 
         optional_string = ' '.join(optional_clauses)
         if props:
-            return u'SELECT {} FROM {} {}'.format(
-                ','.join(props), src, optional_string)
+            return u'SELECT {}{} {}'.format(
+                ','.join(props), (' FROM ' + src) if src else '', optional_string)
         else:
             return u'SELECT FROM {} {}'.format(src, optional_string)
 

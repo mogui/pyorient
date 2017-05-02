@@ -152,7 +152,7 @@ def median(field):
     return FunctionWhat(What.Median, (field,))
 
 def percentile(field, *quantiles):
-    return FunctionWhat(What.Percentile, (field, quantiles))
+    return FunctionWhat(What.Percentile, (field, ) + quantiles)
 
 def variance(field):
     return FunctionWhat(What.Variance, (field,))
@@ -170,7 +170,7 @@ def sysdate(fmt=None, tz=None):
     return FunctionWhat(What.SysDate, (fmt, tz))
 
 def format(fmt_str, *args):
-    return FunctionWhat(What.Format, (fmt_str, args))
+    return FunctionWhat(What.Format, (fmt_str, ) + args)
 
 class EdgeDirection(object):
     OUT = 0
@@ -192,17 +192,17 @@ def distance(x_field, y_field, x_value, y_value):
 def distinct(field):
     return FunctionWhat(What.Distinct, (field,))
 
-def unionall(field, *more):
-    return FunctionWhat(What.UnionAll, (field, more))
+def union_all(field, *more):
+    return FunctionWhat(What.UnionAll, (field, ) + more)
 
 def intersect(field, *more):
-    return FunctionWhat(What.Intersect, (field, more))
+    return FunctionWhat(What.Intersect, (field, ) + more)
 
 def difference(field, *more):
-    return FunctionWhat(What.Difference, (field, more))
+    return FunctionWhat(What.Difference, (field, ) + more)
 
 def symmetric_difference(field, *more):
-    return FunctionWhat(What.SymmetricDifference, (field, more))
+    return FunctionWhat(What.SymmetricDifference, (field, ) + more)
 
 def set(field):
     return FunctionWhat(What.Set, (field,))
@@ -330,11 +330,11 @@ class CollectionMethodMixin(object):
 
     def remove(self, *items):
         # Disable further chaining
-        return MethodWhat.prepare_next_link(self, ChainableWhat, (What.Remove, items))
+        return MethodWhat.prepare_next_link(self, ChainableWhat, (What.Remove, ) + items)
 
     def removeAll(self, *items):
         # Disable further chaining
-        return MethodWhat.prepare_next_link(self, ChainableWhat, (What.RemoveAll, items))
+        return MethodWhat.prepare_next_link(self, ChainableWhat, (What.RemoveAll, ) + items)
 
     def size(self):
         return MethodWhat.prepare_next_link(self, MethodWhat, (What.Size,))
