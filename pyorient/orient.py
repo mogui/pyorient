@@ -256,6 +256,9 @@ class OrientDB(object):
     def close(self):
         self._connection.close()
 
+    def close(self):
+        self._connection.close()
+
     def __getattr__(self, item):
 
         # No special handling for private attributes/methods.
