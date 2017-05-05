@@ -52,3 +52,6 @@ class Sequence(ChainableWhat):
     def next(self):
         return ChainableWhat(self.chain + [(What.Next, )], [])
 
+def sequence(name):
+    return Sequence(name)
+
