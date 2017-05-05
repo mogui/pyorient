@@ -101,6 +101,10 @@ class What(object):
     AtVersion = 90
     AtSize = 91
     AtType = 92
+    # Sequences
+    Sequence = 93
+    Current = 94
+    Next = 95
 
     def __init__(self):
         self.name_override = None

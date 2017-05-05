@@ -22,7 +22,7 @@ class GraphElement(object):
         return self._graph
 
     def save(self):
-        """:returns: True if successful, False otherwise"""
+        """:return: True if successful, False otherwise"""
         if not self._graph:
             raise RuntimeError(
                 'Can not save() element: it has no corresponding Graph')

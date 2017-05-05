@@ -11,6 +11,7 @@ from .update import Update
 from .batch import Batch
 from .commands import VertexCommand, CreateEdgeCommand
 from ..utils import to_unicode
+from .sequences import Sequences
 
 import pyorient
 from collections import namedtuple
@@ -644,7 +645,7 @@ class Graph(object):
         return self.element_from_record(record[0]) if record else None
 
     def save_element(self, element_class, props, elem_id):
-        """:returns: True if successful, False otherwise"""
+        """:return: True if successful, False otherwise"""
         if isinstance(element_class, str):
             name = element_class
             element_class = self.registry.get(element_class)
@@ -683,6 +684,9 @@ class Graph(object):
         else:
             response = self.client.gremlin(script)
         return self.elements_from_records(response)
+
+    def sequences(self):
+        return Sequences(self)
 
     # Vertex-centric functions
     def outE(self, from_, *edge_classes):
@@ -934,7 +938,7 @@ class Graph(object):
         """Get class name(s) for vertexes/edges.
 
         :param classes: String/class object or list of strings/class objects
-        :returns: List if input is iterable, string otherwise
+        :return: List if input is iterable, string otherwise
         """
         return [getattr(val, 'registry_name', val) for val in classes] \
             if hasattr(classes, '__iter__') and not isinstance(classes, str) \
@@ -978,7 +982,7 @@ class Graph(object):
             :param processed_classes: a set of classes that have already been processed
             :param current_trace: list of classes traversed during the recursion.
 
-            :returns: element of classes list sorted in topological order
+            :return: element of classes list sorted in topological order
             """
             # Check if this class has already been handled
             if class_name in processed_classes:

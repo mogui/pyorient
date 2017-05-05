@@ -50,7 +50,7 @@ class Batch(object):
         self.commands += 'sleep {}'.format(ms)
 
     def clear(self):
-        self.objects.clear()
+        # TODO Give option to reuse batches?
         self.variables.clear()
 
         self.commands = self.commands[:self.commands.index('\n') + 1]

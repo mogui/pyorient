@@ -15,6 +15,7 @@ from pyorient.ogm.property import (
 from pyorient.ogm.what import expand, in_, out, distinct, sysdate, QV
 
 from pyorient.ogm.update import Update
+from pyorient.ogm.sequences import Sequence
 
 AnimalsNode = declarative_node()
 AnimalsRelationship = declarative_relationship()
@@ -932,6 +933,7 @@ class OGMTestUpdate(unittest.TestCase):
 
         g.create_all(OGMTestUpdate.Node.registry)
         self.mycounter = g.counters.create(name='mycounter')
+        self.sequences = g.sequences()
 
 
     def testUpdate(self):
@@ -952,5 +954,21 @@ class OGMTestUpdate(unittest.TestCase):
 
         self.assertEquals(second_item.id, 1)
 
+        if g.server_version < (2, 2, 0):
+            return
 
+        # Default start value is 0, so first call to next() gives 1
+        # Want it to be 2
+        seq = self.sequences.create('mycounter', Sequence.Ordered, start=1)
+        create_third = g.batch()
+        create_third[:] = create_third.items.create(id=seq.next(), qty=30, price=2500)
+        create_third.commit()
 
+        create_fourth = g.batch()
+        create_fourth['item'] = create_fourth.items.create(id=seq.next(), qty=40, price=3330)
+        fourth_item = create_fourth['$item']
+        self.assertEquals(fourth_item.id, 3)
+
+        with self.assertRaises(PyOrientCommandException):
+            self.sequences.create('mycounter', Sequence.Cached, 666, 2, 6)
+        self.sequences.drop(seq)

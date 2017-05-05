@@ -144,6 +144,9 @@ class ExpressionMixin(object):
         , What.AtVersion: WhatFunction(0, '@version', tuple())
         , What.AtSize: WhatFunction(0, '@size', tuple())
         , What.AtType: WhatFunction(0, '@type', tuple())
+        , What.Sequence: WhatFunction(1, 'sequence({})', (ArgConverter.Label,))
+        , What.Current: WhatFunction(0, 'current()', tuple())
+        , What.Next: WhatFunction(0, 'next()', tuple())
     }
 
     @classmethod
