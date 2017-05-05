@@ -391,7 +391,9 @@ class PropertyWhat(MethodWhatMixin, Operand, ChainableWhat):
 # Can't make assumptions about type of property
 # Provide all method mixins, and assume user knows what they're doing
 class AnyPropertyWhat(StringMethodMixin, MapMethodMixin, PropertyWhat):
-    pass
+    def __getitem__(self, item):
+        self.props.append((What.WhatFilter, item))
+        return self
 
 class AnyPropertyMixin(object):
     def __getattr__(self, attr):
@@ -501,6 +503,10 @@ class QV(VertexWhatMixin, EdgeWhatMixin, WhatFilterMixin, RecordMethodMixin, Str
     @classmethod
     def parent(cls):
         return cls('parent')
+
+    @classmethod
+    def current(cls):
+        return cls('current')
 
     @classmethod
     def parent_current(cls):

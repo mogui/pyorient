@@ -5,6 +5,9 @@ from .vertex import Vertex
 from .edge import Edge
 from .broker import get_broker
 from .query import Query
+from .query_utils import ArgConverter
+from .expressions import ExpressionMixin
+from .update import Update
 from .batch import Batch
 from .commands import VertexCommand, CreateEdgeCommand
 from ..utils import to_unicode
@@ -558,7 +561,8 @@ class Graph(object):
             db_props = Graph.props_to_db(vertex_cls, kwargs, self.strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
-                    PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v))
+                    PropertyEncoder.encode_name(k),
+                    ArgConverter.convert_to(ArgConverter.Value, v, ExpressionMixin()))
                     for k, v in db_props.items()))
         else:
             set_clause = u''
@@ -610,7 +614,8 @@ class Graph(object):
             db_props = Graph.props_to_db(edge_cls, kwargs, self.strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
-                    PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v))
+                    PropertyEncoder.encode_name(k),
+                    ArgConverter.convert_to(ArgConverter.Value, v, ExpressionMixin()))
                     for k, v in db_props.items()))
         else:
             set_clause = ''
@@ -661,6 +666,12 @@ class Graph(object):
 
     def query(self, first_entity, *entities):
         return Query(self, (first_entity,) + entities)
+
+    def update(self, entity):
+        return Update(self, entity)
+
+    def update_edge(self, entity):
+        return Update.edge(self, entity)
 
     def batch(self, isolation_level=Batch.READ_COMMITTED):
         return Batch(self, isolation_level)

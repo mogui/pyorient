@@ -2,6 +2,7 @@ from .broker import get_broker
 from .commands import VertexCommand
 
 from .vertex import VertexVector
+from .what import ElementWhat
 
 import re
 import string
@@ -164,10 +165,11 @@ class BatchBroker(object):
         else:
             return self.broker.__getattribute__(name + suffix)
 
-class BatchVariable(object):
+class BatchVariable(ElementWhat):
     def __init__(self, reference, value):
+        super(BatchVariable, self).__init__([], [reference])
         self._id = reference
-        self.value = value
+        self._value = value
 
 class BatchVertexVariable(BatchVariable):
     def __init__(self, reference, value):

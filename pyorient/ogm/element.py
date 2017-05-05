@@ -31,6 +31,9 @@ class GraphElement(object):
     def query(self):
         return self._graph.query(self)
 
+    def update(self):
+        return self._graph.update(self)
+
     def __setattr__(self, key, value):
         # Check if the attribute is actually a property of the OGM type
         if (hasattr(type(self), key) and

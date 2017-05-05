@@ -10,9 +10,11 @@ from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
-    String, Date, DateTime, Decimal, Double, Integer, EmbeddedMap, EmbeddedSet,
-    Link, UUID)
-from pyorient.ogm.what import expand, in_, out, distinct, sysdate
+    String, Date, DateTime, Decimal, Double, Integer, Short, Long, EmbeddedMap,
+    EmbeddedSet, Link, UUID)
+from pyorient.ogm.what import expand, in_, out, distinct, sysdate, QV
+
+from pyorient.ogm.update import Update
 
 AnimalsNode = declarative_node()
 AnimalsRelationship = declarative_relationship()
@@ -878,6 +880,7 @@ class OGMTestClassField(unittest.TestCase):
         self.assertEquals({}, g.registry['classfieldvertex2'].class_fields)
 
 
+
 class OGMTestAbstractField(unittest.TestCase):
     def __init__(self, *args, **kwargs):
         super(OGMTestAbstractField, self).__init__(*args, **kwargs)
@@ -886,8 +889,15 @@ class OGMTestAbstractField(unittest.TestCase):
     def setUp(self):
         g = self.g = Graph(Config.from_url('abstract_classes', 'root', 'root'
                                            , initial_drop=True))
-        g.client.command('CREATE CLASS AbstractClass EXTENDS V ABSTRACT')
-        g.client.command('CREATE CLASS ConcreteClass EXTENDS V')
+
+        Node = declarative_node()
+        class AbstractClass(Node.Abstract):
+            element_type = 'AbstractClass'
+
+        class ConcreteClass(Node):
+            element_type = 'ConcreteClass'
+
+        g.create_all(Node.registry)
 
     def testAbstractFlag(self):
         g = self.g
@@ -896,3 +906,51 @@ class OGMTestAbstractField(unittest.TestCase):
             declarative_node(), declarative_relationship(), auto_plural=True)
         self.assertTrue(database_registry['AbstractClass'].abstract)
         self.assertFalse(database_registry['ConcreteClass'].abstract)
+
+class OGMTestUpdate(unittest.TestCase):
+    Node = declarative_node()
+    class Counter(Node):
+        element_plural = 'counters'
+
+        name = String(nullable=False)
+        value = Long(nullable=False, default=0)
+
+    class Items(Node):
+        element_plural = 'items'
+
+        id = Long(nullable=False, unique=True)
+        qty = Short(nullable=False)
+        price = Decimal(nullable=False)
+
+    def __init__(self, *args, **kwargs):
+        super(OGMTestUpdate, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('ogm_updates', 'root', 'root'
+                                           , initial_drop=True))
+
+        g.create_all(OGMTestUpdate.Node.registry)
+        self.mycounter = g.counters.create(name='mycounter')
+
+
+    def testUpdate(self):
+        g = self.g
+
+        # A solution to auto-incrementing ids, when sequences not available (pre-OrientDB 2.2)
+        Counter = OGMTestUpdate.Counter
+
+        create_first = g.batch()
+        create_first['counter'] = g.counters.update().increment((Counter.value, 1)).return_(Update.Before, QV.current()).where(Counter.name=='mycounter')
+        create_first[:] = create_first.items.create(id=create_first[:'counter'].value[0], qty=10, price=1000)
+        create_first.commit()
+
+        create_second = g.batch()
+        create_second['counter'] = self.mycounter.update().increment((Counter.value, 1)).return_(Update.Before, QV.current())
+        create_second['item'] = create_second.items.create(id=create_second[:'counter'].value[0], qty=20, price=1800)
+        second_item = create_second['$item']
+
+        self.assertEquals(second_item.id, 1)
+
+
+

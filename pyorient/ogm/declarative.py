@@ -17,13 +17,15 @@ class DeclarativeMeta(type):
             cls.registry = OrderedDict()
             cls.decl_root = cls
 
-            cls.Abstract = DeclarativeMeta.__new__(DeclarativeMeta,
+            cls.Abstract = DeclarativeMetaAbstract.__new__(DeclarativeMetaAbstract,
                                                    class_name + '.Abstract',
                                                    bases,
-                                                   dict(attrs, abstract = True))
-            cls.Abstract.registry = cls.registry
-            cls.Abstract.decl_root = cls
+                                                   { 'registry': cls.registry, 'decl_root': cls }
+                                                   )
         else:
+            if isinstance(cls, DeclarativeMetaAbstract):
+                bases = (cls.decl_root, )
+
             decl_bases = set(
                 base.decl_root for base in bases
                     if hasattr(base, 'decl_root') and base is not base.decl_root)
@@ -58,6 +60,7 @@ class DeclarativeMeta(type):
 
         return super(DeclarativeMeta, cls).__init__(class_name, bases, attrs)
 
+
     def __setattr__(self, name, value):
         if isinstance(value, Property):
             if value.context:
@@ -73,6 +76,17 @@ class DeclarativeMeta(type):
         directly.
         """
         return repr(self.registry_name)
+
+class DeclarativeMetaAbstract(DeclarativeMeta):
+    """Private."""
+    def __new__(cls, class_name, bases, attrs):
+        abstract_base = next((base for base in bases if type(base) is DeclarativeMetaAbstract), None)
+        if abstract_base is not None:
+            # DeclarativeMetaAbstract only a thin wrapper around its base metaclass
+            return type.__new__(cls, class_name,
+                                (abstract_base.decl_root, ) + tuple(base for base in bases if base is not abstract_base),
+                                dict(attrs, abstract = True))
+        return type.__new__(cls, class_name, bases, attrs)
 
 # Enum only in Python >= 3.4
 #class DeclarativeType(Enum):
