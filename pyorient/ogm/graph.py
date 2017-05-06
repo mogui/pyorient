@@ -11,7 +11,7 @@ from .update import Update
 from .batch import Batch
 from .commands import VertexCommand, CreateEdgeCommand
 from ..utils import to_unicode
-from .sequences import Sequences
+from .sequence import Sequences
 
 import pyorient
 from collections import namedtuple

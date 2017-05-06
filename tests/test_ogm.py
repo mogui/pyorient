@@ -15,7 +15,7 @@ from pyorient.ogm.property import (
 from pyorient.ogm.what import expand, in_, out, distinct, sysdate, QV
 
 from pyorient.ogm.update import Update
-from pyorient.ogm.sequences import Sequence, NewSequence, sequence
+from pyorient.ogm.sequence import Sequence, NewSequence, sequence
 
 AnimalsNode = declarative_node()
 AnimalsRelationship = declarative_relationship()
