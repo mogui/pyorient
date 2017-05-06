@@ -125,8 +125,6 @@ class PropertyEncoder:
                 for k, v in value.items()
             ])
             return u'{{ {} }}'.format(contents)
-        elif isinstance(value, FunctionWhat) and value.chain[0][0] == What.SysDate:
-            return 'sysdate({})'.format(','.join([PropertyEncoder.encode_value(v) for v in value.chain[0][1] if v is not None]))
         elif isinstance(value, GraphElement):
             return value._id
         else:
@@ -209,3 +207,12 @@ class EmbeddedSet(LinkedProperty, CollectionMethodMixin):
 
 class EmbeddedMap(LinkedProperty, MapMethodMixin):
     pass
+
+class PreOp(object):
+    """Subclasses define operations to perform on graph before creating class properties."""
+    def __call__(self, graph, attr):
+        """Prepare the supplied graph.
+        :param attr: Name of attribute specifying PreOp
+        """
+        pass
+

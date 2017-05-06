@@ -49,7 +49,8 @@ class Graph(object):
         # Maps property dict from database to added class's property dict
         self.props_from_db = {}
 
-        self.scripts = config.scripts or pyorient.Scripts()
+        self._scripts = config.scripts
+        self._sequences = None
 
         self.strict = strict
 
@@ -420,6 +421,8 @@ class Graph(object):
         #if not self.client.command(
         #    'SELECT FROM ( SELECT expand( classes ) FROM metadata:schema ) WHERE name = "{}"'
         #        .format(cls_name)):
+
+        # TODO Batch class/property creation statements?
         try:
             self.client.command(
                 'CREATE CLASS {} EXTENDS {}{}'.format(
@@ -428,6 +431,10 @@ class Graph(object):
         except pyorient.PyOrientSchemaException:
             # Class already exists
             pass
+
+        pre_ops = [(k, v) for k,v in cls.__dict__.items() if isinstance(v, PreOp)]
+        for attr, pre_op in pre_ops:
+            pre_op(self, attr)
 
         props = sorted([(k,v) for k,v in cls.__dict__.items()
                         if isinstance(v, Property)]
@@ -478,7 +485,9 @@ class Graph(object):
                     self.client.command(
                         'ALTER PROPERTY {0} DEFAULT {1}'
                             .format(class_prop,
-                                    PropertyEncoder.encode_value(prop_value.default)))
+                                    ArgConverter.convert_to(ArgConverter.Value,
+                                                            prop_value.default,
+                                                            ExpressionMixin())))
 
             self.client.command(
                     'ALTER PROPERTY {0} NOTNULL {1}'
@@ -685,8 +694,17 @@ class Graph(object):
             response = self.client.gremlin(script)
         return self.elements_from_records(response)
 
+    @property
+    def scripts(self):
+        if self._scripts is None:
+            self._scripts = pyorient.Scripts()
+        return self._scripts
+
+    @property
     def sequences(self):
-        return Sequences(self)
+        if self._sequences is None:
+            self._sequences = Sequences(self)
+        return self._sequences
 
     # Vertex-centric functions
     def outE(self, from_, *edge_classes):

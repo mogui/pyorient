@@ -1,4 +1,5 @@
 from .what import What, ChainableWhat
+from .property import PreOp
 
 class Sequences(object):
     def __init__(self, graph):
@@ -31,10 +32,23 @@ class Sequences(object):
                 ' INCREMENT {}'.format(inc) if inc is not None else '',
                 cache
                 ))
-        return Sequence(name)
+        self._library[name] = seq = Sequence(name)
+        return seq
 
     def drop(self, sequence):
-        self._graph.client.command('DROP SEQUENCE {}'.format(sequence))
+        name = '{}'.format(sequence)
+        self._graph.client.command('DROP SEQUENCE ' + name)
+        del self._library[name]
+
+class NewSequence(PreOp):
+    def __init__(self, seq_type, start=None, inc=None, cache=None):
+        self.seq_type = seq_type
+        self.start = start
+        self.inc = inc
+        self.cache = cache
+
+    def __call__(self, graph, attr):
+        graph.sequences.create(attr, self.seq_type, self.start, self.inc, self.cache)
 
 class Sequence(ChainableWhat):
     Ordered = 0

@@ -15,7 +15,7 @@ from pyorient.ogm.property import (
 from pyorient.ogm.what import expand, in_, out, distinct, sysdate, QV
 
 from pyorient.ogm.update import Update
-from pyorient.ogm.sequences import Sequence
+from pyorient.ogm.sequences import Sequence, NewSequence, sequence
 
 AnimalsNode = declarative_node()
 AnimalsRelationship = declarative_relationship()
@@ -908,7 +908,7 @@ class OGMTestAbstractField(unittest.TestCase):
         self.assertTrue(database_registry['AbstractClass'].abstract)
         self.assertFalse(database_registry['ConcreteClass'].abstract)
 
-class OGMTestUpdate(unittest.TestCase):
+class OGMTestSequences(unittest.TestCase):
     Node = declarative_node()
     class Counter(Node):
         element_plural = 'counters'
@@ -924,23 +924,23 @@ class OGMTestUpdate(unittest.TestCase):
         price = Decimal(nullable=False)
 
     def __init__(self, *args, **kwargs):
-        super(OGMTestUpdate, self).__init__(*args, **kwargs)
+        super(OGMTestSequences, self).__init__(*args, **kwargs)
         self.g = None
 
     def setUp(self):
         g = self.g = Graph(Config.from_url('ogm_updates', 'root', 'root'
                                            , initial_drop=True))
 
-        g.create_all(OGMTestUpdate.Node.registry)
+        g.create_all(OGMTestSequences.Node.registry)
         self.mycounter = g.counters.create(name='mycounter')
-        self.sequences = g.sequences()
+        self.sequences = g.sequences
 
 
-    def testUpdate(self):
+    def testSequences(self):
         g = self.g
 
         # A solution to auto-incrementing ids, when sequences not available (pre-OrientDB 2.2)
-        Counter = OGMTestUpdate.Counter
+        Counter = OGMTestSequences.Counter
 
         create_first = g.batch()
         create_first['counter'] = g.counters.update().increment((Counter.value, 1)).return_(Update.Before, QV.current()).where(Counter.name=='mycounter')
@@ -972,3 +972,26 @@ class OGMTestUpdate(unittest.TestCase):
         with self.assertRaises(PyOrientCommandException):
             self.sequences.create('mycounter', Sequence.Cached, 666, 2, 6)
         self.sequences.drop(seq)
+
+
+        class SequencedItem(OGMTestSequences.Node):
+            element_plural = 'sequenced'
+
+            item_ids = NewSequence(Sequence.Ordered, start=-1)
+            # NOTE Disabled until https://github.com/orientechnologies/orientdb/issues/7399 fixed
+            #id = Long(nullable=False, unique=True, default=sequence('item_ids').next())
+            id = Long(nullable=False, unique=True)
+        g.create_class(SequencedItem)
+
+        batch_create = g.batch()
+        # Would be nice to use default value, but see NOTE above
+        item_ids = sequence('item_ids')
+        batch_create[:] = batch_create.sequenced.create(id=item_ids.next())
+        batch_create[:] = batch_create.sequenced.create(id=item_ids.next())
+        batch_create[:] = batch_create.sequenced.create(id=item_ids.next())
+        batch_create[:] = batch_create.sequenced.create(id=item_ids.next())
+        batch_create[:] = batch_create.sequenced.create(id=item_ids.next())
+        batch_create['last'] = batch_create.sequenced.create(id=item_ids.next())
+        last_item = batch_create['$last']
+        self.assertEquals(last_item.id, 5)
+
