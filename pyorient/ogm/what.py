@@ -504,6 +504,11 @@ class QV(VertexWhatMixin, EdgeWhatMixin, WhatFilterMixin, RecordMethodMixin, Str
         self.chain.append((What.WhatLet, (name,)))
         return self
 
+    def query(self):
+        from .query import Query
+        """A (sub-)query on this variable"""
+        return Query(None, [self])
+
     @classmethod
     def parent(cls):
         return cls('parent')

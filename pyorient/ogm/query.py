@@ -1,7 +1,6 @@
 from .property import Property, PropertyEncoder
 from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
-from .what import What, QV
 from .query_utils import ArgConverter
 from .expressions import ExpressionMixin
 
@@ -35,6 +34,8 @@ class Query(ExpressionMixin):
         self._params = {}
 
         first_entity = entities[0]
+
+        from .what import What, QV
 
         if isinstance(first_entity, Property):
             self.source_name = first_entity._context.registry_name
