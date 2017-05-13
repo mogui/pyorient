@@ -1,4 +1,4 @@
-from .operators import Operand, ArithmeticMixin
+from .operators import ArithmeticMixin
 from .what import (
     What, FunctionWhat
     , StringMethodMixin

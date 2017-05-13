@@ -55,6 +55,8 @@ class ArgConverter(object):
         elif conversion is ArgConverter.Boolean:
             if isinstance(arg, pyorient.ogm.what.What):
                 return for_query.build_what(arg)
+            elif isinstance(arg, LogicalConnective):
+                return for_query.filter_string(arg)
             else:
                 return 'true' if arg else 'false'
         elif conversion is ArgConverter.Name:

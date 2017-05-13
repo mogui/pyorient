@@ -94,7 +94,7 @@ class Operand(RelativeOperand):
         return LogicalConnective(Operator.Is, (self, value))
 
     def is_not(self, value):
-        """ Test if a property is not nll
+        """ Test if a property is not null
 
         :param value: May (presently?) only be None
         """

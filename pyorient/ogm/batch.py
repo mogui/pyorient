@@ -1,13 +1,17 @@
 from .broker import get_broker
-from .commands import VertexCommand
+from .commands import VertexCommand, CreateEdgeCommand
 
 from .vertex import VertexVector
-from .what import ElementWhat
+from .what import What, ElementWhat, VertexWhatMixin, EdgeWhatMixin
+
+from .expressions import ExpressionMixin
+from .query_utils import ArgConverter
 
 import re
 import string
+from copy import copy
 
-class Batch(object):
+class Batch(ExpressionMixin):
     READ_COMMITTED = 0
     REPEATABLE_READ = 1
 
@@ -15,11 +19,12 @@ class Batch(object):
         self.graph = graph
         self.objects = {}
         self.variables = {}
+        self.stack = [[]]
 
         if isolation_level == Batch.REPEATABLE_READ:
-            self.commands = 'BEGIN ISOLATION REPEATABLE_READ\n'
+            self.stack[0].append('BEGIN ISOLATION REPEATABLE_READ')
         else:
-            self.commands = 'BEGIN\n'
+            self.stack[0].append('BEGIN')
 
         for name,cls in graph.registry.items():
             broker = get_broker(cls)
@@ -34,26 +39,33 @@ class Batch(object):
 
     def __setitem__(self, key, value):
         command = str(value)
+
         if isinstance(key, slice):
-            self.commands += '{}\n'.format(command)
+            self.stack[-1].append('{}'.format(command))
         else:
             key = Batch.clean_name(key) if Batch.clean_name else key
 
-            self.commands += 'LET {} = {}\n'.format(key, command)
+            self.stack[-1].append('LET {} = {}'.format(key, command))
 
             VarType = BatchVariable
             if isinstance(value, VertexCommand):
                 VarType = BatchVertexVariable
+            elif isinstance(value, CreateEdgeCommand):
+                VarType = BatchEdgeVariable
             self.variables[key] = VarType('${}'.format(key), value)
 
     def sleep(self, ms):
-        self.commands += 'sleep {}'.format(ms)
+        self.stack[-1].append('sleep {}'.format(ms))
 
     def clear(self):
         # TODO Give option to reuse batches?
         self.variables.clear()
 
-        self.commands = self.commands[:self.commands.index('\n') + 1]
+        # Stack size should be 1
+        self.stack[0] = self.stack[0][:1]
+
+    def if_(self, condition):
+        return BatchBranch(self, condition)
 
     def __getitem__(self, key):
         """Commit batch with return value, or reference a previously defined
@@ -72,34 +84,35 @@ class Batch(object):
             if key.step:
                 if key.start:
                     returned = Batch.return_string(key.start)
-                    self.commands += \
-                        'COMMIT RETRY {}\nRETURN {}'.format(key.step, returned)
+                    self.stack[-1].append(
+                        'COMMIT RETRY {}\nRETURN {}'.format(key.step, returned))
                 else:
-                    self.commands += 'COMMIT RETRY {}'.format(key.step)
+                    self.stack[-1].append('COMMIT RETRY {}'.format(key.step))
             elif key.stop:
                 # No commit.
 
                 if Batch.clean_name:
-                    return self.variables[Batch.clean_name(key.stop)]
+                    return copy(self.variables[Batch.clean_name(key.stop)])
                 elif any(c in Batch.INVALID_CHARS for c in key.stop):
                     raise ValueError(
                         'Variable name \'{}\' contains invalid character(s).'
                             .format(key.stop))
 
-                return self.variables[key.stop]
+                return copy(self.variables[key.stop])
             else:
                 if key.start:
                     returned = Batch.return_string(key.start)
-                    self.commands += 'COMMIT\nRETURN {}'.format(returned)
+                    self.stack[-1].append('COMMIT\nRETURN {}'.format(returned))
                 else:
-                    self.commands += 'COMMIT'
+                    self.stack[-1].append('COMMIT')
         else:
             returned = Batch.return_string(key)
-            self.commands += 'COMMIT\nRETURN {}'.format(returned)
+            self.stack[-1].append('COMMIT\nRETURN {}'.format(returned))
 
         g = self.graph
+        commands = '\n'.join(self.stack[-1])
         if returned:
-            response = g.client.batch(self.commands)
+            response = g.client.batch(commands)
             self.clear()
 
             if returned[0] in ('[','{'):
@@ -107,15 +120,15 @@ class Batch(object):
             else:
                 return g.element_from_record(response[0]) if response else None
         else:
-            g.client.batch(self.commands)
+            g.client.batch(commands)
             self.clear()
 
     def commit(self, retries=None):
         """Commit batch with no return value."""
-        self.commands += 'COMMIT' + (' RETRY {}'.format(retries) if retries else '')
+        self.stack[-1].append('COMMIT' + (' RETRY {}'.format(retries) if retries else ''))
 
         g = self.graph
-        g.client.batch(self.commands)
+        g.client.batch('\n'.join(self.stack[-1]))
         self.clear()
 
     @staticmethod
@@ -140,7 +153,7 @@ class Batch(object):
             else:
                 return '{}'.format(variables)
 
-    INVALID_CHARS = set(string.punctuation + string.whitespace)
+    INVALID_CHARS = frozenset(''.join(c for c in string.punctuation if c is not '_') + string.whitespace)
 
     @staticmethod
     def default_name_cleaner(name):
@@ -151,6 +164,29 @@ class Batch(object):
     @classmethod
     def use_name_cleaner(cls, cleaner=default_name_cleaner):
         cls.clean_name = cleaner
+
+class BatchBranch():
+    IF = 'if ({}) {{\n  {}\n}}'
+    def __init__(self, batch, condition):
+        self.batch = batch
+        self.condition = condition
+
+    def __enter__(self):
+        self.batch.stack.append([])
+
+    def __exit__(self, e_type, e_value, e_trace):
+        batch = self.batch
+        branch_commands = '\n'.join(batch.stack.pop())
+
+        if e_type is not None:
+            # If an exception was raised, abort the batch
+            batch.stack[-1].append('ROLLBACK')
+
+        batch.stack[-1].append(
+            BatchBranch.IF.format(
+                    ArgConverter.convert_to(ArgConverter.Boolean, self.condition, batch),
+                    branch_commands
+                ))
 
 class BatchBroker(object):
     def __init__(self, broker):
@@ -167,11 +203,14 @@ class BatchBroker(object):
 
 class BatchVariable(ElementWhat):
     def __init__(self, reference, value):
-        super(BatchVariable, self).__init__([], [reference])
+        super(BatchVariable, self).__init__([(What.WhatLet, (reference[1:],))], [])
         self._id = reference
         self._value = value
 
-class BatchVertexVariable(BatchVariable):
+    def __copy__(self):
+        return type(self)(self._id, self._value)
+
+class BatchVertexVariable(BatchVariable, VertexWhatMixin):
     def __init__(self, reference, value):
         super(BatchVertexVariable, self).__init__(reference, value)
 
@@ -183,6 +222,10 @@ class BatchVertexVariable(BatchVariable):
 
         if edge_or_broker.decl_type == 1:
             return BatchVertexVector(self, edge_or_broker.objects)
+
+class BatchEdgeVariable(BatchVariable, EdgeWhatMixin):
+    def __init__(self, reference, value):
+        super(BatchEdgeVariable, self).__init__(reference, value)
 
 class BatchVertexVector(VertexVector):
     def __init__(self, origin, edge_broker, **kwargs):
