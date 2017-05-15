@@ -93,7 +93,7 @@ class Batch(ExpressionMixin):
 
                 if Batch.clean_name:
                     return copy(self.variables[Batch.clean_name(key.stop)])
-                elif any(c in Batch.INVALID_CHARS for c in key.stop):
+                elif any(c in Batch.INVALID_CHARS for c in key.stop) or key.stop[0].isdigit():
                     raise ValueError(
                         'Variable name \'{}\' contains invalid character(s).'
                             .format(key.stop))
@@ -157,7 +157,8 @@ class Batch(ExpressionMixin):
 
     @staticmethod
     def default_name_cleaner(name):
-        rx = '[' + re.escape(''.join(Batch.INVALID_CHARS)) + ']'
+        # Can't begin with a digit
+        rx = r'^\d|[' + re.escape(''.join(Batch.INVALID_CHARS)) + r']'
         return re.sub(rx, '_', name)
 
     clean_name = None

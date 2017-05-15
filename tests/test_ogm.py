@@ -436,6 +436,7 @@ class OGMDateTimeTestCase(unittest.TestCase):
 
         # orientdb does not store microseconds
         # so make sure the generated datetime has none
+        # Timezones / UTC offset must also be stored separately
         at = datetime.now().replace(microsecond=0)
 
         g.datetime.create(name='now', at=at)
