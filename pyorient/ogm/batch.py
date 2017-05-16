@@ -67,6 +67,9 @@ class Batch(ExpressionMixin):
     def if_(self, condition):
         return BatchBranch(self, condition)
 
+    def __str__(self):
+        return u'\n'.join(self.stack[-1])
+
     def __getitem__(self, key):
         """Commit batch with return value, or reference a previously defined
         variable.
@@ -110,7 +113,7 @@ class Batch(ExpressionMixin):
             self.stack[-1].append('COMMIT\nRETURN {}'.format(returned))
 
         g = self.graph
-        commands = '\n'.join(self.stack[-1])
+        commands = str(self)
         if returned:
             response = g.client.batch(commands)
             self.clear()
@@ -128,7 +131,7 @@ class Batch(ExpressionMixin):
         self.stack[-1].append('COMMIT' + (' RETRY {}'.format(retries) if retries else ''))
 
         g = self.graph
-        g.client.batch('\n'.join(self.stack[-1]))
+        g.client.batch(str(self))
         self.clear()
 
     @staticmethod

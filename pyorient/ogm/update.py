@@ -38,32 +38,39 @@ class Update(ExpressionMixin):
 
     def __str__(self):
         if self._updates[0] is None:
-            return 'UPDATE ' + self._source
+            return u'UPDATE ' + self._source
 
         actions = Update.BuildAction._(self._updates[0], self, self._updates[1])
 
-        ret = self._params.get('return', '')
+        params = self._params
+
+        ret = params.get('return', '')
         if ret:
-            ret = ' RETURN {} {}'.format(Update.RETURN_OPS.get(ret[0], ret[0]), self.build_what(ret[1]))
+            ret = u' RETURN {} {}'.format(Update.RETURN_OPS.get(ret[0], ret[0]), self.build_what(ret[1]))
 
-        lock = self._params.get('lock', None)
+        lock = params.get('lock', None)
         if lock is not None:
-            lock = ' LOCK ' + ('record' if lock else 'default')
+            lock = u' LOCK ' + (u'record' if lock else u'default')
 
-        where = self._params.get('where', '')
-        if where:
-            where = ' WHERE ' + self.filter_string(where)
+        where = params.get('where', '')
+        wheres = [self.filter_string(where)] if where else []
 
-        return 'UPDATE {}{}{}{}{}{}{}{}'.format(
-            'EDGE ' if self._edge else ''
+        kw_where = params.get('kw_where', {})
+        wheres = wheres + ([u' and '.join(u'{}={}'.format(PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v)) for k, v in kw_where.items())] if kw_where else [])
+
+        if wheres:
+            where = u' WHERE ' + u' and '.join(wheres)
+
+        return u'UPDATE {}{}{}{}{}{}{}{}'.format(
+            u'EDGE ' if self._edge else ''
             , self._source
             , actions
-            , ' UPSERT' if 'upsert' in self._params and not self._edge else ''
+            , u' UPSERT' if 'upsert' in params and not self._edge else ''
             , ret
             , where
             , lock if lock is not None else ''
-            , ' LIMIT {}'.format(self._params['limit']) if 'limit' in self._params else ''
-            , ' TIMEOUT {}'.format(self._params['timeout']) if 'timeout' in self._params else ''
+            , u' LIMIT {}'.format(params['limit']) if 'limit' in params else ''
+            , u' TIMEOUT {}'.format(params['timeout']) if 'timeout' in params else ''
                 )
 
     def do(self):
@@ -130,6 +137,9 @@ class Update(ExpressionMixin):
     def where(self, condition):
         self._params['where'] = condition
         return self
+
+    def wherein(self, **kwargs):
+        self._params['kw_where'] = kwargs
 
     def limit(self, max_records):
         self._params['limit'] = max_records
