@@ -2,7 +2,7 @@ from .broker import get_broker
 from .commands import VertexCommand, CreateEdgeCommand
 
 from .vertex import VertexVector
-from .what import What, ElementWhat, VertexWhatMixin, EdgeWhatMixin
+from .what import What, LetVariable, VertexWhatMixin, EdgeWhatMixin
 
 from .expressions import ExpressionMixin
 from .query_utils import ArgConverter
@@ -38,6 +38,12 @@ class Batch(ExpressionMixin):
                 setattr(self, broker_name, broker)
 
     def __setitem__(self, key, value):
+        """Add a command to the batch.
+        :param key: A name for the variable storing the results of the command,
+        or an empty slice if command is only meant for its side-effects.
+        Names can be reused.
+        :param value: The command to perform.
+        """
         command = str(value)
 
         if isinstance(key, slice):
@@ -55,9 +61,13 @@ class Batch(ExpressionMixin):
             self.variables[key] = VarType('${}'.format(key), value)
 
     def sleep(self, ms):
+        """Put the batch in wait.
+        :param ms: Number of milliseconds.
+        """
         self.stack[-1].append('sleep {}'.format(ms))
 
     def clear(self):
+        """Clear the batch for a new set of commands."""
         # TODO Give option to reuse batches?
         self.variables.clear()
 
@@ -65,6 +75,9 @@ class Batch(ExpressionMixin):
         self.stack[0] = self.stack[0][:1]
 
     def if_(self, condition):
+        """Conditional execution in a batch.
+        :param condition: Anything that can be passed to Query.filter()
+        """
         return BatchBranch(self, condition)
 
     def __str__(self):
@@ -205,14 +218,18 @@ class BatchBroker(object):
         else:
             return self.broker.__getattribute__(name + suffix)
 
-class BatchVariable(ElementWhat):
+class BatchVariable(LetVariable):
     def __init__(self, reference, value):
-        super(BatchVariable, self).__init__([(What.WhatLet, (reference[1:],))], [])
+        super(BatchVariable, self).__init__(reference[1:])
         self._id = reference
         self._value = value
 
     def __copy__(self):
         return type(self)(self._id, self._value)
+
+    def query(self):
+        from .query import Query
+        return Query(None, (self, ))
 
 class BatchVertexVariable(BatchVariable, VertexWhatMixin):
     def __init__(self, reference, value):

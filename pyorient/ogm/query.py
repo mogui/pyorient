@@ -35,7 +35,7 @@ class Query(ExpressionMixin):
 
         first_entity = entities[0]
 
-        from .what import What, QV
+        from .what import What, LetVariable
 
         if isinstance(first_entity, Property):
             self.source_name = first_entity._context.registry_name
@@ -51,7 +51,7 @@ class Query(ExpressionMixin):
             self._subquery = first_entity
             self.source_name = first_entity.source_name
             self._class_props = tuple()
-        elif isinstance(first_entity, QV):
+        elif isinstance(first_entity, LetVariable):
             self.source_name = self.build_what(first_entity)
             self._class_props = tuple()
         elif isinstance(first_entity, What):

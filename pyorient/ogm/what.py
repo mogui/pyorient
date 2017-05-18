@@ -196,7 +196,7 @@ def distance(x_field, y_field, x_value, y_value):
 def distinct(field):
     return FunctionWhat(What.Distinct, (field,))
 
-def union_all(field, *more):
+def unionall(field, *more):
     return FunctionWhat(What.UnionAll, (field, ) + more)
 
 def intersect(field, *more):
@@ -496,9 +496,13 @@ class CollectionMethodWhat(CollectionMethodMixin, MethodWhat):
 class MapMethodWhat(MapMethodMixin, MethodWhat):
     pass
 
-class QV(VertexWhatMixin, EdgeWhatMixin, WhatFilterMixin, RecordMethodMixin, StringMethodMixin, MapMethodMixin, MethodWhat, AnyPropertyMixin):
+class LetVariable(ElementWhat):
     def __init__(self, name):
-        super(QV, self).__init__([(What.WhatLet, (name,))], [])
+        super(LetVariable, self).__init__([(What.WhatLet, (name,))], [])
+
+class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMethodMixin):
+    def __init__(self, name):
+        super(QV, self).__init__(name)
 
     def QV(self, name):
         self.chain.append((What.WhatLet, (name,)))
