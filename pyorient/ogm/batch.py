@@ -227,10 +227,6 @@ class BatchVariable(LetVariable):
     def __copy__(self):
         return type(self)(self._id, self._value)
 
-    def query(self):
-        from .query import Query
-        return Query(None, (self, ))
-
 class BatchVertexVariable(BatchVariable, VertexWhatMixin):
     def __init__(self, reference, value):
         super(BatchVertexVariable, self).__init__(reference, value)

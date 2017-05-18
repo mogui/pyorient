@@ -500,6 +500,10 @@ class LetVariable(ElementWhat):
     def __init__(self, name):
         super(LetVariable, self).__init__([(What.WhatLet, (name,))], [])
 
+    def query(self):
+        from .query import Query
+        return Query(None, (self, ))
+
 class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMethodMixin):
     def __init__(self, name):
         super(QV, self).__init__(name)
@@ -507,11 +511,6 @@ class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMeth
     def QV(self, name):
         self.chain.append((What.WhatLet, (name,)))
         return self
-
-    def query(self):
-        from .query import Query
-        """A (sub-)query on this variable"""
-        return Query(None, [self])
 
     @classmethod
     def parent(cls):
