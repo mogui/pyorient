@@ -97,7 +97,9 @@ class PropertyEncoder:
         return name
 
     @staticmethod
-    def encode_value(value):
+    def encode_value(value, expressions):
+        from pyorient.ogm.what import What
+
         if isinstance(value, decimal.Decimal):
             return u'"{:f}"'.format(value)
         elif isinstance(value, float):
@@ -118,15 +120,18 @@ class PropertyEncoder:
         elif isinstance(value, (int,float)) or (sys.version_info[0] < 3 and isinstance(value, long)):
             return str(value)
         elif isinstance(value, list) or isinstance(value, set):
-            return u'[{}]'.format(u','.join([PropertyEncoder.encode_value(v) for v in value]))
+            return u'[{}]'.format(u','.join([PropertyEncoder.encode_value(v, expressions) for v in value]))
         elif isinstance(value, dict):
             contents = u','.join([
-                '{}: {}'.format(PropertyEncoder.encode_value(k), PropertyEncoder.encode_value(v))
+                '{}: {}'.format(PropertyEncoder.encode_value(k, expressions),
+                                PropertyEncoder.encode_value(v, expressions))
                 for k, v in value.items()
             ])
             return u'{{ {} }}'.format(contents)
         elif isinstance(value, GraphElement):
             return value._id
+        elif isinstance(value, What):
+            return expressions.build_what(value)
         else:
             # returning the same object will cause repr(value) to be used
             return value

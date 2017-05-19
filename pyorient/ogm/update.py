@@ -2,11 +2,12 @@ from .element import GraphElement
 from .expressions import ExpressionMixin
 from .property import PropertyEncoder
 from .query_utils import ArgConverter
+from .commands import Command
 
 
 from collections import defaultdict
 
-class Update(ExpressionMixin):
+class Update(ExpressionMixin, Command):
     Default = 0
     Record = 1
 
@@ -56,7 +57,7 @@ class Update(ExpressionMixin):
         wheres = [self.filter_string(where)] if where else []
 
         kw_where = params.get('kw_where', {})
-        wheres = wheres + ([u' and '.join(u'{}={}'.format(PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v)) for k, v in kw_where.items())] if kw_where else [])
+        wheres = wheres + ([u' and '.join(u'{}={}'.format(PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v, self)) for k, v in kw_where.items())] if kw_where else [])
 
         if wheres:
             where = u' WHERE ' + u' and '.join(wheres)
@@ -163,31 +164,31 @@ class Update(ExpressionMixin):
 
         @classmethod
         def set(cls, update, spec):
-            return ' SET ' + ','.join([cls.eq(nvp[0], nvp[1]) for nvp in spec])
+            return ' SET ' + ','.join([cls.eq(nvp[0], nvp[1], update) for nvp in spec])
         @classmethod
         def inc(cls, update, spec):
-            return ' INCREMENT ' + ','.join([cls.eq(nvp[0], nvp[1]) for nvp in spec])
+            return ' INCREMENT ' + ','.join([cls.eq(nvp[0], nvp[1], update) for nvp in spec])
         @classmethod
         def add(cls, update, spec):
-            return ' ADD ' + ','.join([cls.eq(nvp[0], nvp[1]) for nvp in spec])
+            return ' ADD ' + ','.join([cls.eq(nvp[0], nvp[1], update) for nvp in spec])
         @classmethod
         def rem(cls, update, spec):
-            return ' REMOVE ' + ','.join([cls.eq(nvp[0], nvp[1]) for nvp in spec])
+            return ' REMOVE ' + ','.join([cls.eq(nvp[0], nvp[1], update) for nvp in spec])
         @classmethod
         def put(cls, update, spec):
-            return ' PUT ' + ','.join([cls.eq(nvp[0], nvp[1]) for nvp in spec])
+            return ' PUT ' + ','.join([cls.eq(nvp[0], nvp[1], update) for nvp in spec])
 
         @classmethod
         def json(cls, update, usage):
             replace = usage[0]
 
             if replace:
-                return ' CONTENT ' + PropertyEncoder.encode_value(json)
-            return ' MERGE ' + PropertyEncoder.encode_value(json)
+                return ' CONTENT ' + PropertyEncoder.encode_value(json, update)
+            return ' MERGE ' + PropertyEncoder.encode_value(json, update)
 
         @classmethod
-        def eq(cls, key, value):
+        def eq(cls, key, value, update):
             return '{}={}'.format(
-                ArgConverter.convert_to(ArgConverter.Field, key, None),
-                PropertyEncoder.encode_value(value))
+                ArgConverter.convert_to(ArgConverter.Field, key, update),
+                PropertyEncoder.encode_value(value, update))
 

@@ -19,7 +19,7 @@ class ArgConverter(object):
     @staticmethod
     def convert_to(conversion, arg, for_query):
         if conversion is ArgConverter.Label:
-            return '{}'.format(pyorient.ogm.property.PropertyEncoder.encode_value(arg))
+            return '{}'.format(pyorient.ogm.property.PropertyEncoder.encode_value(arg, for_query))
         elif conversion is ArgConverter.Expression:
             if isinstance(arg, LogicalConnective):
                 return '\'{}\''.format(for_query.filter_string(arg))
@@ -39,8 +39,10 @@ class ArgConverter(object):
         elif conversion is ArgConverter.Vertex:
             if isinstance(arg, GraphElement):
                 return arg._id
+            elif isinstance(arg, pyorient.ogm.what.What):
+                return for_query.build_what(arg)
             else:
-                return pyorient.ogm.property.PropertyEncoder.encode_value(arg)
+                return pyorient.ogm.property.PropertyEncoder.encode_value(arg, for_query)
         elif conversion is ArgConverter.Value:
             if isinstance(arg, pyorient.ogm.property.Property):
                 return arg.context_name()
@@ -51,7 +53,7 @@ class ArgConverter(object):
             elif isinstance(arg, ArithmeticOperation):
                 return for_query.arithmetic_string(arg)
             else:
-                return pyorient.ogm.property.PropertyEncoder.encode_value(arg)
+                return pyorient.ogm.property.PropertyEncoder.encode_value(arg, for_query)
         elif conversion is ArgConverter.Boolean:
             if isinstance(arg, pyorient.ogm.what.What):
                 return for_query.build_what(arg)

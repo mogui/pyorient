@@ -191,18 +191,18 @@ class ExpressionMixin(object):
                     left_str, ArgConverter.convert_to(ArgConverter.Vertex
                                                       , right, cls))
             elif op is Operator.Between:
-                far_right = PropertyEncoder.encode_value(expression_root.operands[2])
+                far_right = PropertyEncoder.encode_value(expression_root.operands[2], cls)
                 return u'{0} BETWEEN {1} and {2}'.format(
-                    left_str, PropertyEncoder.encode_value(right), far_right)
+                    left_str, PropertyEncoder.encode_value(right, cls), far_right)
             elif op is Operator.Contains:
                 if isinstance(right, LogicalConnective):
                     return u'{0} contains({1})'.format(
                         left_str, cls.filter_string(right))
                 else:
                     return u'{} in {}'.format(
-                        PropertyEncoder.encode_value(right), left_str)
+                        PropertyEncoder.encode_value(right, cls), left_str)
             elif op is Operator.EndsWith:
-                return u'{0} like {1}'.format(left_str, PropertyEncoder.encode_value('%' + right))
+                return u'{0} like {1}'.format(left_str, PropertyEncoder.encode_value('%' + right, cls))
             elif op is Operator.Is:
                 if not right: # :)
                     return '{0} is null'.format(left_str)
@@ -211,13 +211,13 @@ class ExpressionMixin(object):
                     return '{} is not null'.format(left_str)
             elif op is Operator.Like:
                 return u'{0} like {1}'.format(
-                    left_str, PropertyEncoder.encode_value(right))
+                    left_str, PropertyEncoder.encode_value(right, cls))
             elif op is Operator.Matches:
                 return u'{0} matches {1}'.format(
-                    left_str, PropertyEncoder.encode_value(right))
+                    left_str, PropertyEncoder.encode_value(right, cls))
             elif op is Operator.StartsWith:
                 return u'{0} like {1}'.format(
-                    left_str, PropertyEncoder.encode_value(right + '%'))
+                    left_str, PropertyEncoder.encode_value(right + '%', cls))
             elif op is Operator.InstanceOf:
                 return u'{0} instanceof {1}'.format(
                     left_str, repr(right.registry_name))

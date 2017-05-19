@@ -489,20 +489,23 @@ class Graph(object):
                                                             prop_value.default,
                                                             ExpressionMixin())))
 
-            self.client.command(
-                    'ALTER PROPERTY {0} NOTNULL {1}'
-                        .format(class_prop
-                                , str(not prop_value.nullable).lower()))
+            if not prop_value.nullable:
+                self.client.command(
+                        'ALTER PROPERTY {0} NOTNULL {1}'
+                            .format(class_prop
+                                    , str(not prop_value.nullable).lower()))
 
-            self.client.command(
-                    'ALTER PROPERTY {} MANDATORY {}'
-                        .format(class_prop
-                                , str(prop_value.mandatory).lower()))
+            if prop_value.mandatory:
+                self.client.command(
+                        'ALTER PROPERTY {} MANDATORY {}'
+                            .format(class_prop
+                                    , str(prop_value.mandatory).lower()))
 
-            self.client.command(
-                    'ALTER PROPERTY {} READONLY {}'
-                        .format(class_prop
-                                , str(prop_value.readonly).lower()))
+            if prop_value.readonly:
+                self.client.command(
+                        'ALTER PROPERTY {} READONLY {}'
+                            .format(class_prop
+                                    , str(prop_value.readonly).lower()))
 
             # TODO Add support for composite indexes
             if prop_value.indexed:
@@ -572,7 +575,7 @@ class Graph(object):
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
                     PropertyEncoder.encode_name(k),
-                    ArgConverter.convert_to(ArgConverter.Value, v, ExpressionMixin()))
+                    ArgConverter.convert_to(ArgConverter.Vertex, v, ExpressionMixin()))
                     for k, v in db_props.items()))
         else:
             set_clause = u''
@@ -593,7 +596,7 @@ class Graph(object):
             if isinstance(where, dict):
                 where_clause = u' and '.join(u'{0}={1}'
                     .format(PropertyEncoder.encode_name(k)
-                            , PropertyEncoder.encode_value(v))
+                            , PropertyEncoder.encode_value(v, ExpressionMixin()))
                     for k,v in where.items())
             else:
                 where_clause = Query.filter_string(where)
@@ -625,7 +628,7 @@ class Graph(object):
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
                     PropertyEncoder.encode_name(k),
-                    ArgConverter.convert_to(ArgConverter.Value, v, ExpressionMixin()))
+                    ArgConverter.convert_to(ArgConverter.Vertex, v, ExpressionMixin()))
                     for k, v in db_props.items()))
         else:
             set_clause = ''
@@ -666,7 +669,7 @@ class Graph(object):
             db_props = Graph.props_to_db(element_class, props, self.strict, skip_if='readonly')
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
-                    PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v))
+                    PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v, ExpressionMixin()))
                     for k, v in db_props.items()))
         else:
             set_clause = ''

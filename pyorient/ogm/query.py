@@ -3,6 +3,7 @@ from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
 from .query_utils import ArgConverter
 from .expressions import ExpressionMixin
+from .commands import Command
 
 #from .traverse import Traverse
 
@@ -21,7 +22,7 @@ else:
         , ord(':'): '_'
     }
 
-class Query(ExpressionMixin):
+class Query(ExpressionMixin, Command):
     def __init__(self, graph, entities):
         """Query against a class or a selection of its properties.
 
@@ -387,7 +388,8 @@ class Query(ExpressionMixin):
     def build_wheres(self, params):
         kw_filters = params.get('kw_filters')
         kw_where = [u' and '.join(u'{0}={1}'
-            .format(PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v))
+            .format(PropertyEncoder.encode_name(k),
+                    ArgConverter.convert_to(ArgConverter.Vertex, v, self))
                 for k,v in kw_filters.items())] if kw_filters else []
 
         filter_exp = params.get('filter')

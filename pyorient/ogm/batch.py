@@ -1,5 +1,5 @@
 from .broker import get_broker
-from .commands import VertexCommand, CreateEdgeCommand
+from .commands import Command, VertexCommand, CreateEdgeCommand
 
 from .vertex import VertexVector
 from .what import What, LetVariable, VertexWhatMixin, EdgeWhatMixin
@@ -44,11 +44,15 @@ class Batch(ExpressionMixin):
         Names can be reused.
         :param value: The command to perform.
         """
-        command = str(value)
-
         if isinstance(key, slice):
+            command = str(value)
             self.stack[-1].append('{}'.format(command))
         else:
+            if isinstance(value, Command):
+                command = str(value)
+            else:
+                command = ArgConverter.convert_to(ArgConverter.Vertex, value, self)
+
             key = Batch.clean_name(key) if Batch.clean_name else key
 
             self.stack[-1].append('LET {} = {}'.format(key, command))
@@ -204,6 +208,9 @@ class BatchBranch():
                     ArgConverter.convert_to(ArgConverter.Boolean, self.condition, batch),
                     branch_commands
                 ))
+
+class RollbackException(Exception):
+    pass
 
 class BatchBroker(object):
     def __init__(self, broker):
