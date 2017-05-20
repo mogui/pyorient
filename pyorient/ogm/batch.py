@@ -197,17 +197,20 @@ class BatchBranch():
 
     def __exit__(self, e_type, e_value, e_trace):
         batch = self.batch
-        branch_commands = '\n'.join(batch.stack.pop())
 
         if e_type is not None:
             # If an exception was raised, abort the batch
             batch.stack[-1].append('ROLLBACK')
+        branch_commands = '\n'.join(batch.stack.pop())
 
         batch.stack[-1].append(
             BatchBranch.IF.format(
                     ArgConverter.convert_to(ArgConverter.Boolean, self.condition, batch),
                     branch_commands
                 ))
+
+        # Suppress exceptions from batch
+        return True
 
 class RollbackException(Exception):
     pass
