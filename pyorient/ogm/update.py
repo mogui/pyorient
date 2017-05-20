@@ -141,6 +141,7 @@ class Update(ExpressionMixin, Command):
 
     def wherein(self, **kwargs):
         self._params['kw_where'] = kwargs
+        return self
 
     def limit(self, max_records):
         self._params['limit'] = max_records
