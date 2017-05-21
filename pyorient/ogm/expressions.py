@@ -1,6 +1,6 @@
 from .operators import (Operator, IdentityOperand, Operand,
                         ArithmeticOperation, LogicalConnective)
-from pyorient.ogm.what import What, FunctionWhat, ChainableWhat
+from pyorient.ogm.what import What, FunctionWhat, ChainableWhat, LetVariable
 from pyorient.ogm.property import Property, PropertyEncoder
 from pyorient.ogm.query_utils import ArgConverter
 
@@ -267,6 +267,8 @@ class ExpressionMixin(object):
             return '{}{}{}'.format(lp,exp,rp)
         elif isinstance(operation_root, Property):
             return operation_root.context_name()
+        elif isinstance(operation_root, LetVariable):
+            return cls.build_what(operation_root)
         else:
             return operation_root
 

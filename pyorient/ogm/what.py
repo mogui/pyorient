@@ -1,4 +1,4 @@
-from pyorient.ogm.operators import (IdentityOperand, RelativeOperand, Operand, InstanceOfMixin)
+from pyorient.ogm.operators import (IdentityOperand, RelativeOperand, Operand, InstanceOfMixin, ArithmeticMixin)
 from pyorient.ogm.query_utils import ArgConverter
 
 class What(object):
@@ -504,7 +504,7 @@ class LetVariable(ElementWhat):
         from .query import Query
         return Query(None, (self, ))
 
-class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMethodMixin):
+class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMethodMixin, ArithmeticMixin):
     def __init__(self, name):
         super(QV, self).__init__(name)
 
