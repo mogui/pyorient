@@ -350,7 +350,7 @@ class Query(ExpressionMixin, Command):
         let = params.get('let')
         if let:
             lets = ['LET {}'.format(
-                ','.join('${} = {}'.format(
+                ','.join('{} = {}'.format(
                     PropertyEncoder.encode_name(k),
                     u'({})'.format(v) if isinstance(v, Query) else
                     self.build_what(v)) for k,v in let.items()))]
