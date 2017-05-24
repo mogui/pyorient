@@ -5,8 +5,6 @@ from .query_utils import ArgConverter
 from .commands import Command
 
 
-from collections import defaultdict
-
 class Update(ExpressionMixin, Command):
     Default = 0
     Record = 1
@@ -17,8 +15,7 @@ class Update(ExpressionMixin, Command):
 
     def __init__(self, graph, entity):
         self._graph = graph
-        # Single update may be of only one kind
-        self._updates = (None, None)
+        self._updates = {}
         self._params = {}
         self._edge = None
 
@@ -38,10 +35,10 @@ class Update(ExpressionMixin, Command):
         return self
 
     def __str__(self):
-        if self._updates[0] is None:
+        if not self._updates:
             return u'UPDATE ' + self._source
 
-        actions = Update.BuildAction._(self._updates[0], self, self._updates[1])
+        actions = ''.join([Update.BuildAction._(action_type, self, nvp) for action_type,nvp in self._updates.items()])
 
         params = self._params
 
@@ -82,45 +79,52 @@ class Update(ExpressionMixin, Command):
         """Set field values.
         :param nvps: Sequence of 2-tuple name-value pairs
         """
-        self._updates = ('set', nvps)
+        self._updates.pop('json', None)
+        self._updates['set'] = nvps
         return self
 
     def increment(self, *nvps):
         """Increment field values.
         :param nvps: Sequence of 2-tuple name-value pairs
         """
-        self._updates = ('inc', nvps)
+        self._updates.pop('json', None)
+        self._updates['inc'] = nvps
         return self
 
     def add(self, *nvps):
         """Add to collection.
         :param nvps: Sequence of 2-tuple name-value pairs
         """
-        self._updates = ('add', nvps)
+        self._updates.pop('json', None)
+        self._updates['add'] = nvps
         return self
 
     def remove(self, *nvps):
         """Remove from collection or map.
         :param nvps: Sequence of 2-tuple name-value pairs
         """
-        self._updates = ('rem', nvps)
+        self._updates.pop('json', None)
+        self._updates['rem'] = nvps
         return self
 
     def put(self, *nvps):
         """Put into map.
         :param nvps: Sequence of 2-tuple name-value pairs
         """
-        self._updates = ('put', nvps)
+        self._updates.pop('json', None)
+        self._updates['put'] = nvps
         return self
 
     def content(self, json):
         """Replace record content with JSON"""
-        self._updates = ('json', (True, json))
+        self._updates.clear()
+        self._updates['json'] = (True, json)
         return self
 
     def merge(self, json):
         """Replace record content with JSON"""
-        self._updates = ('json', (False, json))
+        self._updates.clear()
+        self._updates['json'] = (False, json)
         return self
 
     def lock(self, strategy):
@@ -182,6 +186,7 @@ class Update(ExpressionMixin, Command):
         @classmethod
         def json(cls, update, usage):
             replace = usage[0]
+            json = usage[1]
 
             if replace:
                 return ' CONTENT ' + PropertyEncoder.encode_value(json, update)
