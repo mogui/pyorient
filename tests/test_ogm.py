@@ -1019,6 +1019,9 @@ class OGMTestTraversals(unittest.TestCase):
     class OnTopOf(Relationship):
         label = 'on_top_of'
 
+    class LIFO(Relationship):
+        label = 'lifo'
+
     def __init__(self, *args, **kwargs):
         super(OGMTestTraversals, self).__init__(*args, **kwargs)
         self.g = None
@@ -1036,7 +1039,7 @@ class OGMTestTraversals(unittest.TestCase):
         b = g.batch()
 
         b['leo'] = b.leos.create()
-        b['tgt'] = b[:'leo']
+        b['tgt'] = b[:'leo'] # Placeholder batch variable
         b['don'] = b.dons.create()
         b[:] = b[:'don'](OGMTestTraversals.OnTopOf)>b[:'leo']
         b['leo'] = b.leos.create()
@@ -1051,14 +1054,12 @@ class OGMTestTraversals(unittest.TestCase):
         b[:] = b[:'leo'](OGMTestTraversals.OnTopOf)>b[:'don']
         b['don'] = b.dons.create()
         b[:] = b[:'don'](OGMTestTraversals.OnTopOf)>b[:'leo']
+        b['top'] = b[:'tgt'](OGMTestTraversals.LIFO)>b[:'don']
         b['leo'] = b.leos.create()
         b[:] = b[:'leo'](OGMTestTraversals.OnTopOf)>b[:'don']
-
-        target = b['$tgt']
-
-        traversal = g.traverse(target, in_(OGMTestTraversals.OnTopOf))
-        traversals_query = g.query(traversal).filter(QV.depth() > 0)
-        traversals = traversals_query.all()
+        b[:] = g.update_edge(b[:'top']).set((OGMTestTraversals.LIFO.in_, b[:'leo']))
+        b['traversal'] = g.traverse(b[:'tgt'], in_(OGMTestTraversals.OnTopOf)).query().filter(QV.depth() > 0)
+        traversals = b['$traversal']
 
         print('{}s all the way down'.format(traversals[0].species()))
         self.assertEquals(len(traversals), 8)

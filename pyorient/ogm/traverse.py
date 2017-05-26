@@ -14,7 +14,7 @@ class Traverse(ExpressionMixin, Command):
 
     def query(self):
         from .query import Query
-        return Query(self._graph, (self))
+        return Query(self._graph, (self, ))
 
     def maxdepth(self, depth):
         self._params['pred'] = (False, depth)

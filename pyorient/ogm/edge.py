@@ -1,5 +1,6 @@
 from .element import GraphElement
 from .broker import EdgeBroker
+from .what import What, ChainableWhat
 
 class Edge(GraphElement):
     Broker = EdgeBroker
@@ -25,4 +26,7 @@ class Edge(GraphElement):
     def inV(self):
         g = self._graph
         return g.get_vertex(self._in) if g else None
+
+    in_ = ChainableWhat([], [(What.EdgeIn, )])
+    out = ChainableWhat([], [(What.EdgeOut, )])
 

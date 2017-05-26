@@ -94,17 +94,22 @@ class What(object):
     WhatCustom = 85
     # Let
     WhatLet = 86
+    # Standard Graph classes and properties
+    VertexClass = 87
+    EdgeClass = 88
+    EdgeIn = 89
+    EdgeOut = 90
     # Record attributes
-    AtThis = 87
-    AtRid = 88
-    AtClass = 89
-    AtVersion = 90
-    AtSize = 91
-    AtType = 92
+    AtThis = 91
+    AtRid = 92
+    AtClass = 93
+    AtVersion = 94
+    AtSize = 95
+    AtType = 96
     # Sequences
-    Sequence = 93
-    Current = 94
-    Next = 95
+    Sequence = 97
+    Current = 98
+    Next = 99
 
     def __init__(self):
         self.name_override = None

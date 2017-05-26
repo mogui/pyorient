@@ -135,7 +135,7 @@ class Batch(ExpressionMixin):
             response = g.client.batch(commands)
             self.clear()
 
-            if returned[0] in ('[','{'):
+            if returned[0] in ('[','{') or len(response) > 1:
                 return g.elements_from_records(response) if response else None
             else:
                 return g.element_from_record(response[0]) if response else None
@@ -233,6 +233,11 @@ class BatchVariable(LetVariable):
         super(BatchVariable, self).__init__(reference[1:])
         self._id = reference
         self._value = value
+
+    def __call__(self, *args):
+        """If variable serves as a placeholder for another batch variable,
+        proxy its call behaviour to preserve the original variable's syntax."""
+        return self._value.__call__.__func__(self, *args)
 
     def __copy__(self):
         return type(self)(self._id, self._value)

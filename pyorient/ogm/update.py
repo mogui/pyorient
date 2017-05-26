@@ -19,10 +19,14 @@ class Update(ExpressionMixin, Command):
         self._params = {}
         self._edge = None
 
+        from .what import LetVariable
+
         # TODO Support cluster specification
         if isinstance(entity, GraphElement):
             # Vertex or edge instance
             self._source = entity._id
+        elif isinstance(entity, LetVariable):
+            self._source = self.build_what(entity)
         else:
             # Vertex or edge class
             self._source = entity.registry_name
@@ -30,7 +34,7 @@ class Update(ExpressionMixin, Command):
     @classmethod
     def edge(cls, graph, entity):
         """Indicate that entity to update is an edge."""
-        self = cls.__init__(graph, entity)
+        self = cls(graph, entity)
         self._edge = True
         return self
 
