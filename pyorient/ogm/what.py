@@ -504,6 +504,10 @@ class LetVariable(ElementWhat):
         from .query import Query
         return Query(None, (self, ))
 
+    def traverse(self, *what):
+        from .traverse import Traverse
+        return Traverse(None, self, *what)
+
 class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMethodMixin, ArithmeticMixin):
     def __init__(self, name):
         super(QV, self).__init__(name)
@@ -523,6 +527,22 @@ class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMeth
     @classmethod
     def parent_current(cls):
         return cls('parent').QV('current')
+
+    @classmethod
+    def depth(cls):
+        return cls('depth')
+
+    @classmethod
+    def path(cls):
+        return cls('path')
+
+    @classmethod
+    def stack(cls):
+        return cls('stack')
+
+    @classmethod
+    def history(cls):
+        return cls('history')
 
 class FunctionWhat(MethodWhat):
     def __init__(self, func, args):

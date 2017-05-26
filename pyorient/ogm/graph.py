@@ -5,6 +5,7 @@ from .vertex import Vertex
 from .edge import Edge
 from .broker import get_broker
 from .query import Query
+from .traverse import Traverse
 from .query_utils import ArgConverter
 from .expressions import ExpressionMixin
 from .update import Update
@@ -599,7 +600,7 @@ class Graph(object):
                             , PropertyEncoder.encode_value(v, ExpressionMixin()))
                     for k,v in where.items())
             else:
-                where_clause = Query.filter_string(where)
+                where_clause = ExpressionMixin.filter_string(where)
 
             delete_clause += ' WHERE {}'.format(where_clause)
         if limit is not None:
@@ -679,6 +680,9 @@ class Graph(object):
 
     def query(self, first_entity, *entities):
         return Query(self, (first_entity,) + entities)
+
+    def traverse(self, target, *what):
+        return Traverse(self, target, *what)
 
     def update(self, entity):
         return Update(self, entity)

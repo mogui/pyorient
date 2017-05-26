@@ -31,6 +31,9 @@ class GraphElement(object):
     def query(self):
         return self._graph.query(self)
 
+    def traverse(self, *what):
+        return self._graph.traverse(self, *what)
+
     def update(self):
         return self._graph.update(self)
 

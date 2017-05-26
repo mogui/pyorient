@@ -1001,3 +1001,65 @@ class OGMTestSequences(unittest.TestCase):
         last_item = batch_create['$last']
         self.assertEquals(last_item.id, 5)
 
+class OGMTestTraversals(unittest.TestCase):
+    Node = declarative_node()
+    Relationship = declarative_relationship()
+
+    class Turtle(object):
+        @staticmethod
+        def species():
+            return 'turtle'
+
+    class Leonardo(Node, Turtle):
+        element_plural = 'leos'
+
+    class Donatello(Node, Turtle):
+        element_plural = 'dons'
+
+    class OnTopOf(Relationship):
+        label = 'on_top_of'
+
+    def __init__(self, *args, **kwargs):
+        super(OGMTestTraversals, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('ogm_traversals', 'root', 'root'
+                                           , initial_drop=True))
+
+        g.create_all(OGMTestTraversals.Node.registry)
+        g.create_all(OGMTestTraversals.Relationship.registry)
+
+    def testTraversals(self):
+        g = self.g
+
+        b = g.batch()
+
+        b['leo'] = b.leos.create()
+        b['tgt'] = b[:'leo']
+        b['don'] = b.dons.create()
+        b[:] = b[:'don'](OGMTestTraversals.OnTopOf)>b[:'leo']
+        b['leo'] = b.leos.create()
+        b[:] = b[:'leo'](OGMTestTraversals.OnTopOf)>b[:'don']
+        b['don'] = b.dons.create()
+        b[:] = b[:'don'](OGMTestTraversals.OnTopOf)>b[:'leo']
+        b['leo'] = b.leos.create()
+        b[:] = b[:'leo'](OGMTestTraversals.OnTopOf)>b[:'don']
+        b['don'] = b.dons.create()
+        b[:] = b[:'don'](OGMTestTraversals.OnTopOf)>b[:'leo']
+        b['leo'] = b.leos.create()
+        b[:] = b[:'leo'](OGMTestTraversals.OnTopOf)>b[:'don']
+        b['don'] = b.dons.create()
+        b[:] = b[:'don'](OGMTestTraversals.OnTopOf)>b[:'leo']
+        b['leo'] = b.leos.create()
+        b[:] = b[:'leo'](OGMTestTraversals.OnTopOf)>b[:'don']
+
+        target = b['$tgt']
+
+        traversal = g.traverse(target, in_(OGMTestTraversals.OnTopOf))
+        traversals_query = g.query(traversal).filter(QV.depth() > 0)
+        traversals = traversals_query.all()
+
+        print('{}s all the way down'.format(traversals[0].species()))
+        self.assertEquals(len(traversals), 8)
+
