@@ -48,20 +48,23 @@ class Batch(ExpressionMixin):
             command = str(value)
             self.stack[-1].append('{}'.format(command))
         else:
+            VarType = BatchVariable
             if isinstance(value, Command):
                 command = str(value)
+
+                if isinstance(value, VertexCommand):
+                    VarType = BatchVertexVariable
+                elif isinstance(value, CreateEdgeCommand):
+                    VarType = BatchEdgeVariable
             else:
+                if isinstance(value, BatchVariable):
+                    VarType = value.__class__
                 command = ArgConverter.convert_to(ArgConverter.Vertex, value, self)
 
             key = Batch.clean_name(key) if Batch.clean_name else key
 
             self.stack[-1].append('LET {} = {}'.format(key, command))
 
-            VarType = BatchVariable
-            if isinstance(value, VertexCommand):
-                VarType = BatchVertexVariable
-            elif isinstance(value, CreateEdgeCommand):
-                VarType = BatchEdgeVariable
             self.variables[key] = VarType('${}'.format(key), value)
 
     def sleep(self, ms):
@@ -233,11 +236,6 @@ class BatchVariable(LetVariable):
         super(BatchVariable, self).__init__(reference[1:])
         self._id = reference
         self._value = value
-
-    def __call__(self, *args):
-        """If variable serves as a placeholder for another batch variable,
-        proxy its call behaviour to preserve the original variable's syntax."""
-        return self._value.__call__.__func__(self, *args)
 
     def __copy__(self):
         return type(self)(self._id, self._value)
