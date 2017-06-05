@@ -157,11 +157,19 @@ class Graph(object):
                 props[prop_name] = Graph.property_from_schema(p, linked_class)
             return props
 
+        def expand_properties(class_record):
+            # TODO FIXME Integrate this expansion into the above SELECT to avoid round-trips
+            class_record['properties'] = [
+                self.client.command('SELECT FROM {}'.format(prop))[0].oRecordData if isinstance(prop, pyorient.OrientRecordLink)
+                else prop for prop in class_record['properties']
+            ]
+            return class_record
+
         # We need to topologically sort classes, since we cannot rely on any ordering
         # in the database. In particular defaultClusterId is set to -1 for all abstract
         # classes. Additionally, superclass(es) can be changed post-create, changing the
         # dependency ordering.
-        schema = Graph.toposort_classes([c.oRecordData for c in schema])
+        schema = Graph.toposort_classes([expand_properties(c.oRecordData) for c in schema])
         registries = [registry, self.registry]
         # We will keep properties of non-graph types here, just in case vertex/edge
         # types derive from them.
