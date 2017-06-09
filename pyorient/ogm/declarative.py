@@ -53,7 +53,7 @@ class DeclarativeMeta(type):
             for prop in cls.__dict__.values():
                 if not isinstance(prop, Property):
                     continue
-                prop._context = cls
+                prop.context = cls
 
             # FIXME Only want bases that correspond to vertex/edge classes.
             cls.registry[cls.registry_name] = cls

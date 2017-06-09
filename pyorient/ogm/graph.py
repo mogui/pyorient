@@ -85,6 +85,10 @@ class Graph(object):
 
         return cluster_map
 
+    def close(self):
+        """Close database and destroy the connection."""
+        self.client.db_close()
+
     def drop(self, db_name=None, storage=None):
         """Drop entire database."""
         config = self.config
@@ -131,7 +135,8 @@ class Graph(object):
         schema = self.client.command(
             'SELECT FROM (SELECT expand(classes) FROM metadata:schema)'
             ' WHERE name NOT IN [\'ORole\', \'ORestricted\', \'OTriggered\','
-            ' \'ORIDs\', \'OUser\', \'OIdentity\', \'OSchedule\', \'OFunction\']')
+            ' \'ORIDs\', \'OUser\', \'OIdentity\', \'OSchedule\', \'OFunction\','
+            ' \'OSequence\', \'_studio\']')
 
         def resolve_class(name, registries):
             for r in registries:
@@ -447,9 +452,9 @@ class Graph(object):
 
         props = sorted([(k,v) for k,v in cls.__dict__.items()
                         if isinstance(v, Property)]
-                       , key=lambda p:p[1].instance_idx)
+                       , key=lambda p:p[1]._instance_idx)
         for prop_name, prop_value in props:
-            value_name = prop_value.name
+            value_name = prop_value._name
             if value_name:
                 prop_name = value_name
 
@@ -465,8 +470,8 @@ class Graph(object):
             class_prop = '{0}.{1}'.format(cls_name, prop_name)
 
             linked_to = None
-            if isinstance(prop_value, LinkedClassProperty) and prop_value.linked_to is not None:
-                type_linked_to = prop_value.linked_to
+            if isinstance(prop_value, LinkedClassProperty) and prop_value._linked_to is not None:
+                type_linked_to = prop_value._linked_to
 
                 # For now, in case type_linked_to is a Property,
                 # need to bypass __getattr__()
@@ -489,40 +494,40 @@ class Graph(object):
                 # Property already exists
                 pass
 
-            if prop_value.default is not None:
+            if prop_value._default is not None:
                 if self.server_version >= (2,1,0):
                     self.client.command(
                         'ALTER PROPERTY {0} DEFAULT {1}'
                             .format(class_prop,
                                     ArgConverter.convert_to(ArgConverter.Value,
-                                                            prop_value.default,
+                                                            prop_value._default,
                                                             ExpressionMixin())))
 
-            if not prop_value.nullable:
+            if not prop_value._nullable:
                 self.client.command(
                         'ALTER PROPERTY {0} NOTNULL {1}'
                             .format(class_prop
-                                    , str(not prop_value.nullable).lower()))
+                                    , str(not prop_value._nullable).lower()))
 
-            if prop_value.mandatory:
+            if prop_value._mandatory:
                 self.client.command(
                         'ALTER PROPERTY {} MANDATORY {}'
                             .format(class_prop
-                                    , str(prop_value.mandatory).lower()))
+                                    , str(prop_value._mandatory).lower()))
 
-            if prop_value.readonly:
+            if prop_value._readonly:
                 self.client.command(
                         'ALTER PROPERTY {} READONLY {}'
                             .format(class_prop
-                                    , str(prop_value.readonly).lower()))
+                                    , str(prop_value._readonly).lower()))
 
             # TODO Add support for composite indexes
-            if prop_value.indexed:
+            if prop_value._indexed:
                 try:
                     self.client.command(
                         'CREATE INDEX {0} {1}'
                             .format(class_prop
-                                    , 'UNIQUE' if prop_value.unique
+                                    , 'UNIQUE' if prop_value._unique
                                       else 'NOTUNIQUE'))
                 except pyorient.PyOrientIndexException:
                     # Index already exists
@@ -675,7 +680,7 @@ class Graph(object):
                     'Class \'{}\' not registered with graph.'.format(name))
 
         if props:
-            db_props = Graph.props_to_db(element_class, props, self.strict, skip_if='readonly')
+            db_props = Graph.props_to_db(element_class, props, self.strict, skip_if='_readonly')
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
                     PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v, ExpressionMixin()))
@@ -684,7 +689,7 @@ class Graph(object):
             set_clause = ''
 
         result = self.client.command(u'UPDATE {}{}'.format(elem_id, set_clause))
-        return result and result[0] == b'1'
+        return result and (result[0] == 1 or result[0] == b'1')
 
     def query(self, first_entity, *entities):
         return Query(self, (first_entity,) + entities)
@@ -935,7 +940,7 @@ class Graph(object):
                 prop = getattr(element_class, k)
                 if skip_if is not None and getattr(prop, skip_if, False):
                     continue
-                db_props[prop.name or k] = v
+                db_props[prop._name or k] = v
             elif strict:
                 raise AttributeError('Class {} has no property {}'.format(
                     element_class, k))
@@ -954,9 +959,9 @@ class Graph(object):
             if isinstance(p, Property):
                 props.append((m, p))
 
-        props = sorted(props, key=lambda p:p[1].instance_idx)
+        props = sorted(props, key=lambda p:p[1]._instance_idx)
         for prop_name, prop_value in props:
-            value_name = prop_value.name
+            value_name = prop_value._name
             if value_name:
                 all_properties[value_name] = prop_name
                 prop_name = value_name
