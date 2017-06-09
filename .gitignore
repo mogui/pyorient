@@ -37,6 +37,7 @@ singletest.py
 wiki
 .builddev
 .idea
+.vimrc
 /ci/environment
 *.zip
 cover
