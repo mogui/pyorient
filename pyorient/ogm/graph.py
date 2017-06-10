@@ -637,19 +637,23 @@ class Graph(object):
     def create_edge_command(self, edge_cls, from_vertex, to_vertex, **kwargs):
         class_name = edge_cls.registry_name
 
+        expressions = ExpressionMixin()
         if kwargs:
             db_props = Graph.props_to_db(edge_cls, kwargs, self.strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
                     PropertyEncoder.encode_name(k),
-                    ArgConverter.convert_to(ArgConverter.Vertex, v, ExpressionMixin()))
+                    ArgConverter.convert_to(ArgConverter.Vertex, v, expressions))
                     for k, v in db_props.items()))
         else:
             set_clause = ''
 
         return CreateEdgeCommand(
             u'CREATE EDGE {} FROM {} TO {}{}'.format(
-                class_name, from_vertex._id, to_vertex._id, set_clause))
+                class_name,
+                ArgConverter.convert_to(ArgConverter.Vertex, from_vertex, expressions),
+                ArgConverter.convert_to(ArgConverter.Vertex, to_vertex, expressions),
+                set_clause))
 
     def create_function(self, name, code, parameters=None, idempotent=False, language='javascript'):
         parameter_str = ' PARAMETERS [' + ','.join(parameters) + ']' if parameters else ''
