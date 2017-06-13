@@ -63,11 +63,13 @@ class Update(ExpressionMixin, Command):
         if wheres:
             where = u' WHERE ' + u' and '.join(wheres)
 
+        # Don't prevent upsert when updating an edge; may be supported by future OrientDB,
+        # and when it's not supported, failure should be obvious, not concealed by OGM 
         return u'UPDATE {}{}{}{}{}{}{}{}'.format(
             u'EDGE ' if self._edge else ''
             , self._source
             , actions
-            , u' UPSERT' if 'upsert' in params and not self._edge else ''
+            , u' UPSERT' if 'upsert' in params else ''
             , ret
             , where
             , lock if lock is not None else ''

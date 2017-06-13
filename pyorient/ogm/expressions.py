@@ -33,7 +33,7 @@ class ExpressionMixin(object):
                                 , (ArgConverter.Boolean, ArgConverter.Value
                                    , ArgConverter.Value))
         , What.IfNull: WhatFunction(2, 'ifnull({})'
-                                    , (ArgConverter.Field, ArgConverter.Value))
+                                    , (ArgConverter.Field, ArgConverter.Vertex))
         , What.Expand: WhatFunction(1, 'expand({})', (ArgConverter.Field,))
         , What.First: WhatFunction(1, 'first({})', (ArgConverter.Field,))
         , What.Last: WhatFunction(1, 'last({})', (ArgConverter.Field,))

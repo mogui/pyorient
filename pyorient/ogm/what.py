@@ -237,7 +237,7 @@ def any():
 def all():
     return FunctionWhat(What.All, tuple())
 
-class ChainableWhat(What):
+class ChainableWhat(What, Operand):
     def __init__(self, chain, props):
         super(ChainableWhat, self).__init__()
         self.chain = chain
@@ -361,7 +361,7 @@ class WhatFilterMixin(object):
         return self
 
 # Concrete method chaining types
-class MethodWhat(MethodWhatMixin, Operand, ChainableWhat):
+class MethodWhat(MethodWhatMixin, ChainableWhat):
     def __init__(self, chain=[], props=[]):
         super(MethodWhat, self).__init__(chain, props)
         # Methods can also be chained to props
@@ -387,7 +387,7 @@ class MethodWhat(MethodWhatMixin, Operand, ChainableWhat):
 
         return current
 
-class PropertyWhat(MethodWhatMixin, Operand, ChainableWhat):
+class PropertyWhat(MethodWhatMixin, ChainableWhat):
     def __init__(self, chain, props):
         super(PropertyWhat, self).__init__(chain, props)
 
@@ -505,6 +505,10 @@ class LetVariable(ElementWhat):
     def __init__(self, name):
         super(LetVariable, self).__init__([(What.WhatLet, (name,))], [])
 
+    def QV(self, name):
+        self.chain.append((What.WhatLet, (name,)))
+        return self
+
     def query(self):
         from .query import Query
         return Query(None, (self, ))
@@ -516,10 +520,6 @@ class LetVariable(ElementWhat):
 class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMethodMixin, ArithmeticMixin):
     def __init__(self, name):
         super(QV, self).__init__(name)
-
-    def QV(self, name):
-        self.chain.append((What.WhatLet, (name,)))
-        return self
 
     @classmethod
     def parent(cls):

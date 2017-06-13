@@ -27,6 +27,10 @@ class Edge(GraphElement):
         g = self._graph
         return g.get_vertex(self._in) if g else None
 
+    # TODO To prevent subclasses from getting precedence in equality
+    # comparisons, and hence for more intuitive SQL commands, these may be
+    # better with another ChainableWhat subclass. Consider this more
+    # seriously if people raise issues.
     in_ = ChainableWhat([], [(What.EdgeIn, )])
     out = ChainableWhat([], [(What.EdgeOut, )])
 
