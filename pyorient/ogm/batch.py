@@ -263,10 +263,8 @@ class BatchVertexVector(VertexVector):
 
     def __gt__(self, target):
         """Syntactic sugar for creating an edge in a batch."""
-        if hasattr(target, '_id'):
-            return self.edge_broker.create_command(
-                self.origin, target, **self.kwargs)
-        return self
+        return self.edge_broker.create_command(
+            self.origin, target, **self.kwargs)
 
     def __lt__(self, origin):
         """Syntactic sugar for creating an edge in a batch.
