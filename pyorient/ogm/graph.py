@@ -411,40 +411,14 @@ class Graph(object):
         self.props_from_db = {}
 
 
-    def create_class(self, cls):
+    def create_class(self, cls, skip_define=False):
         """Add vertex or edge class to database.
 
         :param cls: Subclass of type returned by declarative_node
             /declarative_relationship
         """
 
-        cls_name = cls.registry_name
-
-        bases = [base for base in cls.__bases__ if Graph.valid_element_base(base)]
-        if not bases:
-            raise TypeError(
-                'Unexpected base class(es) in Graph.create_class'
-                ' - try the declarative bases')
-
-        extends = None
-        if bases[0] is bases[0].decl_root:
-            extends = ['V', 'E'][bases[0].decl_type]
-        else:
-            extends = ','.join([base.registry_name for base in bases])
-
-        #if not self.client.command(
-        #    'SELECT FROM ( SELECT expand( classes ) FROM metadata:schema ) WHERE name = "{}"'
-        #        .format(cls_name)):
-
-        # TODO Batch class/property creation statements?
-        try:
-            self.client.command(
-                'CREATE CLASS {} EXTENDS {}{}'.format(
-                    cls_name, extends,
-                    " ABSTRACT" if getattr(cls, 'abstract', False) else ''))
-        except pyorient.PyOrientSchemaException:
-            # Class already exists
-            pass
+        cls_name = self.define_class(cls) if not skip_define else cls.registry_name
 
         pre_ops = [(k, v) for k,v in cls.__dict__.items() if isinstance(v, PreOp)]
         for attr, pre_op in pre_ops:
@@ -556,13 +530,48 @@ class Graph(object):
             self.client.command(
                 'DROP CLASS {}'.format(cls.registry_name))
 
+    def define_class(self, cls):
+        cls_name = cls.registry_name
+
+        bases = [base for base in cls.__bases__ if Graph.valid_element_base(base)]
+        if not bases:
+            raise TypeError(
+                'Unexpected base class(es) in Graph.create_class'
+                ' - try the declarative bases')
+
+        extends = None
+        if bases[0] is bases[0].decl_root:
+            extends = ['V', 'E'][bases[0].decl_type]
+        else:
+            extends = ','.join([base.registry_name for base in bases])
+
+        #if not self.client.command(
+        #    'SELECT FROM ( SELECT expand( classes ) FROM metadata:schema ) WHERE name = "{}"'
+        #        .format(cls_name)):
+
+        # TODO Batch class/property creation statements?
+        try:
+            self.client.command(
+                'CREATE CLASS {} EXTENDS {}{}'.format(
+                    cls_name, extends,
+                    " ABSTRACT" if getattr(cls, 'abstract', False) else ''))
+        except pyorient.PyOrientSchemaException:
+            # Class already exists
+            pass
+
+        return cls_name
+
     def create_all(self, registry):
         """Create classes in database for all classes in registry.
 
         :param registry: Ordered collection of classes to create, bases first.
         """
         for cls in registry.values():
-            self.create_class(cls)
+            # Handle case of circular dependencies between class properties
+            self.define_class(cls)
+
+        for cls in registry.values():
+            self.create_class(cls, skip_define=True)
 
     def drop_all(self, registry):
         """Drop all registry classes from database.
@@ -1016,7 +1025,7 @@ class Graph(object):
     @staticmethod
     def toposort_classes(classes):
         """Sort class metadatas so that a superclass is always before the subclass"""
-        def get_class_topolist(class_name, name_to_class, processed_classes, current_trace):
+        def get_class_topolist(class_name, name_to_class, processed_classes, current_trace, superclass=True):
             """Return a topologically sorted list of this class's dependencies and class itself
 
             :param class_name: name of the class to process
@@ -1031,25 +1040,27 @@ class Graph(object):
                 return []
 
             if class_name in current_trace:
-                raise AssertionError(
-                    'Encountered self-reference in dependency chain of {}'.format(class_name))
+                if superclass:
+                    raise AssertionError(
+                        'Encountered self-reference in dependency chain of {}'.format(class_name))
+                return []
 
             cls = name_to_class[class_name]
-            # Collect the dependency classes
-            # These are bases and classes from linked properties
-            dependencies = Graph.list_superclasses(cls)
-            # Recursively process linked edges
+
+            class_list = []
+            # Recursively process class dependencies
+            # These are bases...
+            current_trace.add(class_name)
+            for dependency in Graph.list_superclasses(cls):
+                class_list.extend(get_class_topolist(
+                    dependency, name_to_class, processed_classes, current_trace))
+
+            # ...and classes from linked edges
             properties = cls['properties'] if 'properties' in cls else []
             for prop in properties:
                 if 'linkedClass' in prop:
-                    dependencies.append(prop['linkedClass'])
-
-            class_list = []
-            # Recursively process superclasses
-            current_trace.add(class_name)
-            for dependency in dependencies:
-                class_list.extend(get_class_topolist(
-                    dependency, name_to_class, processed_classes, current_trace))
+                    class_list.extend(get_class_topolist(
+                        prop['linkedClass'], name_to_class, processed_classes, current_trace, superclass=False))
             current_trace.remove(class_name)
             # Do the bookkeeping
             class_list.append(name_to_class[class_name])
@@ -1078,3 +1089,4 @@ class Graph(object):
             return [sup]
         else:
             return []
+

@@ -62,12 +62,13 @@ class DeclarativeMeta(type):
 
 
     def __setattr__(self, name, value):
+        result = super(DeclarativeMeta, self).__setattr__(name, value)
         if isinstance(value, Property):
             if value.context:
                 raise ValueError(
                     'Attempt to add a single Property to multiple classes.')
             value.context = self
-        return super(DeclarativeMeta, self).__setattr__(name, value)
+        return result
 
     def __format__(self, format_spec):
         """Quoted class-name for specifying class as string argument.
