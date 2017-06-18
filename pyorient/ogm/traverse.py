@@ -41,7 +41,11 @@ class Traverse(ExpressionMixin, Command):
         what = self.build_fields(tuple())
         predicate, limit, strategy = self.build_optional()
 
-        return Traverse.TEMPLATE.format(what, ArgConverter.convert_to(ArgConverter.Vertex, self._target, self), predicate, limit, strategy)
+        from .query import Query
+        return Traverse.TEMPLATE.format(what,
+            u'({})'.format(self._target) if isinstance(self._target, Query)
+                else ArgConverter.convert_to(ArgConverter.Vertex, self._target, self),
+            predicate, limit, strategy)
 
     def all(self, *what):
         g = self._graph

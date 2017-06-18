@@ -74,6 +74,10 @@ class Query(ExpressionMixin, Command):
         Serves as a useful shorthand for chaining sub-queries."""
         return Query(self._graph, (self, ))
 
+    def traverse(self, *what):
+        from .traverse import Traverse
+        return Traverse(self._graph, self, *what)
+
     @property
     def graph(self):
         """Get graph being queried. May be None for subqueries"""
