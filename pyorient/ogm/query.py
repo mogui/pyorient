@@ -3,7 +3,7 @@ from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
 from .query_utils import ArgConverter
 from .expressions import ExpressionMixin
-from .commands import Command
+from .commands import Command, create_cache_callback
 
 from pyorient import OrientRecordLink
 
@@ -32,6 +32,11 @@ class Query(ExpressionMixin, Command):
         self._subquery = None
         self._params = {}
 
+        if not entities:
+            self.source_name = None
+            self._class_props = tuple()
+            return
+
         first_entity = entities[0]
 
         from .what import What, LetVariable
@@ -57,7 +62,7 @@ class Query(ExpressionMixin, Command):
             self.source_name = self.build_what(first_entity)
             self._class_props = tuple()
         elif isinstance(first_entity, What):
-            self._params['what'] = [first_entity]
+            self._params['what'] = entities
             self.source_name = None
             self._class_props = tuple()
         else:
@@ -68,6 +73,13 @@ class Query(ExpressionMixin, Command):
     def sub(cls, source):
         """Shorthand for defining a sub-query, which does not need a Graph"""
         return cls(None, (source, ))
+
+    @classmethod
+    def proj(cls, *whats):
+        """Query without a source (or Graph), just a projection.
+        Useful for Batch return values."""
+        self = cls(None, None)
+        return self.what(*whats)
 
     def query(self):
         """Create a query, with current query as a subquery.
@@ -101,6 +113,12 @@ class Query(ExpressionMixin, Command):
             wheres = self.build_wheres(params)
 
             g = self._graph
+            cache = params.get('cache', None)
+            if cache:
+                command_suffix = (None, None, cache)
+            else:
+                command_suffix = tuple()
+
             while True:
                 current_skip = params['skip']
                 where = u'WHERE {0}'.format(
@@ -109,7 +127,7 @@ class Query(ExpressionMixin, Command):
 
                 select = self.build_select(props, lets + [where] + optional_clauses)
 
-                response = g.client.command(select)
+                response = g.client.command(*((select,) + command_suffix))
                 if response:
                     response = response[0]
 
@@ -199,7 +217,11 @@ class Query(ExpressionMixin, Command):
 
         g = self._graph
 
-        response = g.client.command(select)
+        cache = self._params.get('cache', None)
+        if cache:
+            response = g.client.command(select, None, None, cache)
+        else:
+            response = g.client.command(select)
         if response:
             # TODO Determine which other queries always take only one iteration
             list_query = 'count' not in self._params
@@ -348,8 +370,23 @@ class Query(ExpressionMixin, Command):
             self._params['limit'] = stop - start
         return self
 
+    def fetch_plan(self, plan, fetch_cache = None):
+        """Specify a fetch plan for the query.
+
+        :param plan: A string with a series of space-separated rules of the
+        form [[levels]]fieldPath:depthLevel
+        :param fetch_cache: A dictionary in which to cache fetched elements,
+        indexed by OrientRecordLink. Optional only to avoid extra burden while
+        using varied fetch plans in batches. A cache is required for any
+        executed command(s) containing fetch plan(s).
+        """
+        self._params['fetch'] = plan
+        self._params['cache'] = create_cache_callback(self._graph, fetch_cache)
+        return self
+
     def lock(self):
         self._params['lock'] = True
+        return self
 
     def build_props(self, params, prop_names=None, for_iterator=False):
         let = params.get('let')
@@ -444,6 +481,10 @@ class Query(ExpressionMixin, Command):
             limit = params.get('limit')
             if limit:
                 optional_clauses.append('LIMIT {}'.format(limit))
+
+        fetch = params.get('fetch')
+        if fetch:
+            optional_clauses.append('FETCHPLAN {}'.format(fetch))
 
         lock = params.get('lock')
         if lock:

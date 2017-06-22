@@ -1,5 +1,5 @@
 from .broker import get_broker
-from .commands import Command, VertexCommand, CreateEdgeCommand
+from .commands import Command, VertexCommand, CreateEdgeCommand, create_cache_callback
 
 from .vertex import VertexVector
 from .what import What, LetVariable, VertexWhatMixin, EdgeWhatMixin
@@ -15,11 +15,12 @@ class Batch(ExpressionMixin):
     READ_COMMITTED = 0
     REPEATABLE_READ = 1
 
-    def __init__(self, graph, isolation_level=READ_COMMITTED):
+    def __init__(self, graph, isolation_level=READ_COMMITTED, cache=None):
         self.graph = graph
         self.objects = {}
         self.variables = {}
         self.stack = [[]]
+        self.cache = create_cache_callback(graph, cache)
 
         if isolation_level == Batch.REPEATABLE_READ:
             self.stack[0].append('BEGIN ISOLATION REPEATABLE_READ')
@@ -52,10 +53,14 @@ class Batch(ExpressionMixin):
             if isinstance(value, Command):
                 command = str(value)
 
+                from pyorient.ogm.query import Query
+                from pyorient.ogm.traverse import Traverse
                 if isinstance(value, VertexCommand):
                     VarType = BatchVertexVariable
                 elif isinstance(value, CreateEdgeCommand):
                     VarType = BatchEdgeVariable
+                elif isinstance(value, Query) or isinstance(value, Traverse):
+                    VarType = BatchQueryVariable
             else:
                 if isinstance(value, BatchVariable):
                     VarType = value.__class__
@@ -135,30 +140,106 @@ class Batch(ExpressionMixin):
         g = self.graph
         commands = str(self)
         if returned:
-            response = g.client.batch(commands)
+            if self.cache:
+                response = g.client.batch(commands, None, None, self.cache)
+            else:
+                response = g.client.batch(commands)
+
+            query_response = \
+                len(response) > 1 or returned[0] == '$' and isinstance(
+                    self.variables.get(returned[1:], None), BatchQueryVariable)
             self.clear()
 
-            if returned[0] in ('[','{') or len(response) > 1:
+            if returned[0] in ('[','{') or query_response:
                 return g.elements_from_records(response) if response else None
             else:
                 return g.element_from_record(response[0]) if response else None
         else:
-            g.client.batch(commands)
+            if self.cache:
+                g.client.batch(commands, None, None, self.cache)
+            else:
+                g.client.batch(commands)
             self.clear()
+
+    def collect(self, *variables, **kw_args):
+        """Commit batch, collecting batch variables in a dict.
+
+        :param variables: Names of variables to collect.
+        :param kw_args: Only 'retries', a limit for retries in event of
+        concurrent modifications.
+        """
+
+        # Until OrientDB supports multiple expand()s in a single query, we are
+        # confined to creative use of unionall().
+        # Like pascal strings, prefix each query's result set with a
+        # run-length.
+        # e.g., for results from variables a, b, c:
+        # [3, a1, a2, a3, 2, b1, b2, 1, c1]
+
+        rle = True # TODO Once OrientDB supports multiple expand()s
+
+        if rle:
+            for var in variables:
+                self.stack[-1].append('LET _{0} = SELECT ${0}.size() as size'.format(var))
+
+        retries = kw_args.get('retries', None)
+        if retries is not None:
+            self.stack[-1].append('COMMIT RETRY {}'.format(retries))
+        else:
+            self.stack[-1].append('COMMIT')
+
+        if rle:
+            self.stack[-1].append(
+                'RETURN (SELECT expand(unionall({})))'.format(
+                ','.join(['$_{0},${0}'.format(var) for var in variables])))
+
+        g = self.graph
+        commands = str(self)
+        if self.cache:
+            response = g.client.batch(commands, None, None, self.cache)
+        else:
+            response = g.client.batch(commands)
+
+        collected = {}
+        if rle:
+            run_idx = 1
+            for var in variables:
+                run_length = response[run_idx-1].oRecordData['size']
+
+                sentinel = run_idx + run_length
+                collected[var] = g.elements_from_records(response[run_idx:sentinel])
+                run_idx = sentinel + 1
+
+        self.clear()
+
+        return collected
 
     def commit(self, retries=None):
         """Commit batch with no return value."""
         self.stack[-1].append('COMMIT' + (' RETRY {}'.format(retries) if retries else ''))
 
         g = self.graph
-        g.client.batch(str(self))
+        if self.cache:
+            g.client.batch(str(self), None, None, self.cache)
+        else:
+            g.client.batch(str(self))
         self.clear()
 
     @staticmethod
     def return_string(variables):
         cleaned = Batch.clean_name or (lambda s:s)
 
-        if isinstance(variables, (list, tuple)):
+        from pyorient.ogm.query import Query
+        # Since any value can be returned from a batch,
+        # '$' must be used when a variable is referenced
+        if isinstance(variables, str):
+            if variables[0] == '$':
+                return '{}'.format('$' + cleaned(variables[1:]))
+            else:
+                return repr(variables)
+        elif isinstance(variables, Query):
+            return '({})'.format(variables)
+        elif isinstance(variables, (list, tuple)):
             return '[' + ','.join(
                 '${}'.format(cleaned(var)) for var in variables) + ']'
         elif isinstance(variables, dict):
@@ -166,15 +247,7 @@ class Batch(ExpressionMixin):
                 '{}:${}'.format(repr(k),cleaned(v))
                     for k,v in variables.items()) + '}'
         else:
-            # Since any value can be returned from a batch,
-            # '$' must be used when a variable is referenced
-            if isinstance(variables, str):
-                if variables[0] == '$':
-                    return '{}'.format('$' + cleaned(variables[1:]))
-                else:
-                    return repr(variables)
-            else:
-                return '{}'.format(variables)
+            return '{}'.format(variables)
 
     INVALID_CHARS = frozenset(''.join(c for c in string.punctuation if c is not '_') + string.whitespace)
 
@@ -256,6 +329,9 @@ class BatchVertexVariable(BatchVariable, VertexWhatMixin):
 class BatchEdgeVariable(BatchVariable, EdgeWhatMixin):
     def __init__(self, reference, value):
         super(BatchEdgeVariable, self).__init__(reference, value)
+
+class BatchQueryVariable(BatchVariable):
+    pass
 
 class BatchVertexVector(VertexVector):
     def __init__(self, origin, edge_broker, **kwargs):

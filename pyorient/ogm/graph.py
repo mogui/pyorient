@@ -716,8 +716,8 @@ class Graph(object):
     def update_edge(self, entity):
         return Update.edge(self, entity)
 
-    def batch(self, isolation_level=Batch.READ_COMMITTED):
-        return Batch(self, isolation_level)
+    def batch(self, isolation_level=Batch.READ_COMMITTED, cache=None):
+        return Batch(self, isolation_level, cache)
 
     def gremlin(self, script, args=None, namespace=None):
         script_body = self.scripts.script_body(script, args, namespace)

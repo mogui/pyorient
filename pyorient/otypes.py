@@ -127,6 +127,12 @@ class OrientRecordLink(object):
     def __str__(self):
         return self.get_hash()
 
+    # For use as dict key
+    def __hash__(self):
+        return hash(self.__link)
+    def __eq__(self, other):
+        return self.__link == other.__link
+
     def get(self):
         return self.__link
 

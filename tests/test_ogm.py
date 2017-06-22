@@ -1064,3 +1064,42 @@ class OGMTestTraversals(unittest.TestCase):
         print('{}s all the way down'.format(traversals[0].species()))
         self.assertEquals(len(traversals), 8)
 
+class OGMFetchPlansCase(unittest.TestCase):
+    Node = declarative_node()
+    Relationship = declarative_relationship()
+
+    class A(Node):
+        element_plural = 'ayes'
+
+    class B(Node):
+        element_plural = 'bees'
+
+    class AB(Relationship):
+        label = 'ayebee'
+
+    def __init__(self, *args, **kwargs):
+        super(OGMFetchPlansCase, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('ogm_fetchplans', 'root', 'root'
+                                           , initial_drop=True))
+
+        g.create_all(OGMFetchPlansCase.Node.registry)
+        g.create_all(OGMFetchPlansCase.Relationship.registry)
+
+    def testFetchPlans(self):
+        g = self.g
+
+        cache = {}
+        b = g.batch(cache=cache)
+        b['a'] = b.ayes.create()
+        b['b'] = b.bees.create()
+        b[:] = b.ayebee.create(b[:'a'], b[:'b'])
+        b['ayes'] = b.ayes.query().fetch_plan('*:-1')
+        result = b['$ayes']
+
+        self.assertEquals(len(result), 1)
+        self.assertEquals(len(cache), 2)
+
+
