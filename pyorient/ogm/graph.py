@@ -108,16 +108,17 @@ class Graph(object):
                                     , self._last_user, self._last_cred)
         return True
 
-    def include(self, registry):
+    def include(self, registry, *registries):
         """Update Graph's registry, when database schema already exists.
 
         Faster than a full create_all() when it's not required.
         """
-        for cls in registry.values():
-            db_to_element = Graph.compute_all_properties(cls)
-            self.props_from_db[cls] = Graph.create_props_mapping(db_to_element)
-            self.init_broker_for_class(cls)
-            self.registry[cls.registry_name] = cls
+        for reg in (registry,) + registries:
+            for cls in reg.values():
+                db_to_element = Graph.compute_all_properties(cls)
+                self.props_from_db[cls] = Graph.create_props_mapping(db_to_element)
+                self.init_broker_for_class(cls)
+                self.registry[cls.registry_name] = cls
 
     def build_mapping(self, vertex, edge, auto_plural=False):
         """Use database schema to dynamically build mapping classes.
@@ -561,26 +562,30 @@ class Graph(object):
 
         return cls_name
 
-    def create_all(self, registry):
+    def create_all(self, registry, *registries):
         """Create classes in database for all classes in registry.
 
         :param registry: Ordered collection of classes to create, bases first.
+        :param registries: More ordered class collections to create
         """
-        for cls in registry.values():
-            # Handle case of circular dependencies between class properties
-            self.define_class(cls)
+        for reg in (registry,) + registries:
+            for cls in reg.values():
+                # Handle case of circular dependencies between class properties
+                self.define_class(cls)
 
-        for cls in registry.values():
-            self.create_class(cls, skip_define=True)
+        for reg in (registry,) + registries:
+            for cls in reg.values():
+                self.create_class(cls, skip_define=True)
 
-    def drop_all(self, registry):
+    def drop_all(self, registry, *registries):
         """Drop all registry classes from database.
 
         :param registry: Ordered collection of classes to drop, bases first.
         """
         # Drop subclasses first
-        for cls in reversed(list(registry.values())):
-            self.drop_class(cls, ignore_instances=True)
+        for reg in (registry,) + registries:
+            for cls in reversed(list(reg.values())):
+                self.drop_class(cls, ignore_instances=True)
 
     def create_vertex(self, vertex_cls, **kwargs):
         result = self.client.command(
