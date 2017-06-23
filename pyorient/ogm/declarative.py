@@ -23,9 +23,6 @@ class DeclarativeMeta(type):
                                                    { 'registry': cls.registry, 'decl_root': cls }
                                                    )
         else:
-            if isinstance(cls, DeclarativeMetaAbstract):
-                bases = (cls.decl_root, )
-
             decl_bases = set(
                 base.decl_root for base in bases
                     if hasattr(base, 'decl_root') and base is not base.decl_root)
@@ -60,7 +57,6 @@ class DeclarativeMeta(type):
 
         return super(DeclarativeMeta, cls).__init__(class_name, bases, attrs)
 
-
     def __setattr__(self, name, value):
         result = super(DeclarativeMeta, self).__setattr__(name, value)
         if isinstance(value, Property):
@@ -81,13 +77,24 @@ class DeclarativeMeta(type):
 class DeclarativeMetaAbstract(DeclarativeMeta):
     """Private."""
     def __new__(cls, class_name, bases, attrs):
-        abstract_base = next((base for base in bases if type(base) is DeclarativeMetaAbstract), None)
+        abstract_base = next((base for base in bases
+            if type(base) is DeclarativeMetaAbstract), None)
+
+        discard_abstract = False
         if abstract_base is not None:
-            # DeclarativeMetaAbstract only a thin wrapper around its base metaclass
-            return type.__new__(cls, class_name,
-                                (abstract_base.decl_root, ) + tuple(base for base in bases if base is not abstract_base),
-                                dict(attrs, abstract = True))
-        return type.__new__(cls, class_name, bases, attrs)
+            if hasattr(abstract_base, 'registry_name'):
+                discard_abstract = True
+            else:
+                # DeclarativeMetaAbstract only a thin wrapper around its base metaclass
+                return type.__new__(cls, class_name,
+                                    (abstract_base.decl_root, ) + tuple(base for base in bases if base is not abstract_base),
+                                    dict(attrs, abstract = True))
+
+        instance = type.__new__(cls, class_name, bases, attrs)
+        if discard_abstract:
+            # Don't inherit abstractness
+            instance.abstract = False
+        return instance
 
 # Enum only in Python >= 3.4
 #class DeclarativeType(Enum):

@@ -904,6 +904,9 @@ class OGMTestAbstractField(unittest.TestCase):
         class ConcreteClass(Node):
             element_type = 'ConcreteClass'
 
+        class ConcreteSubclass(AbstractClass):
+            element_type = 'ConcreteSubclass'
+
         g.create_all(Node.registry)
 
     def testAbstractFlag(self):
@@ -911,8 +914,14 @@ class OGMTestAbstractField(unittest.TestCase):
 
         database_registry = g.build_mapping(
             declarative_node(), declarative_relationship(), auto_plural=True)
-        self.assertTrue(database_registry['AbstractClass'].abstract)
+
+        abstractClass = database_registry['AbstractClass']
+        self.assertTrue(abstractClass.abstract)
         self.assertFalse(database_registry['ConcreteClass'].abstract)
+
+        subclass = database_registry['ConcreteSubclass']
+        self.assertFalse(subclass.abstract)
+        self.assertEqual(subclass.__bases__[0], abstractClass)
 
 class OGMTestSequences(unittest.TestCase):
     Node = declarative_node()
