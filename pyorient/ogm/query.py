@@ -113,10 +113,13 @@ class Query(ExpressionMixin, Command):
             wheres = self.build_wheres(params)
 
             g = self._graph
-            cache = params.get('cache', None)
-            if cache:
-                command_suffix = (None, None, cache)
+            cache_param = params.get('cache', None)
+            caching = cache_param is not None
+            if caching:
+                cache = cache_param[0]
+                command_suffix = (None, None, cache_param[1])
             else:
+                cache = None
                 command_suffix = tuple()
 
             while True:
@@ -139,13 +142,13 @@ class Query(ExpressionMixin, Command):
                             if len(prop_names) > 1:
                                 yield selectuple(
                                     *tuple(self.parse_record_prop(
-                                            response.oRecordData.get(name))
+                                            response.oRecordData.get(name), cache)
                                         for name in prop_names))
                             else:
                                 yield self.parse_record_prop(
-                                        response.oRecordData[prop_names[0]])
+                                        response.oRecordData[prop_names[0]], cache)
                         else:
-                            yield g.element_from_record(response)
+                            yield g.element_from_record(response, cache)
                             break
                     else:
                         if '-' in response._rid:
@@ -161,7 +164,7 @@ class Query(ExpressionMixin, Command):
                         else:
                             self.skip(response._rid)
 
-                        yield g.element_from_record(response)
+                        yield g.element_from_record(response, cache)
                 else:
                     break
 
@@ -217,10 +220,13 @@ class Query(ExpressionMixin, Command):
 
         g = self._graph
 
-        cache = self._params.get('cache', None)
-        if cache:
-            response = g.client.command(select, None, None, cache)
+        cache_param = self._params.get('cache', None)
+        caching = cache_param is not None
+        if caching:
+            response = g.client.command(select, None, None, cache_param[1])
+            cache = cache_param[0]
         else:
+            cache = None
             response = g.client.command(select)
         if response:
             # TODO Determine which other queries always take only one iteration
@@ -232,14 +238,14 @@ class Query(ExpressionMixin, Command):
                         return [
                             selectuple(*tuple(
                                 self.parse_record_prop(
-                                    record.oRecordData.get(name))
+                                    record.oRecordData.get(name), cache)
                                 for name in prop_names))
                             for record in response]
                     else:
                         prop_name = prop_names[0]
                         return [
                             self.parse_record_prop(
-                                record.oRecordData[prop_name])
+                                record.oRecordData[prop_name], cache)
                             for record in response]
                 else:
                     if self._params.get('reify', False) and len(response) == 1:
@@ -247,7 +253,7 @@ class Query(ExpressionMixin, Command):
                         del self._params['kw_filters']
                         self.source_name = response[0]._rid
 
-                    return g.elements_from_records(response)
+                    return g.elements_from_records(response, cache)
             else:
                 return next(iter(response[0].oRecordData.values()))
         else:
@@ -381,7 +387,7 @@ class Query(ExpressionMixin, Command):
         executed command(s) containing fetch plan(s).
         """
         self._params['fetch'] = plan
-        self._params['cache'] = create_cache_callback(self._graph, fetch_cache)
+        self._params['cache'] = (fetch_cache, create_cache_callback(self._graph, fetch_cache))
         return self
 
     def lock(self):
@@ -526,13 +532,13 @@ class Query(ExpressionMixin, Command):
         else:
             return u'SELECT FROM {} {}'.format(src, optional_string)
 
-    def parse_record_prop(self, prop):
+    def parse_record_prop(self, prop, cache):
         if isinstance(prop, list):
             g = self._graph
             # NOTE For 'ridbags', even of length 1, returns a list.
-            return g.elements_from_links(prop) if len(prop) > 0 and isinstance(prop[0], OrientRecordLink) else prop
+            return g.elements_from_links(prop, cache) if len(prop) > 0 and isinstance(prop[0], OrientRecordLink) else prop
         elif isinstance(prop, OrientRecordLink):
-            return self._graph.element_from_link(prop)
+            return self._graph.element_from_link(prop, cache)
         return prop
 
 class TempParams(object):

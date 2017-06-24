@@ -9,7 +9,7 @@ def create_cache_callback(graph, cache):
         return None
 
     def cache_cb(record):
-        cache[OrientRecordLink(record._rid[1:])] = graph.element_from_record(record)
+        cache[OrientRecordLink(record._rid[1:])] = graph.element_from_record(record, cache)
     return cache_cb
 
 class VertexCommand(Command):

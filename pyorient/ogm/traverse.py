@@ -6,11 +6,20 @@ class Traverse(ExpressionMixin, Command):
     DepthFirst = 0
     BreadthFirst = 1
 
-    def __init__(self, graph, target, *what):
+    def __init__(self, graph, target, *what, **kwargs):
+        """Traverse a graph from a given target.
+
+        :param graph: Graph to traverse
+        :param target: Target from which to begin traversal
+        :param what: Fields to traverse, or any()/all()
+        :param kwargs: 'cache', to enable linked properties
+        of traversed elements to be dynamically resolved,
+        provided a cache."""
         self._graph = graph
         self._target = target
         self._what = what
         self._params = {}
+        self._cache = kwargs.get('cache', None)
 
     def query(self):
         from .query import Query
@@ -57,7 +66,7 @@ class Traverse(ExpressionMixin, Command):
 
         response = g.client.command(traverse)
         if response:
-            return g.elements_from_records(response)
+            return g.elements_from_records(response, self._cache)
 
         return []
 

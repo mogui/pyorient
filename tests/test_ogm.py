@@ -11,7 +11,7 @@ from pyorient.groovy import GroovyScripts
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
     String, Date, DateTime, Decimal, Double, Integer, Short, Long, EmbeddedMap,
-    EmbeddedSet, Link, UUID)
+    EmbeddedSet, Link, LinkList, UUID)
 from pyorient.ogm.what import expand, in_, out, distinct, sysdate, QV
 
 from pyorient.ogm.update import Update
@@ -1111,4 +1111,47 @@ class OGMFetchPlansCase(unittest.TestCase):
         self.assertEquals(len(result), 1)
         self.assertEquals(len(cache), 2)
 
+
+class OGMLinkResolverCase(unittest.TestCase):
+    Node = declarative_node()
+
+    class A(Node):
+        element_plural = 'ayes'
+        name = String(nullable=False)
+
+    class B(Node):
+        element_plural = 'bees'
+    B.ayes = LinkList(linked_to=A, nullable=False)
+
+    class C(Node):
+        element_plural = 'cees'
+    C.bee = Link(linked_to=B, nullable=False)
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('ogm_linkresolver', 'root', 'root'
+                                           , initial_drop=True)
+                           , decorate_properties=True)
+
+        g.create_all(OGMLinkResolverCase.Node.registry)
+
+    def testFetchPlans(self):
+        g = self.g
+
+        cache = {}
+        b = g.batch(cache=cache)
+        b['a1'] = b.ayes.create(name='Foo')
+        b['a2'] = b.ayes.create(name='Bar')
+        b['b'] = b.bees.create(ayes=[b[:'a1'], b[:'a2']])
+        b['c'] = b.cees.create(bee=b[:'b'])
+
+        b['result'] = b.cees.query().fetch_plan('*:-1')
+        c = b['$result']
+
+        self.assertEquals(len(c), 1)
+        ayes = c[0].bee.ayes
+        self.assertEquals(len(ayes), 2)
+        self.assertEquals(ayes[0].name, 'Foo')
+        self.assertEquals(ayes[1].name, 'Bar')
+        for a in ayes:
+            print(a.name)
 

@@ -69,3 +69,68 @@ class GraphElement(object):
         """Quoted record id for specifying element as string argument."""
         return repr(self._id)
 
+class ElementLink(object):
+    """Resolves attributes of linked-to elements."""
+    def __init__(self, link, cache):
+        self._link = link
+        self._cache = cache
+
+    def __str__(self):
+        return self._link.get_hash()
+
+    def __getattr__(self, name):
+        return getattr(self._cache[self._link], name)
+
+
+from sys import version_info
+if version_info[0] < 3:
+    next_value = lambda d: next(d.itervalues())
+else:
+    next_value = lambda d: next(iter(d.values()))
+
+class ElementLinkCollection(object):
+    """Resolves linked-to elements in a collection."""
+    def __init__(self, collection, cache):
+        self._collection = collection
+        self._cache = cache
+
+    def __str__(self):
+        return str(self._collection)
+
+    def __len__(self):
+        return len(self._collection)
+
+    def __contains__(self, item):
+        return item in self._collection
+
+    def __getitem__(self, item):
+        return self._cache[self._collection[item]]
+
+    def __iter__(self):
+        if isinstance(self._collection, dict):
+            for k in self._collection:
+                # __iter__ expected to yield keys for mapping types
+                yield k
+        else:
+            for link in self._collection:
+                yield self._cache[link]
+
+    def itervalues(self):
+        """For iterating cached elements from a LinkMap"""
+        for link in next_value(self._collection):
+            yield self._cache[link]
+
+
+from collections import Iterable
+from pyorient import OrientRecordLink
+def decorate_property(prop, cache):
+    if isinstance(prop, OrientRecordLink):
+        return ElementLink(prop, cache)
+    elif isinstance(prop, Iterable):
+        link_collection = \
+            isinstance(next_value(prop), OrientRecordLink) if isinstance(prop, dict) \
+            else isinstance(next(iter(prop)), OrientRecordLink)
+        if link_collection:
+            return ElementLinkCollection(prop, cache)
+    return prop
+

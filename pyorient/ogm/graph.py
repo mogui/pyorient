@@ -21,7 +21,7 @@ from os.path import isfile
 ServerVersion = namedtuple('orientdb_version', ['major', 'minor', 'build'])
 
 class Graph(object):
-    def __init__(self, config, user=None, cred=None, strict=False):
+    def __init__(self, config, user=None, cred=None, strict=False, decorate_properties=False):
         """Connect to OrientDB graph database, creating the database if
         non-existent.
 
@@ -29,6 +29,9 @@ class Graph(object):
         :param user: (Optional) Username by which to use database
         :param cred: (Optional) Credential for database username
         :param strict: (Optional, default False) Use strict property checking
+        :param decorate_properties: (Optional, default False) Enable dynamic
+        link resolution. If True, vertices and edges can resolve their own
+        links, provided a cache. Otherwise, handle cache indirectly.
 
         :note: user only meaningful when cred also provided.
         """
@@ -52,6 +55,12 @@ class Graph(object):
 
         self._scripts = config.scripts
         self._sequences = None
+
+        if decorate_properties:
+            from .element import decorate_property
+            self._prop_decorator = decorate_property
+        else:
+            self._prop_decorator = None
 
         self.strict = strict
 
@@ -116,7 +125,7 @@ class Graph(object):
         for reg in (registry,) + registries:
             for cls in reg.values():
                 db_to_element = Graph.compute_all_properties(cls)
-                self.props_from_db[cls] = Graph.create_props_mapping(db_to_element)
+                self.props_from_db[cls] = Graph.create_props_mapping(db_to_element, self._prop_decorator)
                 self.init_broker_for_class(cls)
                 self.registry[cls.registry_name] = cls
 
@@ -511,7 +520,7 @@ class Graph(object):
         # We store all of the properties for the reverse mapping, not only
         # those that are defined directly on the class
         db_to_element = Graph.compute_all_properties(cls)
-        self.props_from_db[cls] = Graph.create_props_mapping(db_to_element)
+        self.props_from_db[cls] = Graph.create_props_mapping(db_to_element, self._prop_decorator)
         self.init_broker_for_class(cls)
         self.registry[cls_name] = cls
 
@@ -593,7 +602,7 @@ class Graph(object):
 
         props = result.oRecordData
         return vertex_cls.from_graph(self, result._rid,
-                                     self.props_from_db[vertex_cls](props))
+                                     self.props_from_db[vertex_cls](props, None))
 
     def create_vertex_command(self, vertex_cls, **kwargs):
         class_name = vertex_cls.registry_name
@@ -819,20 +828,20 @@ class Graph(object):
 
     # The following mostly intended for internal use
 
-    def vertex_from_record(self, record, vertex_cls = None):
+    def vertex_from_record(self, record, vertex_cls=None, cache=None):
         if not vertex_cls:
             vertex_cls = self.registry.get(record._class)
 
         props = record.oRecordData
         return vertex_cls.from_graph(self
              , record._rid
-             , self.props_from_db[vertex_cls](props)) if vertex_cls \
+             , self.props_from_db[vertex_cls](props, cache)) if vertex_cls \
             else Vertex.from_graph(self, record._rid, props)
 
-    def vertexes_from_records(self, records):
-        return [self.vertex_from_record(record) for record in records]
+    def vertexes_from_records(self, records, cache=None):
+        return [self.vertex_from_record(record, None, cache) for record in records]
 
-    def edge_from_record(self, record, edge_cls = None):
+    def edge_from_record(self, record, edge_cls=None, cache=None):
         props = record.oRecordData
 
         in_hash = None
@@ -851,13 +860,13 @@ class Graph(object):
             edge_cls = self.registry.get(record._class)
         return edge_cls.from_graph(self, record._rid
            , in_hash, out_hash
-           , self.props_from_db[edge_cls](props)) if edge_cls \
+           , self.props_from_db[edge_cls](props, cache)) if edge_cls \
             else Edge.from_graph(self, record._rid, in_hash, out_hash, props)
 
-    def edges_from_records(self, records):
-        return [self.edge_from_record(record) for record in records]
+    def edges_from_records(self, records, cache=None):
+        return [self.edge_from_record(record, none, cache) for record in records]
 
-    def element_from_record(self, record):
+    def element_from_record(self, record, cache=None):
         if not isinstance(record, pyorient.OrientRecord):
             return record
 
@@ -866,20 +875,21 @@ class Graph(object):
             if isinstance(record_data['in'], pyorient.OrientRecordLink) and \
                     isinstance(record_data['out'],
                                pyorient.OrientRecordLink):
-                return self.edge_from_record(record)
+                return self.edge_from_record(record, None, cache)
             else:
-                return self.vertex_from_record(record)
+                return self.vertex_from_record(record, None, cache)
         except:
-            return self.vertex_from_record(record)
+            return self.vertex_from_record(record, None, cache)
 
-    def elements_from_records(self, records):
-        return [self.element_from_record(record) for record in records]
+    def elements_from_records(self, records, cache=None):
+        return [self.element_from_record(record, cache) for record in records]
 
-    def element_from_link(self, link):
-        return self.get_element(link.get_hash())
+    def element_from_link(self, link, cache=None):
+        cached = cache[link] if cache else None
+        return cached or self.get_element(link.get_hash())
 
-    def elements_from_links(self, links):
-        return [self.element_from_link(link) for link in links]
+    def elements_from_links(self, links, cache=None):
+        return [self.element_from_link(link, cache) for link in links]
 
     PROPERTY_TYPES = {
         0:Boolean
@@ -941,10 +951,15 @@ class Graph(object):
                                                 cls.registry_name))
 
     @staticmethod
-    def create_props_mapping(db_to_element):
-        return lambda db_props: {
-            db_to_element[k]:v for k,v in db_props.items()
-                if k in db_to_element }
+    def create_props_mapping(db_to_element, wrapper):
+        if wrapper is not None:
+            return lambda db_props, cache: {
+                db_to_element[k]:wrapper(v, cache) if cache is not None else v for k,v in db_props.items()
+                    if k in db_to_element }
+        else:
+            return lambda db_props, _: {
+                db_to_element[k]:v for k,v in db_props.items()
+                    if k in db_to_element }
 
     @staticmethod
     def props_to_db(element_class, props, strict, skip_if=None):

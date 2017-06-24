@@ -20,7 +20,8 @@ class Batch(ExpressionMixin):
         self.objects = {}
         self.variables = {}
         self.stack = [[]]
-        self.cache = create_cache_callback(graph, cache)
+        self.cacher = create_cache_callback(graph, cache)
+        self.cache = cache
 
         if isolation_level == Batch.REPEATABLE_READ:
             self.stack[0].append('BEGIN ISOLATION REPEATABLE_READ')
@@ -139,9 +140,12 @@ class Batch(ExpressionMixin):
 
         g = self.graph
         commands = str(self)
+
+        caching = self.cacher is not None
+
         if returned:
-            if self.cache:
-                response = g.client.batch(commands, None, None, self.cache)
+            if caching:
+                response = g.client.batch(commands, None, None, self.cacher)
             else:
                 response = g.client.batch(commands)
 
@@ -151,12 +155,12 @@ class Batch(ExpressionMixin):
             self.clear()
 
             if returned[0] in ('[','{') or query_response:
-                return g.elements_from_records(response) if response else None
+                return g.elements_from_records(response, self.cache) if response else None
             else:
-                return g.element_from_record(response[0]) if response else None
+                return g.element_from_record(response[0], self.cache) if response else None
         else:
-            if self.cache:
-                g.client.batch(commands, None, None, self.cache)
+            if caching:
+                g.client.batch(commands, None, None, self.cacher)
             else:
                 g.client.batch(commands)
             self.clear()
@@ -195,8 +199,8 @@ class Batch(ExpressionMixin):
 
         g = self.graph
         commands = str(self)
-        if self.cache:
-            response = g.client.batch(commands, None, None, self.cache)
+        if self.cacher:
+            response = g.client.batch(commands, None, None, self.cacher)
         else:
             response = g.client.batch(commands)
 
@@ -207,7 +211,7 @@ class Batch(ExpressionMixin):
                 run_length = response[run_idx-1].oRecordData['size']
 
                 sentinel = run_idx + run_length
-                collected[var] = g.elements_from_records(response[run_idx:sentinel])
+                collected[var] = g.elements_from_records(response[run_idx:sentinel], self.cache)
                 run_idx = sentinel + 1
 
         self.clear()
@@ -219,8 +223,8 @@ class Batch(ExpressionMixin):
         self.stack[-1].append('COMMIT' + (' RETRY {}'.format(retries) if retries else ''))
 
         g = self.graph
-        if self.cache:
-            g.client.batch(str(self), None, None, self.cache)
+        if self.cacher:
+            g.client.batch(str(self), None, None, self.cacher)
         else:
             g.client.batch(str(self))
         self.clear()
