@@ -2,6 +2,7 @@ import sys
 import unittest
 import decimal
 import os.path
+import timeit
 from datetime import datetime
 
 from pyorient import PyOrientCommandException, PyOrientSQLParsingException
@@ -10,9 +11,9 @@ from pyorient.groovy import GroovyScripts
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
-    String, Date, DateTime, Decimal, Double, Integer, Short, Long, EmbeddedMap,
-    EmbeddedSet, Link, LinkList, UUID)
-from pyorient.ogm.what import expand, in_, out, distinct, sysdate, QV
+    Boolean, String, Date, DateTime, Float, Decimal, Double, Integer, Short,
+    Long, EmbeddedMap, EmbeddedSet, Link, LinkList, UUID)
+from pyorient.ogm.what import expand, in_, out, outV, inV, distinct, sysdate, QV, unionall
 
 from pyorient.ogm.update import Update
 from pyorient.ogm.sequence import Sequence, NewSequence, sequence
@@ -787,11 +788,11 @@ class OGMTestInheritance(unittest.TestCase):
         g = self.g
         pentium = g.x86cpu.create(name='Pentium', version=6)
         self.assertTrue(isinstance(pentium.name, str))
-        self.assertEquals('Pentium', pentium.name)
-        self.assertEquals(6, pentium.version)
+        self.assertEqual('Pentium', pentium.name)
+        self.assertEqual(6, pentium.version)
 
         loaded_pentium = g.get_vertex(pentium._id)
-        self.assertEquals(pentium, loaded_pentium)
+        self.assertEqual(pentium, loaded_pentium)
         self.assertTrue(isinstance(loaded_pentium.name, str))
 
     def testStrictness(self):
@@ -812,8 +813,8 @@ class OGMTestInheritance(unittest.TestCase):
             pentium = g.cpu.create(name='Pentium', version=6)
 
         pentium = g.x86cpu.create(name='Pentium', version=6)
-        self.assertEquals('Pentium', pentium.name)
-        self.assertEquals(6, pentium.version)
+        self.assertEqual('Pentium', pentium.name)
+        self.assertEqual(6, pentium.version)
 
 class OGMTestNullProperties(unittest.TestCase):
     def __init__(self, *args, **kwargs):
@@ -871,20 +872,20 @@ class OGMTestClassField(unittest.TestCase):
         g.clear_registry()
         g.include(database_registry)
         if g.server_version > (2,2,0): # Ugly! TODO Isolate version at which behaviour was changed
-            self.assertEquals(
+            self.assertEqual(
                 {'test_field_1': 'test_string_one', 'test_field_2': 'test string two'},
                 g.registry['classfieldvertex'].class_fields)
-            self.assertEquals(
+            self.assertEqual(
                 {'test_field_1': 'test string two'},
                 g.registry['classfieldedge'].class_fields)
         else:
-            self.assertEquals(
+            self.assertEqual(
                 {'test_field_1': 'test_string_one', 'test_field_2': '"test string two"'},
                 g.registry['classfieldvertex'].class_fields)
-            self.assertEquals(
+            self.assertEqual(
                 {'test_field_1': '"test string two"'},
                 g.registry['classfieldedge'].class_fields)
-        self.assertEquals({}, g.registry['classfieldvertex2'].class_fields)
+        self.assertEqual({}, g.registry['classfieldvertex2'].class_fields)
 
 
 
@@ -967,7 +968,7 @@ class OGMTestSequences(unittest.TestCase):
         create_second['item'] = create_second.items.create(id=create_second[:'counter'].value[0], qty=20, price=1800)
         second_item = create_second['$item']
 
-        self.assertEquals(second_item.id, 1)
+        self.assertEqual(second_item.id, 1)
 
         if g.server_version < (2, 2, 0):
             return
@@ -982,7 +983,7 @@ class OGMTestSequences(unittest.TestCase):
         create_fourth = g.batch()
         create_fourth['item'] = create_fourth.items.create(id=seq.next(), qty=40, price=3330)
         fourth_item = create_fourth['$item']
-        self.assertEquals(fourth_item.id, 3)
+        self.assertEqual(fourth_item.id, 3)
 
         with self.assertRaises(PyOrientCommandException):
             self.sequences.create('mycounter', Sequence.Cached, 666, 2, 6)
@@ -1008,7 +1009,7 @@ class OGMTestSequences(unittest.TestCase):
         batch_create[:] = batch_create.sequenced.create(id=item_ids.next())
         batch_create['last'] = batch_create.sequenced.create(id=item_ids.next())
         last_item = batch_create['$last']
-        self.assertEquals(last_item.id, 5)
+        self.assertEqual(last_item.id, 5)
 
 class OGMTestTraversals(unittest.TestCase):
     Node = declarative_node()
@@ -1071,7 +1072,7 @@ class OGMTestTraversals(unittest.TestCase):
         traversals = b['$traversal']
 
         print('{}s all the way down'.format(traversals[0].species()))
-        self.assertEquals(len(traversals), 8)
+        self.assertEqual(len(traversals), 8)
 
 class OGMFetchPlansCase(unittest.TestCase):
     Node = declarative_node()
@@ -1108,8 +1109,8 @@ class OGMFetchPlansCase(unittest.TestCase):
         b['ayes'] = b.ayes.query().fetch_plan('*:-1')
         result = b['$ayes']
 
-        self.assertEquals(len(result), 1)
-        self.assertEquals(len(cache), 2)
+        self.assertEqual(len(result), 1)
+        self.assertEqual(len(cache), 2)
 
 
 class OGMLinkResolverCase(unittest.TestCase):
@@ -1147,11 +1148,119 @@ class OGMLinkResolverCase(unittest.TestCase):
         b['result'] = b.cees.query().fetch_plan('*:-1')
         c = b['$result']
 
-        self.assertEquals(len(c), 1)
+        self.assertEqual(len(c), 1)
         ayes = c[0].bee.ayes
-        self.assertEquals(len(ayes), 2)
-        self.assertEquals(ayes[0].name, 'Foo')
-        self.assertEquals(ayes[1].name, 'Bar')
+        self.assertEqual(len(ayes), 2)
+        self.assertEqual(ayes[0].name, 'Foo')
+        self.assertEqual(ayes[1].name, 'Bar')
         for a in ayes:
             print(a.name)
+
+from pyorient.ogm.what import QT
+class OGMTokensCase(unittest.TestCase):
+    Node = declarative_node()
+    Relationship = declarative_relationship()
+
+    class Activity(Node):
+        element_plural = 'activities'
+        text = String(nullable=False)
+        fun = Boolean(nullable=False)
+
+    class Next(Relationship):
+        label = 'next'
+        probability = Float(nullable=False, readonly=True)
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('ogm_tokens', 'root', 'root'
+                                           , initial_drop=True))
+
+        g.create_all(OGMTokensCase.Node.registry)
+        g.create_all(OGMTokensCase.Relationship.registry)
+
+        b = g.batch()
+        b['a1'] = b.activities.create(text='Study', fun=False)
+        b['a2'] = b.activities.create(text='Check social media', fun=True)
+        b['a3'] = b.activities.create(text='Watch cat videos', fun=True)
+        b['a4'] = b.activities.create(text='Go for run', fun=True)
+        b['a5'] = b.activities.create(text='Read the news', fun=True)
+        b['a6'] = b.activities.create(text='Have a shower', fun=True)
+        b['a7'] = b.activities.create(text='Get some rest', fun=False)
+        b['a8'] = b.activities.create(text='Work', fun=False)
+
+        b[:] = b.next.create(b[:'a1'], b[:'a2'], probability=0.4)
+        b[:] = b.next.create(b[:'a1'], b[:'a4'], probability=0.1)
+        b[:] = b.next.create(b[:'a1'], b[:'a5'], probability=0.3)
+        b[:] = b.next.create(b[:'a1'], b[:'a7'], probability=0.2)
+
+        b[:] = b.next.create(b[:'a2'], b[:'a3'], probability=0.7)
+        b[:] = b.next.create(b[:'a2'], b[:'a5'], probability=0.2)
+        b[:] = b.next.create(b[:'a2'], b[:'a7'], probability=0.2)
+        b[:] = b.next.create(b[:'a2'], b[:'a8'], probability=0.05)
+
+        b[:] = b.next.create(b[:'a3'], b[:'a4'], probability=0.2)
+        b[:] = b.next.create(b[:'a3'], b[:'a1'], probability=0.4)
+        b[:] = b.next.create(b[:'a3'], b[:'a8'], probability=0.4)
+
+        b[:] = b.next.create(b[:'a4'], b[:'a6'], probability=0.6)
+        b[:] = b.next.create(b[:'a4'], b[:'a7'], probability=0.1)
+        b[:] = b.next.create(b[:'a4'], b[:'a8'], probability=0.3)
+
+        b[:] = b.next.create(b[:'a5'], b[:'a1'], probability=0.3)
+        b[:] = b.next.create(b[:'a5'], b[:'a4'], probability=0.3)
+        b[:] = b.next.create(b[:'a5'], b[:'a7'], probability=0.3)
+        b[:] = b.next.create(b[:'a5'], b[:'a8'], probability=0.1)
+
+        b[:] = b.next.create(b[:'a6'], b[:'a2'], probability=0.2)
+        b[:] = b.next.create(b[:'a6'], b[:'a5'], probability=0.1)
+        b[:] = b.next.create(b[:'a6'], b[:'a7'], probability=0.7)
+
+        b[:] = b.next.create(b[:'a7'], b[:'a1'], probability=0.4)
+        b[:] = b.next.create(b[:'a7'], b[:'a2'], probability=0.1)
+        b[:] = b.next.create(b[:'a7'], b[:'a4'], probability=0.1)
+        b[:] = b.next.create(b[:'a7'], b[:'a8'], probability=0.4)
+
+        b[:] = b.next.create(b[:'a8'], b[:'a2'], probability=0.2)
+        b[:] = b.next.create(b[:'a8'], b[:'a4'], probability=0.4)
+        b[:] = b.next.create(b[:'a8'], b[:'a7'], probability=0.4)
+
+        b.commit()
+
+    def testTokens(self):
+        g = self.g
+
+        enjoy_query = g.activities.query().filter_by(fun=QT())
+        fun = enjoy_query.format(True).all()
+        self.assertEqual(len(fun), 5)
+        not_fun = enjoy_query.format(False).all()
+        self.assertEqual(len(not_fun), 3)
+
+        next_query = g.next.query().what(outV().as_('o'), inV().as_('i')).filter(OGMTokensCase.Next.probability > 0.5) 
+        uncached = next_query.query().what(unionall('o', 'i'))
+        from copy import deepcopy
+        cached = deepcopy(uncached)
+        cache = {}
+        cached.fetch_plan('*:1', cache)
+        cached_time = timeit.timeit(lambda: cached.all(), number=30)
+        uncached_time = timeit.timeit(lambda: uncached.all(), number=30)
+        self.assertLess(cached_time, uncached_time)
+        print("Cached query {}% faster than uncached".format(cached_time / uncached_time * 100.0))
+
+        probable_transitions = (
+            (('Have a shower', True), ('Get some rest', False))
+            , (('Check social media', True), ('Watch cat videos', True))
+            , (('Go for run', True), ('Have a shower', True))
+        )
+
+        # Replicate the above query, this time through token replacement
+        next_query.what(QT(), QT()).filter(QT('cond'))
+        token_sub = next_query.format(outV().as_('o'), inV().as_('i'), cond=OGMTokensCase.Next.probability > 0.5)
+
+        cached = token_sub.query().what(unionall('o', 'i')).fetch_plan('*:1', cache)
+        self.assertIsInstance(cached.compile(), (str, unicode))
+        
+        probable = cached.all()
+        self.assertEqual(len(probable), 3)
+        for p in probable:
+            print(((p[0].text, p[0].fun), (p[1].text, p[1].fun)))
+            self.assertIn(((p[0].text, p[0].fun), (p[1].text, p[1].fun)), probable_transitions)
 

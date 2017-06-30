@@ -549,6 +549,15 @@ class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMeth
     def history(cls):
         return cls('history')
 
+class QT(What):
+    """Query token; for substitutions by RetrievalCommand.format()"""
+    def __init__(self, ref=None):
+        self.token = ref
+
+    def query(self):
+        from .query import Query
+        return Query(None, (self, ))
+
 class FunctionWhat(MethodWhat):
     def __init__(self, func, args):
         super(FunctionWhat, self).__init__([(func, args)], [])

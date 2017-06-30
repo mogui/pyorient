@@ -2,8 +2,7 @@ from .property import Property, PropertyEncoder
 from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
 from .query_utils import ArgConverter
-from .expressions import ExpressionMixin
-from .commands import Command, create_cache_callback
+from .commands import RetrievalCommand, create_cache_callback
 
 from pyorient import OrientRecordLink
 
@@ -20,7 +19,7 @@ else:
         , ord(':'): '_'
     }
 
-class Query(ExpressionMixin, Command):
+class Query(RetrievalCommand):
     def __init__(self, graph, entities):
         """Query against a class or a selection of its properties.
 
@@ -28,6 +27,7 @@ class Query(ExpressionMixin, Command):
         :param entities: Vertex/Edge class/a collection of its properties,
         an instance of such a class, or a subquery.
         """
+        super(Query, self).__init__()
         self._graph = graph
         self._subquery = None
         self._params = {}
@@ -80,6 +80,32 @@ class Query(ExpressionMixin, Command):
         Useful for Batch return values."""
         self = cls(None, None)
         return self.what(*whats)
+
+    @classmethod
+    def from_string(cls, command, graph):
+        """Create query from pre-written command text.
+        :param command: Query command text
+        :param graph: Graph instance to traverse
+        """
+        self = cls(graph, None)
+        self._compiled = str(command)
+        return self
+
+    def format(self, *args, **kwargs):
+        """RetrievalCommand.format() override for Query
+        :return: Compiled Query, with tokens replaced, and *shallow* copies of
+        parameters to maintain cache and behaviour of projection queries
+        Please note that this only does string replacement, it does not replace
+        the underlying What.Token instances used for compilation, choosing
+        speed at some cost to flexibility.
+        """
+        encode = self.FORMAT_ENCODER
+
+        new_query = self.from_string(self.compile().format(*[encode(arg) for arg in args], **{k:encode(v) for k,v in kwargs.items()}), self._graph)
+        new_query.source_name = self.source_name
+        new_query._class_props = self._class_props 
+        new_query._params = self._params
+        return new_query
 
     def query(self):
         """Create a query, with current query as a subquery.
@@ -185,11 +211,29 @@ class Query(ExpressionMixin, Command):
             return response[0] if response else None
 
     def __str__(self):
-        props, lets, where, optional_clauses = self.prepare()
-        return self.build_select(props, lets + where + optional_clauses)
+        def compiler():
+            props, lets, where, optional_clauses = self.prepare()
+            return self.build_select(props, lets + where + optional_clauses)
+        return self.compile(compiler)
 
     def __len__(self):
         return self.count()
+
+    def __deepcopy__(self, memo):
+        cls = self.__class__
+        copy = cls.__new__(cls)
+        memo[id(self)] = copy
+
+        copy._graph = self._graph
+        copy._subquery = self._subquery
+        copy._params = {}
+        copy._params.update(self._params)
+        copy.source_name = self.source_name
+        copy._class_props = self._class_props
+
+        copy._compiled = self._compiled
+
+        return copy
 
     def prepare(self, prop_names=None):
         params = self._params
@@ -209,14 +253,21 @@ class Query(ExpressionMixin, Command):
 
     def all(self):
         prop_names = []
-        props, lets, where, optional_clauses = self.prepare(prop_names)
-        if len(prop_names) > 1:
-            prop_prefix = self.source_name.translate(sanitise_ids)
+        if self._compiled is not None and 'count' not in self._params:
+            # Must do a little extra work, for projection queries
+            self.build_props(self._params, prop_names)
+            select = self._compiled
+        else:
+            props, lets, where, optional_clauses = self.prepare(prop_names)
+            if len(prop_names) > 1:
+                prop_prefix = self.source_name.translate(sanitise_ids)
 
-            selectuple = namedtuple(prop_prefix + '_props',
-                [Query.sanitise_prop_name(name)
-                    for name in prop_names])
-        select = self.build_select(props, lets + where + optional_clauses)
+                selectuple = namedtuple(prop_prefix + '_props',
+                    [Query.sanitise_prop_name(name)
+                        for name in prop_names])
+            select = self.build_select(props, lets + where + optional_clauses)
+            if 'count' not in self._params:
+                self._compiled = select
 
         g = self._graph
 
@@ -309,6 +360,7 @@ class Query(ExpressionMixin, Command):
             return self.all()
 
     def what(self, *whats):
+        self.purge()
         self._params['what'] = whats
         return self
 
@@ -319,6 +371,7 @@ class Query(ExpressionMixin, Command):
         pass them here. See PEP 468.
         :param kwargs: Conveniently specify context variables.
         """
+        self.purge()
         if ordered:
             if kwargs is not None:
                 ordered[0].update(kwargs)
@@ -328,14 +381,17 @@ class Query(ExpressionMixin, Command):
         return self
 
     def filter(self, expression):
+        self.purge()
         self._params['filter'] = expression
         return self
 
     def filter_by(self, **kwargs):
+        self.purge()
         self._params['kw_filters'] = kwargs
         return self
 
     def group_by(self, *criteria):
+        self.purge()
         self._params['group_by'] = criteria
         return self
 
@@ -343,18 +399,22 @@ class Query(ExpressionMixin, Command):
         """:param criteria: A projection field, or a 2-tuple of the form
         (<projection field>, <reverse>), where <reverse> is a bool which
         - if True - results in a descending order for the field"""
+        self.purge()
         self._params['order_by'] = criteria
         return self
 
     def unwind(self, field):
+        self.purge()
         self._params['unwind'] = field
         return self
 
     def skip(self, skip):
+        self.purge()
         self._params['skip'] = skip
         return self
 
     def limit(self, limit):
+        self.purge()
         self._params['limit'] = limit
         return self
 
@@ -369,6 +429,7 @@ class Query(ExpressionMixin, Command):
         records to retrieve. Otherwise, the index one-past-the-last
         record to retrieve.
         """
+        self.purge()
         self._params['skip'] = start
         if isinstance(start, str):
             self._params['limit'] = stop
@@ -386,11 +447,13 @@ class Query(ExpressionMixin, Command):
         using varied fetch plans in batches. A cache is required for any
         executed command(s) containing fetch plan(s).
         """
+        self.purge()
         self._params['fetch'] = plan
         self._params['cache'] = (fetch_cache, create_cache_callback(self._graph, fetch_cache))
         return self
 
     def lock(self):
+        self.purge()
         self._params['lock'] = True
         return self
 
@@ -441,7 +504,11 @@ class Query(ExpressionMixin, Command):
                 for k,v in kw_filters.items())] if kw_filters else []
 
         filter_exp = params.get('filter')
-        exp_where = [self.filter_string(filter_exp)] if filter_exp else []
+        from .what import QT
+        if isinstance(filter_exp, QT):
+            exp_where = ['{{{}}}'.format(filter_exp.token) if filter_exp.token is not None else '{}']
+        else:
+            exp_where = [self.filter_string(filter_exp)] if filter_exp else []
 
         return kw_where + exp_where
 

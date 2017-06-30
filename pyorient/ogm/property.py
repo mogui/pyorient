@@ -125,7 +125,7 @@ class PropertyEncoder:
             return json.dumps(value)
         elif value is None:
             return 'null'
-        elif isinstance(value, (int,float)) or (sys.version_info[0] < 3 and isinstance(value, long)):
+        elif isinstance(value, int) or (sys.version_info[0] < 3 and isinstance(value, long)):
             return str(value)
         elif isinstance(value, list) or isinstance(value, set):
             return u'[{}]'.format(u','.join([PropertyEncoder.encode_value(v, expressions) for v in value]))

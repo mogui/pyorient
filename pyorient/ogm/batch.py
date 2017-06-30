@@ -1,5 +1,5 @@
 from .broker import get_broker
-from .commands import Command, VertexCommand, CreateEdgeCommand, create_cache_callback
+from .commands import Command, VertexCommand, CreateEdgeCommand, RetrievalCommand, create_cache_callback
 
 from .vertex import VertexVector
 from .what import What, LetVariable, VertexWhatMixin, EdgeWhatMixin
@@ -54,13 +54,11 @@ class Batch(ExpressionMixin):
             if isinstance(value, Command):
                 command = str(value)
 
-                from pyorient.ogm.query import Query
-                from pyorient.ogm.traverse import Traverse
                 if isinstance(value, VertexCommand):
                     VarType = BatchVertexVariable
                 elif isinstance(value, CreateEdgeCommand):
                     VarType = BatchEdgeVariable
-                elif isinstance(value, Query) or isinstance(value, Traverse):
+                elif isinstance(value, RetrievalCommand):
                     VarType = BatchQueryVariable
             else:
                 if isinstance(value, BatchVariable):

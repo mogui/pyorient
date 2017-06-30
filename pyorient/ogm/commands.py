@@ -39,3 +39,47 @@ class CreateEdgeCommand(Command):
     def retry(self, retries):
         self.retries = retries
         return self
+
+from .expressions import ExpressionMixin
+from .property import PropertyEncoder
+from .operators import LogicalConnective
+class RetrievalCommand(Command, ExpressionMixin):
+    def __init__(self, command_text=None):
+        self._compiled = command_text
+
+    def compile(self, compiler=None):
+        """Compile this command for reuse later.
+        :return: The compiled command text
+        :param compiler: (Optional) A function compiles the command.
+        This must not trigger __str__ on the command type.
+        """
+        if not self._compiled:
+            self._compiled = compiler() if compiler else str(self)
+        return self._compiled
+
+    def purge(self):
+        """Purge the results of a previous compilation."""
+        self._compiled = None
+
+    def __str__(self):
+        """The compiled command text."""
+        return self._compiled or ''
+
+    def FORMAT_ENCODER(self, v):
+        if isinstance(v, RetrievalCommand):
+            return '({})'.format(v.compile()) 
+        elif isinstance(v, LogicalConnective):
+            return self.filter_string(v)
+        else:
+            return PropertyEncoder.encode_value(v, self)
+
+    def format(self, *args, **kwargs):
+        """Return a copy of the raw command (not usable directly), where {}'s
+        of the compiled command are replaced by positional or keyword arguments,
+        similar to Python's str.format()
+        :param args: The n'th argument is substituted for the {n}th token.
+        :param kwargs: Substitute tokens by keyword.
+        """
+        encode = self.FORMAT_ENCODER
+        return RetrievalCommand(self.compile().format(*[encode(arg) for arg in args], **{k:encode(v) for k,v in kwargs.items()}))
+

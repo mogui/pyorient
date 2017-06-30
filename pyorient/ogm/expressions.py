@@ -297,13 +297,12 @@ class ExpressionMixin(object):
                     prop_names.append(what_str.replace('"', ''))
             return what_str
 
-        name_override = what.name_override
-        as_str = ' AS {}'.format(name_override) if name_override else ''
-
         if isinstance(what, FunctionWhat):
             func = what.chain[0][0]
             what_function = cls.WhatFunctions[func]
 
+            name_override = what.name_override
+            as_str = ' AS {}'.format(name_override) if name_override else ''
             if prop_names is not None:
                 # Projections not allowed with Expand
                 counted = func is not What.Expand
@@ -339,10 +338,15 @@ class ExpressionMixin(object):
                 else:
                     chain.append(prop)
 
+            name_override = what.name_override
+            as_str = ' AS {}'.format(name_override) if name_override else ''
             if prop_names is not None:
                 prop_names.append(
                     cls.parse_prop_name(chain[0], name_override))
             return '{}{}'.format('.'.join(chain), as_str)
+        else:
+            # For now, can assume it's a Token
+            return '{{{}}}'.format(what.token) if what.token is not None else '{}'
 
     @staticmethod
     def parse_prop_name(from_str, override):
