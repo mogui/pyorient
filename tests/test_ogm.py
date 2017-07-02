@@ -1112,6 +1112,17 @@ class OGMFetchPlansCase(unittest.TestCase):
         self.assertEqual(len(result), 1)
         self.assertEqual(len(cache), 2)
 
+        prev_cache = cache.copy()
+        cache.clear()
+        b['ayes'] = b.ayes.query()
+        b['bees'] = b.bees.query()
+        result = b.collect('ayes', 'bees', fetch='*:-1')
+
+        self.assertEqual(len(result), 2)
+        # Cache will only include the edge, now
+        self.assertEqual(len(cache), 1)
+        from pyorient.ogm.edge import Edge
+        self.assertIsInstance(cache.values()[0], Edge)
 
 class OGMLinkResolverCase(unittest.TestCase):
     Node = declarative_node()

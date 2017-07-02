@@ -167,8 +167,9 @@ class Batch(ExpressionMixin):
         """Commit batch, collecting batch variables in a dict.
 
         :param variables: Names of variables to collect.
-        :param kw_args: Only 'retries', a limit for retries in event of
-        concurrent modifications.
+        :param kw_args: 'retries', a limit for retries in event of
+        concurrent modifications. 'fetch': A fetch plan, for all collected
+        queries.
         """
 
         # Until OrientDB supports multiple expand()s in a single query, we are
@@ -190,10 +191,15 @@ class Batch(ExpressionMixin):
         else:
             self.stack[-1].append('COMMIT')
 
+        fetch = kw_args.get('fetch', '')
+        if fetch:
+            fetch = ' FETCHPLAN ' + fetch
+
         if rle:
             self.stack[-1].append(
-                'RETURN (SELECT expand(unionall({})))'.format(
-                ','.join(['$_{0},${0}'.format(var) for var in variables])))
+                'RETURN (SELECT expand(unionall({})){})'.format(
+                ','.join(['$_{0},${0}'.format(var) for var in variables]),
+                fetch))
 
         g = self.graph
         commands = str(self)
