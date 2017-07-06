@@ -23,7 +23,7 @@ cache:
   - "./ci/environment/"
 
 before_script:
-- sleep 100
+- sleep 15
 - travis_retry ../ci/environment//orientdb_current/bin/console.sh "CONNECT remote:localhost root root"
   
 script:
