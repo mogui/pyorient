@@ -23,16 +23,6 @@ class OrientSerializationBinary(object):
     def decode(self, content):
         clsname, data = pyorient_native.deserialize(content,
                                     content.__sizeof__(), self.props)
-        rels = [k for k in data.keys() if ('in_' in k or 'out_' in k
-                                       or k=='in' or k=='out')] 
-        for k in rels:
-            if isinstance(data[k],list):
-                for i in range(len(data[k])):
-                    data[k][i] = OrientRecordLink(str(data[k][i][1]) + ':' +
-                                                  str(data[k][i][2]))
-            elif isinstance(data[k],tuple):
-                data[k] = OrientRecordLink(str(data[k][1]) + ':' +
-                                                  str(data[k][2]))
         return [clsname, data]
 
     def encode(self, record):
