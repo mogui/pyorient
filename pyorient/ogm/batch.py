@@ -359,12 +359,13 @@ class BatchCompiler(object):
     """Suppress execution of batch to allow for later formatting."""
     def __init__(self, batch):
         self.batch = batch
+        self.prev = batch.compile
 
     def __enter__(self):
         self.batch.compile = True
 
     def __exit__(self, e_type, e_value, e_trace):
-        self.batch.compile = False
+        self.batch.compile = self.prev
         # Don't suppress exceptions during compile
         return False
 
@@ -399,7 +400,8 @@ class CompiledBatch(RetrievalCommand):
         """
         if self._formatted is None or args or kwargs:
             encode = self.FORMAT_ENCODER
-            self._formatted = self._compiled.format(*[encode(arg) for arg in args], **{k:encode(v) for k,v in kwargs.items()})
+            self._formatted = self._compiled.format(*[encode(arg) for arg in args],
+                                                    **{k:encode(v) for k,v in kwargs.items()})
 
         return self._formatted
 
