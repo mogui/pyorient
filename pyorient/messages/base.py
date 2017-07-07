@@ -384,8 +384,8 @@ class BaseMessage(object):
                     'content': content, 'version': version}
 
         elif _type['type'] == LINK:
-
-            rid = "#" + str( self._decode_field( _type['struct'][0] ) )
+            # Returning in the format expected by OrientRecordLink, without leading hash
+            rid = str( self._decode_field( _type['struct'][0] ) )
             rid += ":" + str( self._decode_field( _type['struct'][1] ) )
             return rid
 
