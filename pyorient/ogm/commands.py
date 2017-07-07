@@ -50,8 +50,8 @@ class RetrievalCommand(Command, ExpressionMixin):
     def compile(self, compiler=None):
         """Compile this command for reuse later.
         :return: The compiled command text
-        :param compiler: (Optional) A function compiles the command.
-        This must not trigger __str__ on the command type.
+        :param compiler: (Optional) A function that compiles the command.
+        This function must not trigger __str__ on the command instance.
         """
         if not self._compiled:
             self._compiled = compiler() if compiler else str(self)

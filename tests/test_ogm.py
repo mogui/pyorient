@@ -8,6 +8,7 @@ from datetime import datetime
 from pyorient import PyOrientCommandException, PyOrientSQLParsingException
 from pyorient.ogm import Graph, Config
 from pyorient.groovy import GroovyScripts
+from pyorient.utils import STR_TYPES
 
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
@@ -1122,7 +1123,7 @@ class OGMFetchPlansCase(unittest.TestCase):
         # Cache will only include the edge, now
         self.assertEqual(len(cache), 1)
         from pyorient.ogm.edge import Edge
-        self.assertIsInstance(cache.values()[0], Edge)
+        self.assertIsInstance(list(cache.values())[0], Edge)
 
 class OGMLinkResolverCase(unittest.TestCase):
     Node = declarative_node()
@@ -1168,6 +1169,7 @@ class OGMLinkResolverCase(unittest.TestCase):
             print(a.name)
 
 from pyorient.ogm.what import QT
+from pyorient.ogm.batch import BatchCompiler
 class OGMTokensCase(unittest.TestCase):
     Node = declarative_node()
     Relationship = declarative_relationship()
@@ -1180,6 +1182,13 @@ class OGMTokensCase(unittest.TestCase):
     class Next(Relationship):
         label = 'next'
         probability = Float(nullable=False, readonly=True)
+
+    class Foo(Node):
+        element_plural = 'foos'
+        value = Float(nullable=False)
+
+    class Self(Relationship):
+        label = 'self'
 
     def setUp(self):
         g = self.g = Graph(Config.from_url('ogm_tokens', 'root', 'root'
@@ -1236,6 +1245,33 @@ class OGMTokensCase(unittest.TestCase):
 
         b.commit()
 
+        self.cache = {}
+
+        b = g.batch(compile=True, cache=self.cache)
+        b[:] = b.foos.create(value=QT())
+        b[:] = b.foos.create(value=QT())
+        b[:] = b.foos.create(value=QT())
+        b[:] = b.foos.create(value=QT())
+        b[:] = b.foos.create(value=QT())
+        b[:] = b.foos.create(value=QT())
+        b[:] = b.foos.create(value=QT())
+        b[:] = b.foos.create(value=QT())
+        b[:] = b.foos.create(value=QT())
+        b['last'] = b.foos.create(value=QT())
+        b[:] = b[:'last'](OGMTokensCase.Self)>b[:'last']
+        self.run_token_batch = b.commit()
+        self.run_token_batch.format(*tuple(x * 0.1 for x in range(1, 11)))
+
+        c = g.batch()
+        with BatchCompiler(c):
+            c['foos'] = c.foos.query().filter(QT())
+            self.query_foos = c['$foos']
+        self.query_foos.format(OGMTokensCase.Foo.value > 0.5)
+
+        # Reuse existing batch
+        b['self'] = b.self.query()
+        self.self_query = b.collect('self', 'self')
+
     def testTokens(self):
         g = self.g
 
@@ -1251,8 +1287,8 @@ class OGMTokensCase(unittest.TestCase):
         cached = deepcopy(uncached)
         cache = {}
         cached.fetch_plan('*:1', cache)
-        cached_time = timeit.timeit(lambda: cached.all(), number=30)
-        uncached_time = timeit.timeit(lambda: uncached.all(), number=30)
+        cached_time = timeit.timeit(lambda: cached.all(), number=50)
+        uncached_time = timeit.timeit(lambda: uncached.all(), number=50)
         self.assertLess(cached_time, uncached_time)
         print("Cached query {}% faster than uncached".format(cached_time / uncached_time * 100.0))
 
@@ -1267,7 +1303,7 @@ class OGMTokensCase(unittest.TestCase):
         token_sub = next_query.format(outV().as_('o'), inV().as_('i'), cond=OGMTokensCase.Next.probability > 0.5)
 
         cached = token_sub.query().what(unionall('o', 'i')).fetch_plan('*:1', cache)
-        self.assertIsInstance(cached.compile(), (str, unicode))
+        self.assertIsInstance(cached.compile(), STR_TYPES)
         
         probable = cached.all()
         self.assertEqual(len(probable), 3)
@@ -1275,3 +1311,15 @@ class OGMTokensCase(unittest.TestCase):
             print(((p[0].text, p[0].fun), (p[1].text, p[1].fun)))
             self.assertIn(((p[0].text, p[0].fun), (p[1].text, p[1].fun)), probable_transitions)
 
+        # Test compiled batches
+        self.run_token_batch()
+
+        num_greater = len(self.query_foos())
+        self.assertEqual(len(self.query_foos.execute()), num_greater)
+        self.query_foos.format(OGMTokensCase.Foo.value < 0.5)
+        self.assertLess(len(self.query_foos.execute()), num_greater)
+
+        # Ensure duplicates are ignored
+        self.assertEqual(str(self.self_query).count('\n'), 4)
+
+        self.assertIsInstance(self.self_query()['self'][0], OGMTokensCase.Self)

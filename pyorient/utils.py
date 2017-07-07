@@ -118,6 +118,8 @@ if sys.version < '3':
 
     def to_str(x):
         return unicode(x).encode('utf-8')
+
+    STR_TYPES = (str, unicode)
 else:
     def u(x):
         return x
@@ -127,3 +129,6 @@ else:
 
     def to_unicode(x):
         return str(x)
+
+    STR_TYPES = (str, )
+

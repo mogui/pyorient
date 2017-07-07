@@ -7,6 +7,7 @@ from .what import (
     , PropertyWhat, AnyPropertyWhat
 )
 from .element import GraphElement
+from ..utils import STR_TYPES
 
 import json
 import datetime
@@ -116,12 +117,10 @@ class PropertyEncoder:
                 return u'"{:f}"'.format(decimal.Decimal(value))
         elif isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
             return u'"{}"'.format(value)
-        elif isinstance(value, str):
+        elif isinstance(value, STR_TYPES):
             # it just so happens that JSON in ASCII mode has the same limitations
             # and escape sequences as what we need: \u00c5 vs \xc5 representation,
             # quote escaping etc.
-            return json.dumps(value)
-        elif sys.version_info[0] < 3 and isinstance(value, unicode):
             return json.dumps(value)
         elif value is None:
             return 'null'
