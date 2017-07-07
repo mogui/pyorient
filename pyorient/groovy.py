@@ -42,6 +42,13 @@ import hashlib
 from .scripts import ScriptFunction
 from .utils import u
 
+from sys import version_info
+
+ADD_DEL_FLAGS = tuple()
+if version_info[0] == 3:
+    if version_info[1] >= 6:
+        ADD_DEL_FLAGS = (0, 0)
+
 #
 # The scanner code came from the TED project.
 #
@@ -58,7 +65,7 @@ class Scanner(object):
         sub_pattern.flags = flags
         for phrase, action in self.lexicon:
             patterns.append(sre_parse.SubPattern(sub_pattern, [
-                (SUBPATTERN, (len(patterns) + 1, sre_parse.parse(phrase, flags))),
+                (SUBPATTERN, (len(patterns) + 1, ) + ADD_DEL_FLAGS + (sre_parse.parse(phrase, flags), )),
                 ]))
         #sub_pattern.groups = len(patterns) + 1
         group_pattern = sre_parse.SubPattern(sub_pattern, [(BRANCH, (None, patterns))])
