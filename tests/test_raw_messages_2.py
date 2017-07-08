@@ -5,7 +5,7 @@ import os
 import unittest
 
 from pyorient.exceptions import *
-from pyorient import OrientSocket
+from pyorient import OrientSocket, OrientRecordLink
 from pyorient.messages.database import *
 from pyorient.messages.commands import *
 from pyorient.messages.cluster import *
