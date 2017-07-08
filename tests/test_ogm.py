@@ -1154,7 +1154,12 @@ class OGMLinkResolverCase(unittest.TestCase):
         b = g.batch(cache=cache)
         b['a1'] = b.ayes.create(name='Foo')
         b['a2'] = b.ayes.create(name='Bar')
-        b['b'] = b.bees.create(ayes=[b[:'a1'], b[:'a2']])
+        # https://github.com/orientechnologies/orientdb/issues/7435
+        if g.server_version >= (2,2,21):
+            b['b'] = b.bees.create(ayes=[b[:'a1'], b[:'a2']])
+        else:
+            b['ayes'] = [b[:'a1'], b[:'a2']]
+            b['b'] = b.bees.create(ayes=b[:'ayes'])
         b['c'] = b.cees.create(bee=b[:'b'])
 
         b['result'] = b.cees.query().fetch_plan('*:-1')
