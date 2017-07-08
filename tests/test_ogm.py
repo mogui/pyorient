@@ -1292,8 +1292,8 @@ class OGMTokensCase(unittest.TestCase):
         cached = deepcopy(uncached)
         cache = {}
         cached.fetch_plan('*:1', cache)
-        cached_time = timeit.timeit(lambda: cached.all(), number=50)
-        uncached_time = timeit.timeit(lambda: uncached.all(), number=50)
+        cached_time = timeit.timeit(lambda: cached.all(), number=100)
+        uncached_time = timeit.timeit(lambda: uncached.all(), number=100)
         self.assertLess(cached_time, uncached_time)
         print("Cached query {}% faster than uncached".format(cached_time / uncached_time * 100.0))
 

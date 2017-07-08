@@ -49,8 +49,8 @@ class CommandTestCase(unittest.TestCase):
             res = client.record_load( "#11:0", "*:-1", _callback )
             assert res._rid == "#11:0"
             assert res._class == 'followed_by'
-            assert res._in != 0
-            assert res._out != 0
+            assert isinstance(res._in, OrientRecordLink)
+            assert isinstance(res._out, OrientRecordLink)
 
             session_id = client.connect( "root", "root" )
 

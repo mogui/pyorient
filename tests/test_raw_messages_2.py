@@ -60,8 +60,8 @@ class RawMessages_2_TestCase(unittest.TestCase):
 
         assert res._rid == "#11:0"
         assert res._class == 'followed_by'
-        assert res._in != 0
-        assert res._out != 0
+        assert isinstance(res._in, OrientRecordLink)
+        assert isinstance(res._out, OrientRecordLink)
 
     def test_record_count_with_no_opened_db(self):
         connection = OrientSocket( "localhost", 2424 )
