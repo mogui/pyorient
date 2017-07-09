@@ -71,7 +71,8 @@ class BaseMessage(object):
             return OrientSerialization.get_impl(self._orientSocket.serialization_type,
                                                 self._orientSocket._props)
         else:
-            return OrientSerialization.get_impl(self._orientSocket.serialization_type)
+            return OrientSerialization.get_impl(self._orientSocket.serialization_type,
+                                                self._orientSocket._props)
 
     def get_orient_socket_instance(self):
         return self._orientSocket
