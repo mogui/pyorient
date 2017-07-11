@@ -1182,7 +1182,7 @@ class OGMLinkResolverCase(unittest.TestCase):
                 print(a.name)
 
 from pyorient.ogm.what import QT
-from pyorient.ogm.batch import BatchCompiler
+from pyorient.ogm.batch import BatchCompiler, CompiledBatch
 class OGMTokensCase(unittest.TestCase):
     Node = declarative_node()
     Relationship = declarative_relationship()
@@ -1261,6 +1261,7 @@ class OGMTokensCase(unittest.TestCase):
         self.cache = {}
 
         b = g.batch(compile=True, cache=self.cache)
+        self.b_cacher = b.cacher
         b[:] = b.foos.create(value=QT())
         b[:] = b.foos.create(value=QT())
         b[:] = b.foos.create(value=QT())
@@ -1274,6 +1275,7 @@ class OGMTokensCase(unittest.TestCase):
         b[:] = b[:'last'](OGMTokensCase.Self)>b[:'last']
         self.run_token_batch = b.commit()
         self.run_token_batch.format(*tuple(x * 0.1 for x in range(1, 11)))
+
 
         c = g.batch()
         with BatchCompiler(c):
@@ -1329,6 +1331,7 @@ class OGMTokensCase(unittest.TestCase):
             self.assertIn(((p[0].text, p[0].fun), (p[1].text, p[1].fun)), probable_transitions)
 
         # Test compiled batches
+        self.assertEqual(self.b_cacher, self.run_token_batch.cacher)
         self.run_token_batch()
 
         num_greater = len(self.query_foos())
@@ -1339,8 +1342,10 @@ class OGMTokensCase(unittest.TestCase):
         # Ensure duplicates are ignored
         self.assertEqual(str(self.self_query).count('\n'), 4)
 
-
         # 2.2.9 doesn't support Batch.collect() :(
         if g.server_version != (2,2,9):
             self.assertIsInstance(self.self_query()['self'][0], OGMTokensCase.Self)
+
+        auto_callback = CompiledBatch('BEGIN\nCOMMIT', self.g, {})
+        self.assertIsNotNone(auto_callback._cacher)
 

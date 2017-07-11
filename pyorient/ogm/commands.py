@@ -12,6 +12,22 @@ def create_cache_callback(graph, cache):
         cache[OrientRecordLink(record._rid[1:])] = graph.element_from_record(record, cache)
     return cache_cb
 
+class CacheMixin(object):
+    """Manages a cache dictionary and the callback for adding to it
+    Assumes inheriting classes specify 'graph' variable or property"""
+    @property
+    def cache(self):
+        return self._cache
+
+    @cache.setter
+    def cache(self, cache):
+        self._cacher = create_cache_callback(self.graph, cache)
+        self._cache = cache
+
+    @property
+    def cacher(self):
+        return self._cacher
+
 class VertexCommand(Command):
     def __init__(self, command_text):
         self.command_text = command_text
