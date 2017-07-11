@@ -1302,7 +1302,8 @@ class OGMTokensCase(unittest.TestCase):
         cache = {}
         # 2.2.9 doesn't trigger cache callback... ignore
         # TODO Determine range of non-working versions
-        if g.server_version != (2,2,9):
+        caching_supported = g.server_version != (2,2,9)
+        if caching_supported:
             from copy import deepcopy
             cached = deepcopy(uncached)
             cached.fetch_plan('*:1', cache)
@@ -1340,7 +1341,8 @@ class OGMTokensCase(unittest.TestCase):
         foos_cache = {}
         foos_again = self.query_foos.copy(foos_cache)
         foos_again()
-        self.assertGreater(len(foos_cache), 0)
+        if caching_supported:
+            self.assertGreater(len(foos_cache), 0)
         self.assertEqual(len(self.cache), len(foos_cache))
 
         self.query_foos.format(OGMTokensCase.Foo.value < 0.5)
