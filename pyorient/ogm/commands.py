@@ -14,7 +14,9 @@ def create_cache_callback(graph, cache):
 
 class CacheMixin(object):
     """Manages a cache dictionary and the callback for adding to it
-    Assumes inheriting classes specify 'graph' variable or property"""
+    Assumes inheriting classes specify:
+        - 'graph' variable or property
+    """
     @property
     def cache(self):
         return self._cache

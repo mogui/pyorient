@@ -1258,10 +1258,8 @@ class OGMTokensCase(unittest.TestCase):
 
         b.commit()
 
-        self.cache = {}
 
-        b = g.batch(compile=True, cache=self.cache)
-        self.b_cacher = b.cacher
+        b = g.batch(compile=True)
         b[:] = b.foos.create(value=QT())
         b[:] = b.foos.create(value=QT())
         b[:] = b.foos.create(value=QT())
@@ -1277,9 +1275,11 @@ class OGMTokensCase(unittest.TestCase):
         self.run_token_batch.format(*tuple(x * 0.1 for x in range(1, 11)))
 
 
-        c = g.batch()
+        self.cache = {}
+        c = g.batch(cache=self.cache)
+        self.c_cacher = c.cacher
         with BatchCompiler(c):
-            c['foos'] = c.foos.query().filter(QT())
+            c['foos'] = c.foos.query().filter(QT()).fetch_plan('*:1')
             self.query_foos = c['$foos']
         self.query_foos.format(OGMTokensCase.Foo.value > 0.5)
 
@@ -1331,13 +1331,21 @@ class OGMTokensCase(unittest.TestCase):
             self.assertIn(((p[0].text, p[0].fun), (p[1].text, p[1].fun)), probable_transitions)
 
         # Test compiled batches
-        self.assertEqual(self.b_cacher, self.run_token_batch.cacher)
+        self.assertEqual(self.c_cacher, self.query_foos.cacher)
         self.run_token_batch()
 
         num_greater = len(self.query_foos())
         self.assertEqual(len(self.query_foos.execute()), num_greater)
+
+        foos_cache = {}
+        foos_again = self.query_foos.copy(foos_cache)
+        foos_again()
+        self.assertGreater(len(foos_cache), 0)
+        self.assertEqual(len(self.cache), len(foos_cache))
+
         self.query_foos.format(OGMTokensCase.Foo.value < 0.5)
         self.assertLess(len(self.query_foos.execute()), num_greater)
+
 
         # Ensure duplicates are ignored
         self.assertEqual(str(self.self_query).count('\n'), 4)

@@ -153,41 +153,41 @@ class Batch(ExpressionMixin, CacheMixin):
 
         g = self.graph
         if self.compile:
-            command_source = batch_instance = CompiledBatch(str(self), g, self._cache, self._cacher)
+            command_source = CompiledBatch(str(self), g, self._cache, self._cacher)
             finalise_batch = lambda executor: command_source.set_executor(executor)
         else:
-            batch_instance = self
-            command_source = str(batch_instance)
-            finalise_batch = lambda executor: executor()
+            command_source = str(self)
+            finalise_batch = lambda executor: executor(self)
 
         self.clear()
 
         def make_batch_executor(returned, caching):
+            # A notable constraint; batch is only compiled for caching if source batch has cache set
             if caching:
-                getter = lambda: g.client.batch(str(command_source), None, None, batch_instance._cacher)
+                getter = lambda batch: g.client.batch(str(command_source), None, None, batch._cacher)
             else:
-                getter = lambda: g.client.batch(str(command_source))
+                getter = lambda _: g.client.batch(str(command_source))
 
             if returned:
                 if returned[0] in ('[', '{'):
-                    processor = lambda response: \
-                        g.elements_from_records(response, batch_instance._cache) if response else None
+                    processor = lambda response, batch: \
+                        g.elements_from_records(response, batch._cache) if response else None
                 else:
-                    def processor(response):
+                    def processor(response, batch):
                         if response:
                             if is_query_response(response):
-                                return g.elements_from_records(response, batch_instance._cache)
+                                return g.elements_from_records(response, batch._cache)
                             else:
-                                return g.element_from_record(response[0], batch_instance._cache)
-                def handler():
-                    return processor(getter())
+                                return g.element_from_record(response[0], batch._cache)
+                def handler(batch):
+                    return processor(getter(batch), batch)
                 return handler
             else:
-                def handler():
-                    getter()
+                def handler(batch):
+                    getter(batch)
                 return handler
 
-        return finalise_batch(make_batch_executor(returned, batch_instance._cacher is not None))
+        return finalise_batch(make_batch_executor(returned, self._cacher is not None))
 
     def collect(self, *variables, **kwargs):
         """Commit batch, collecting batch variables in a dict.
@@ -233,23 +233,23 @@ class Batch(ExpressionMixin, CacheMixin):
 
         g = self.graph
         if self.compile:
-            command_source = batch_instance = CompiledBatch(str(self), g, self._cache, self._cacher)
+            command_source = CompiledBatch(str(self), g, self._cache, self._cacher)
             finalise_batch = lambda executor: command_source.set_executor(executor)
         else:
-            batch_instance = self
-            command_source = str(batch_instance)
-            finalise_batch = lambda executor: executor()
+            command_source = str(self)
+            finalise_batch = lambda executor: executor(self)
 
         self.clear()
 
+        # A notable constraint; batch is only compiled for caching if source batch has cache set
         if self._cacher:
-            getter = lambda: g.client.batch(str(command_source), None, None, batch_instance._cacher)
+            getter = lambda batch: g.client.batch(str(command_source), None, None, batch._cacher)
         else:
-            getter = lambda: g.client.batch(str(command_source))
+            getter = lambda _: g.client.batch(str(command_source))
 
         if rle:
-            def collect():
-                response = getter()
+            def collect(batch):
+                response = getter(batch)
 
                 collected = {}
                 run_idx = 1
@@ -257,7 +257,7 @@ class Batch(ExpressionMixin, CacheMixin):
                     run_length = response[run_idx-1].oRecordData['size']
 
                     sentinel = run_idx + run_length
-                    collected[var] = g.elements_from_records(response[run_idx:sentinel], batch_instance._cache)
+                    collected[var] = g.elements_from_records(response[run_idx:sentinel], batch._cache)
                     run_idx = sentinel + 1
                 return collected
 
@@ -274,18 +274,18 @@ class Batch(ExpressionMixin, CacheMixin):
         g = self.graph
 
         if self.compile:
-            command_source = batch_instance = CompiledBatch(str(self), g, self._cache, self._cacher)
+            command_source = CompiledBatch(str(self), g, self._cache, self._cacher)
             finalise_batch = lambda executor: command_source.set_executor(executor, suppress_return=True)
         else:
-            batch_instance = self
-            command_source = str(batch_instance)
-            finalise_batch = lambda executor: executor() and None
+            command_source = str(self)
+            finalise_batch = lambda executor: executor(self) and None
 
         self.clear()
+        # A notable constraint; batch is only compiled for caching if source batch has cache set
         if self._cacher:
-            execute_batch = lambda: g.client.batch(str(command_source), None, None, batch_instance._cacher)
+            execute_batch = lambda batch: g.client.batch(str(command_source), None, None, batch._cacher)
         else:
-            execute_batch = lambda: g.client.batch(str(command_source))
+            execute_batch = lambda _: g.client.batch(str(command_source))
 
         return finalise_batch(execute_batch)
 
@@ -391,7 +391,16 @@ class CompiledBatch(RetrievalCommand, CacheMixin):
 
         self._compiled = compiled
         self._formatted = None
+        self._generator = None
+        # For copy()
         self._executor = None
+        self._result_suppressed = False
+
+    def copy(self, cache):
+        """Make a mostly-shallow copy of this compiled batch, using its own cache"""
+        cp = self.__class__(self._compiled, self.graph, cache)
+        cp._formatted = self._formatted
+        return cp.set_executor(self._executor, self._result_suppressed)
 
     def __str__(self):
         """A simplified version of format()"""
@@ -400,16 +409,23 @@ class CompiledBatch(RetrievalCommand, CacheMixin):
         return self._formatted
 
     def set_executor(self, executor, suppress_return=False):
-        if suppress_return:
-            def generator():
-                while True:
-                    yield executor() and None
-        else:
-            def generator():
-                while True:
-                    yield executor()
+        # Allow for subsequent copying
+        self._executor = executor
+        self._result_suppressed = suppress_return
 
-        self._executor = generator()
+        if executor is not None:
+            if suppress_return:
+                def generator():
+                    while True:
+                        yield executor(self) and None
+            else:
+                def generator():
+                    while True:
+                        yield executor(self)
+
+            self._generator = generator()
+        else:
+            self._generator = None
         return self
 
     def format(self, *args, **kwargs):
@@ -426,7 +442,7 @@ class CompiledBatch(RetrievalCommand, CacheMixin):
     def execute(self):
         """Execute the compiled batch"""
         try:
-            return next(self._executor)
+            return next(self._generator)
         except StopIteration:
             return None
 
