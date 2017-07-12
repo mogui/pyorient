@@ -139,7 +139,6 @@ class OrientRecordLink(object):
     def get_hash(self):
         return "#%s" % self.__link
 
-
 class OrientBinaryObject(object):
     """
     This will be a RidBag
