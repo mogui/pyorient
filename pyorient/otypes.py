@@ -1,5 +1,6 @@
 import sys
 import time
+import base64
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -149,10 +150,12 @@ class OrientBinaryObject(object):
     def get_hash(self):
         return "_" + self.b64 + "_"
 
-    def getBin(self):
-        import base64
-        return base64.b64decode(self.b64)
-
+    if sys.version_info[0] < 3:
+        def getBin(self):
+            return bytearray(base64.b64decode(self.b64))
+    else:
+        def getBin(self):
+            return base64.b64decode(self.b64)
 
 class OrientCluster(object):
     def __init__(self, name, cluster_id, cluster_type=None, segment=None):
