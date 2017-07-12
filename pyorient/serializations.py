@@ -585,7 +585,6 @@ class CSVRidBagDecoder(object):
             cid = struct.unpack('>H', data[pos:next_pos])[0]
             pos = next_pos
             next_pos = pos + 8
-            import binascii
             cpos = struct.unpack('>Q', data[pos:next_pos])[0]
             pos = next_pos
             rid_idx += 1
