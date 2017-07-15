@@ -1234,7 +1234,7 @@ class OGMLinkResolverCase(unittest.TestCase):
             # TODO Determine range of non-working versions
             if g.server_version != (2,2,9):
                 if g == self.elems_decorated:
-                    # C handles link resolution
+                    # C (and B) handle link resolution
                     self.assertIsInstance(c[0].bee, OGMLinkResolverCase.B)
                 else:
                     # Link handles its own resolving
@@ -1259,12 +1259,15 @@ class OGMLinkResolverCase(unittest.TestCase):
                 # With the appropriate fetch plan and element/property decoration
                 # (see MapperConfig), both approaches can achieve much the same
                 # effect.
-                appreciators = g.appreciators.query().what(QV.current().as_('person'), out('borrowed').as_('borrowed'), out('watched').as_('watched')).fetch_plan('*:1', cache).order_by(OGMLinkResolverCase.Appreciator.name).all()
+                appreciators_query = g.appreciators.query().what(QV.current().as_('person'), out('borrowed').as_('borrowed'), out('watched').as_('watched')).fetch_plan('*:1', cache).order_by(OGMLinkResolverCase.Appreciator.name)
+                appreciators = appreciators_query.all()
+
+                self.assertIsInstance(appreciators[0].person, OGMLinkResolverCase.Appreciator)
 
                 self.assertEqual(len(appreciators), 2)
                 alice = appreciators[0].person
                 self.assertEqual(alice.name, 'Alice')
-                alice_borrowed = [b.title for b in appreciators[0].borrowed]
+                alice_borrowed = [bk.title for bk in appreciators[0].borrowed]
                 self.assertEqual(len(alice_borrowed), 3)
                 self.assertIn('Anna Karenina', alice_borrowed)
                 self.assertIn('The Adventures of Huckleberry Finn', alice_borrowed)
@@ -1275,7 +1278,7 @@ class OGMLinkResolverCase(unittest.TestCase):
                 self.assertIn('The Godfather', alice_watched)
 
                 bob = appreciators[1].person
-                bob_borrowed = [b.author for b in appreciators[1].borrowed]
+                bob_borrowed = [bk.author for bk in appreciators[1].borrowed]
                 self.assertEqual(len(bob_borrowed), 2)
                 self.assertIn('Gustave Flaubert', bob_borrowed)
                 self.assertIn('Mark Twain', bob_borrowed)
@@ -1284,6 +1287,19 @@ class OGMLinkResolverCase(unittest.TestCase):
                 self.assertIn('Francis Ford Coppola', bob_watched)
                 self.assertIn('James Cameron', bob_watched)
                 self.assertIn('Robert Zemeckis', bob_watched)
+
+                # Fetch the unresolved (but variously decorated) links
+                b['result'] = appreciators_query
+                appreciators = b['$result']
+
+                # Dodge any link resolution to peek at actual type
+                person = dict.__getitem__(appreciators[0]._props, 'person')
+                if g == self.elems_decorated:
+                    from pyorient import OrientRecordLink
+                    self.assertIsInstance(person, OrientRecordLink)
+                else:
+                    # Decorated property that does its own resolving
+                    self.assertEqual(type(appreciators[0].person), type(person))
 
                 cache.clear()
 

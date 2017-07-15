@@ -69,24 +69,6 @@ class CacheMixin(object):
     def cacher(self):
         return self._cacher
 
-class ResolvedOrSame(dict):
-    """A cache wrapper with semantics useful to element property lookups"""
-    def __missing__(self, value):
-        """If there was nothing to resolve, assume a value, not a link"""
-        return value
-
-class ResolvedOrOp(dict):
-    """A cache wrapper that triggers an operation in event of a miss"""
-    def __init__(self, cache, op):
-        """:param cache: A cache dictionary
-        :param op: A one-argument callable, accepting the missed key
-        """
-        dict.__init__(self, cache)
-        self._op = op
-
-    def __missing__(self, key):
-        return self._op(key)
-
 class ElementLink(object):
     """Resolves attributes of linked-to elements."""
     def __init__(self, link, cache):
@@ -98,7 +80,6 @@ class ElementLink(object):
 
     def __getattr__(self, name):
         return getattr(self._cache[self._link], name)
-
 
 from sys import version_info
 if version_info[0] < 3:

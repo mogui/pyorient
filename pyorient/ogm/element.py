@@ -1,5 +1,5 @@
+from pyorient import OrientRecordLink
 import pyorient.ogm.property
-from .mapping import ResolvedOrSame
 
 class GraphElement(object):
     def __init__(self, **kwargs):
@@ -36,7 +36,12 @@ class GraphElement(object):
             # TODO Consider strategies (and practical value) to replace links
             # with resolved elements, to avoid repeated resolving
             # Seems like premature optimisation...
-            elem._props.lookup_op = lambda v: ResolvedOrSame(cache)[v]
+            def cache_lookup(v):
+                if isinstance(v, OrientRecordLink):
+                    return cache.get(v,v)
+                else:
+                    return v
+            elem._props.lookup_op = cache_lookup
         return elem
 
     @property
@@ -63,9 +68,9 @@ class GraphElement(object):
     def __setattr__(self, key, value):
         # Check if the attribute is actually a property of the OGM type
         if (hasattr(type(self), key) and
-            isinstance(getattr(type(self), key), pyorient.ogm.property.Property)):
-                self._props[key] = value
-                return
+                isinstance(getattr(type(self), key), pyorient.ogm.property.Property)):
+            self._props[key] = value
+            return
 
         super(GraphElement, self).__setattr__(key, value)
 

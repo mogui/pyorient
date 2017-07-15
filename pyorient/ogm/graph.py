@@ -13,7 +13,7 @@ from .batch import Batch
 from .commands import VertexCommand, CreateEdgeCommand
 from ..utils import to_unicode
 from .sequence import Sequences
-from .mapping import MapperConfig, Decorate, ResolvedOrOp
+from .mapping import MapperConfig, Decorate
 
 import pyorient
 from collections import namedtuple
@@ -462,7 +462,7 @@ class Graph(object):
                 elif prop_name == 'out_':
                     prop_name = 'out'
 
-            class_prop = '{0}.{1}'.format(cls_name, prop_name)
+            class_prop = cls_name + '.' + prop_name
 
             linked_to = None
             if isinstance(prop_value, LinkedClassProperty) and prop_value._linked_to is not None:
@@ -849,7 +849,7 @@ class Graph(object):
              , self.props_from_db[vertex_cls](props, cache)
              , self._element_cache(cache)) if vertex_cls \
             else Vertex.from_graph(self, record._rid,
-                                   self._generic_props_mapping(props),
+                                   self._generic_props_mapping(props, cache),
                                    self._element_cache(cache))
 
     def vertexes_from_records(self, records, cache=None):
@@ -877,7 +877,8 @@ class Graph(object):
            , self.props_from_db[edge_cls](props, cache)
            , self._element_cache(cache)) if edge_cls \
             else Edge.from_graph(self, record._rid, in_hash, out_hash,
-                                 self._generic_props_mapping(props), self._element_cache(cache))
+                                 self._generic_props_mapping(props, cache),
+                                 self._element_cache(cache))
 
     def edges_from_records(self, records, cache=None):
         return [self.edge_from_record(record, none, cache) for record in records]
@@ -901,8 +902,11 @@ class Graph(object):
         return [self.element_from_record(record, cache) for record in records]
 
     def element_from_link(self, link, cache=None):
-        fetch = lambda l: self.get_element(l.get_hash())
-        return ResolvedOrOp(cache, fetch)[link] if cache else fetch(link)
+        if cache:
+            cached = cache.get(link, None)
+            if cached is not None:
+                return cached
+        return self.get_element(link.get_hash())
 
     def elements_from_links(self, links, cache=None):
         return [self.element_from_link(link, cache) for link in links]

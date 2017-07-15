@@ -49,7 +49,7 @@ class Batch(ExpressionMixin, CacheMixin):
         """
         if isinstance(key, slice):
             command = str(value)
-            self.stack[-1].append('{}'.format(command))
+            self.stack[-1].append(command)
         else:
             VarType = BatchVariable
             if isinstance(value, Command):
@@ -70,7 +70,7 @@ class Batch(ExpressionMixin, CacheMixin):
 
             self.stack[-1].append('LET {} = {}'.format(key, command))
 
-            self.variables[key] = VarType('${}'.format(key), value)
+            self.variables[key] = VarType('$'+key, value)
 
     def sleep(self, ms):
         """Put the batch in wait.
@@ -306,7 +306,7 @@ class Batch(ExpressionMixin, CacheMixin):
             return '({})'.format(variables)
         elif isinstance(variables, (list, tuple)):
             return '[' + ','.join(
-                '${}'.format(cleaned(var)) for var in variables) + ']'
+                '$'+cleaned(var) for var in variables) + ']'
         elif isinstance(variables, dict):
             return '{' + ','.join(
                 '{}:${}'.format(repr(k),cleaned(v))
