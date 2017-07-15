@@ -1,5 +1,6 @@
 from .broker import get_broker
-from .commands import Command, VertexCommand, CreateEdgeCommand, RetrievalCommand, CacheMixin
+from .commands import Command, VertexCommand, CreateEdgeCommand, RetrievalCommand
+from .mapping import CacheMixin
 
 from .vertex import VertexVector
 from .what import What, LetVariable, VertexWhatMixin, EdgeWhatMixin

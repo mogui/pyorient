@@ -1144,42 +1144,148 @@ class OGMLinkResolverCase(unittest.TestCase):
         element_plural = 'cees'
     C.bee = Link(linked_to=B, nullable=False)
 
-    def setUp(self):
-        g = self.g = Graph(Config.from_url('ogm_linkresolver', 'root', 'root'
-                                           , initial_drop=True)
-                           , decorate_properties=True)
+    class Appreciator(Node):
+        element_plural = 'appreciators'
+        name = String(nullable=False)
 
-        g.create_all(OGMLinkResolverCase.Node.registry)
+    class Book(Node):
+        element_plural = 'books'
+        title = String(nullable=False)
+        author = String(nullable=False)
+
+    class Film(Node):
+        element_plural = 'films'
+        name = String(nullable=False)
+        director = String(nullable=False)
+
+    Relationship = declarative_relationship()
+    class Borrowed(Relationship):
+        label = 'borrowed'
+
+    class Watched(Relationship):
+        label = 'watched'
+
+    def setUp(self):
+        from pyorient.ogm.mapping import Decorate, MapperConfig
+        self.props_decorated = \
+                Graph(Config.from_url('ogm_linkresolver_props', 'root', 'root'
+                                      , initial_drop=True)
+                      , decoration=Decorate.Properties)
+        # Alternative specification
+        mapper_conf = MapperConfig(decoration=Decorate.Elements)
+        self.elems_decorated = \
+                Graph(Config.from_url('ogm_linkresolver_elems', 'root', 'root'
+                                      , initial_drop=True)
+                      , None, None, mapper_conf)
+
+        for g in (self.props_decorated, self.elems_decorated):
+            g.create_all(OGMLinkResolverCase.Node.registry, OGMLinkResolverCase.Relationship.registry)
+
+            # Should compiled batches be usable across graphs?
+            # Seems more suited to tests than practical use.
+            b = g.batch()
+            b['a1'] = b.ayes.create(name='Foo')
+            b['a2'] = b.ayes.create(name='Bar')
+            # https://github.com/orientechnologies/orientdb/issues/7435
+            if g.server_version >= (2,2,21):
+                b['b'] = b.bees.create(ayes=[b[:'a1'], b[:'a2']])
+            else:
+                b['ayes'] = [b[:'a1'], b[:'a2']]
+                b['b'] = b.bees.create(ayes=b[:'ayes'])
+            b['c'] = b.cees.create(bee=b[:'b'])
+
+            b['karenina'] = b.books.create(title='Anna Karenina', author='Leo Tolstoy')
+            b['bovary'] = b.books.create(title='Madame Bovary', author='Gustave Flaubert')
+            b['finn'] = b.books.create(title='The Adventures of Huckleberry Finn', author='Mark Twain')
+            b['moby'] = b.books.create(title='Moby Dick', author='Herman Melville')
+
+            b['et'] = b.films.create(name='E.T.', director='Steven Spielberg')
+            b['titanic'] = b.films.create(name='Titanic', director='James Cameron')
+            b['future'] = b.films.create(name='Back to the Future', director='Robert Zemeckis')
+            b['godfather'] = b.films.create(name='The Godfather', director='Francis Ford Coppola')
+
+            b['alice'] = b.appreciators.create(name='Alice')
+            alice = b[:'alice']
+            b[:] = b.borrowed.create(alice, b[:'karenina'])
+            b[:] = b.borrowed.create(alice, b[:'finn'])
+            b[:] = b.borrowed.create(alice, b[:'moby'])
+            b[:] = b.watched.create(alice, b[:'et'])
+            b[:] = b.watched.create(alice, b[:'godfather'])
+            b['bob'] = b.appreciators.create(name='Bob')
+            bob = b[:'bob']
+            b[:] = b.borrowed.create(bob, b[:'bovary'])
+            b[:] = b.borrowed.create(bob, b[:'finn'])
+            b[:] = b.watched.create(bob, b[:'godfather'])
+            b[:] = b.watched.create(bob, b[:'titanic'])
+            b[:] = b.watched.create(bob, b[:'future'])
+
+            b.commit()
 
     def testFetchPlans(self):
-        g = self.g
+        for g in (self.elems_decorated, self.props_decorated):
+            cache = {}
+            b = g.batch(cache=cache)
+            b['result'] = b.cees.query().fetch_plan('*:-1')
+            c = b['$result']
 
-        cache = {}
-        b = g.batch(cache=cache)
-        b['a1'] = b.ayes.create(name='Foo')
-        b['a2'] = b.ayes.create(name='Bar')
-        # https://github.com/orientechnologies/orientdb/issues/7435
-        if g.server_version >= (2,2,21):
-            b['b'] = b.bees.create(ayes=[b[:'a1'], b[:'a2']])
-        else:
-            b['ayes'] = [b[:'a1'], b[:'a2']]
-            b['b'] = b.bees.create(ayes=b[:'ayes'])
-        b['c'] = b.cees.create(bee=b[:'b'])
+            self.assertEqual(len(c), 1)
 
-        b['result'] = b.cees.query().fetch_plan('*:-1')
-        c = b['$result']
+            # 2.2.9 doesn't trigger cache callback... ignore
+            # TODO Determine range of non-working versions
+            if g.server_version != (2,2,9):
+                if g == self.elems_decorated:
+                    # C handles link resolution
+                    self.assertIsInstance(c[0].bee, OGMLinkResolverCase.B)
+                else:
+                    # Link handles its own resolving
+                    self.assertNotIsInstance(c[0].bee, OGMLinkResolverCase.B)
 
-        self.assertEqual(len(c), 1)
+                ayes = c[0].bee.ayes
+                # A custom collection that resolves contained links
+                self.assertNotIsInstance(ayes, list)
+                self.assertEqual(len(ayes), 2)
+                self.assertEqual(ayes[0].name, 'Foo')
+                self.assertEqual(ayes[1].name, 'Bar')
+                for a in ayes:
+                    print(a.name)
 
-        # 2.2.9 doesn't trigger cache callback... ignore
-        # TODO Determine range of non-working versions
-        if g.server_version != (2,2,9):
-            ayes = c[0].bee.ayes
-            self.assertEqual(len(ayes), 2)
-            self.assertEqual(ayes[0].name, 'Foo')
-            self.assertEqual(ayes[1].name, 'Bar')
-            for a in ayes:
-                print(a.name)
+                # Query will by default - unless response_options() is passed
+                # resolve_projections=False - resolve (one level of) links
+                # automatically, returning the elements to which they point.
+                #
+                # This is different from Batches, which return elements
+                # containing unresolved links.
+                #
+                # With the appropriate fetch plan and element/property decoration
+                # (see MapperConfig), both approaches can achieve much the same
+                # effect.
+                appreciators = g.appreciators.query().what(QV.current().as_('person'), out('borrowed').as_('borrowed'), out('watched').as_('watched')).fetch_plan('*:1', cache).order_by(OGMLinkResolverCase.Appreciator.name).all()
+
+                self.assertEqual(len(appreciators), 2)
+                alice = appreciators[0].person
+                self.assertEqual(alice.name, 'Alice')
+                alice_borrowed = [b.title for b in appreciators[0].borrowed]
+                self.assertEqual(len(alice_borrowed), 3)
+                self.assertIn('Anna Karenina', alice_borrowed)
+                self.assertIn('The Adventures of Huckleberry Finn', alice_borrowed)
+                self.assertIn('Moby Dick', alice_borrowed)
+                alice_watched = [f.name for f in appreciators[0].watched]
+                self.assertEqual(len(alice_watched), 2)
+                self.assertIn('E.T.', alice_watched)
+                self.assertIn('The Godfather', alice_watched)
+
+                bob = appreciators[1].person
+                bob_borrowed = [b.author for b in appreciators[1].borrowed]
+                self.assertEqual(len(bob_borrowed), 2)
+                self.assertIn('Gustave Flaubert', bob_borrowed)
+                self.assertIn('Mark Twain', bob_borrowed)
+                bob_watched = [f.director for f in appreciators[1].watched]
+                self.assertEqual(len(bob_watched), 3)
+                self.assertIn('Francis Ford Coppola', bob_watched)
+                self.assertIn('James Cameron', bob_watched)
+                self.assertIn('Robert Zemeckis', bob_watched)
+
+                cache.clear()
 
 from pyorient.ogm.what import QT
 from pyorient.ogm.batch import BatchCompiler, CompiledBatch

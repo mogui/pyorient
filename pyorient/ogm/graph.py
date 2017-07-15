@@ -13,6 +13,7 @@ from .batch import Batch
 from .commands import VertexCommand, CreateEdgeCommand
 from ..utils import to_unicode
 from .sequence import Sequences
+from .mapping import MapperConfig, Decorate, ResolvedOrOp
 
 import pyorient
 from collections import namedtuple
@@ -21,17 +22,15 @@ from os.path import isfile
 ServerVersion = namedtuple('orientdb_version', ['major', 'minor', 'build'])
 
 class Graph(object):
-    def __init__(self, config, user=None, cred=None, strict=False, decorate_properties=False):
+    def __init__(self, config, user=None, cred=None, *args, **kwargs):
         """Connect to OrientDB graph database, creating the database if
         non-existent.
 
         :param config: Information on database to which to connect
         :param user: (Optional) Username by which to use database
         :param cred: (Optional) Credential for database username
-        :param strict: (Optional, default False) Use strict property checking
-        :param decorate_properties: (Optional, default False) Enable dynamic
-        link resolution. If True, vertices and edges can resolve their own
-        links, provided a cache. Otherwise, handle cache indirectly.
+        :param args: If supplied, must be MapperConfig instance
+        :param kwargs: See MapperConfig
 
         :note: user only meaningful when cred also provided.
         """
@@ -56,13 +55,25 @@ class Graph(object):
         self._scripts = config.scripts
         self._sequences = None
 
-        if decorate_properties:
-            from .element import decorate_property
-            self._prop_decorator = decorate_property
-        else:
+        self._element_cache = lambda cache: None
+        mapper_conf = (args and args[0]) or MapperConfig(**kwargs)
+        if not mapper_conf.decorate:
             self._prop_decorator = None
+            self._generic_props_mapping =  lambda db_props, _: db_props
+        else:
+            decorate = mapper_conf.decorate
 
-        self.strict = strict
+            if decorate == Decorate.Elements:
+                self._prop_decorator = decorator = Decorate.iterable
+                self._element_cache = lambda cache: cache
+            elif decorate == Decorate.Properties:
+                self._prop_decorator = decorator = Decorate.property
+
+            self._generic_props_mapping = lambda db_props, cache: {
+                k:decorator(v, cache) for k,v in db_props.items() } \
+                    if cache is not None else db_props
+
+        self._strict = mapper_conf.strict
 
     def open(self, db_name, storage, user=None, cred=None):
         """Open a graph on currently-connected database.
@@ -608,7 +619,7 @@ class Graph(object):
         class_name = vertex_cls.registry_name
 
         if kwargs:
-            db_props = Graph.props_to_db(vertex_cls, kwargs, self.strict)
+            db_props = Graph.props_to_db(vertex_cls, kwargs, self._strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
                     PropertyEncoder.encode_name(k),
@@ -662,7 +673,7 @@ class Graph(object):
 
         expressions = ExpressionMixin()
         if kwargs:
-            db_props = Graph.props_to_db(edge_cls, kwargs, self.strict)
+            db_props = Graph.props_to_db(edge_cls, kwargs, self._strict)
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
                     PropertyEncoder.encode_name(k),
@@ -707,7 +718,7 @@ class Graph(object):
                     'Class \'{}\' not registered with graph.'.format(name))
 
         if props:
-            db_props = Graph.props_to_db(element_class, props, self.strict, skip_if='_readonly')
+            db_props = Graph.props_to_db(element_class, props, self._strict, skip_if='_readonly')
             set_clause = u' SET {}'.format(
                 u','.join(u'{}={}'.format(
                     PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v, ExpressionMixin()))
@@ -835,8 +846,11 @@ class Graph(object):
         props = record.oRecordData
         return vertex_cls.from_graph(self
              , record._rid
-             , self.props_from_db[vertex_cls](props, cache)) if vertex_cls \
-            else Vertex.from_graph(self, record._rid, props)
+             , self.props_from_db[vertex_cls](props, cache)
+             , self._element_cache(cache)) if vertex_cls \
+            else Vertex.from_graph(self, record._rid,
+                                   self._generic_props_mapping(props),
+                                   self._element_cache(cache))
 
     def vertexes_from_records(self, records, cache=None):
         return [self.vertex_from_record(record, None, cache) for record in records]
@@ -860,8 +874,10 @@ class Graph(object):
             edge_cls = self.registry.get(record._class)
         return edge_cls.from_graph(self, record._rid
            , in_hash, out_hash
-           , self.props_from_db[edge_cls](props, cache)) if edge_cls \
-            else Edge.from_graph(self, record._rid, in_hash, out_hash, props)
+           , self.props_from_db[edge_cls](props, cache)
+           , self._element_cache(cache)) if edge_cls \
+            else Edge.from_graph(self, record._rid, in_hash, out_hash,
+                                 self._generic_props_mapping(props), self._element_cache(cache))
 
     def edges_from_records(self, records, cache=None):
         return [self.edge_from_record(record, none, cache) for record in records]
@@ -885,11 +901,20 @@ class Graph(object):
         return [self.element_from_record(record, cache) for record in records]
 
     def element_from_link(self, link, cache=None):
-        cached = cache[link] if cache else None
-        return cached or self.get_element(link.get_hash())
+        fetch = lambda l: self.get_element(l.get_hash())
+        return ResolvedOrOp(cache, fetch)[link] if cache else fetch(link)
 
     def elements_from_links(self, links, cache=None):
         return [self.element_from_link(link, cache) for link in links]
+
+    def parse_record_prop(self, prop, cache):
+        # Invariant: Input and output collection types match
+        if isinstance(prop, list):
+            if len(prop) > 0 and isinstance(prop[0], pyorient.OrientRecordLink):
+                return self.elements_from_links(prop, cache) 
+        elif isinstance(prop, pyorient.OrientRecordLink):
+            return self.element_from_link(prop, cache)
+        return prop
 
     PROPERTY_TYPES = {
         0:Boolean
@@ -952,14 +977,18 @@ class Graph(object):
 
     @staticmethod
     def create_props_mapping(db_to_element, wrapper):
+        def mapped_key(db_props):
+            for k,v in db_props.items():
+                mapped = db_to_element.get(k, None)
+                if mapped is not None:
+                    yield mapped,v
+
         if wrapper is not None:
             return lambda db_props, cache: {
-                db_to_element[k]:wrapper(v, cache) if cache is not None else v for k,v in db_props.items()
-                    if k in db_to_element }
+                k:wrapper(v, cache) for k,v in mapped_key(db_props) } \
+                    if cache is not None else dict(mapped_key(db_props))
         else:
-            return lambda db_props, _: {
-                db_to_element[k]:v for k,v in db_props.items()
-                    if k in db_to_element }
+            return lambda db_props, _: dict(mapped_key(db_props))
 
     @staticmethod
     def props_to_db(element_class, props, strict, skip_if=None):

@@ -2,9 +2,8 @@ from .property import Property, PropertyEncoder
 from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
 from .query_utils import ArgConverter
-from .commands import RetrievalCommand, create_cache_callback
-
-from pyorient import OrientRecordLink
+from .commands import RetrievalCommand
+from .mapping import create_cache_callback
 
 from collections import namedtuple
 from keyword import iskeyword
@@ -136,6 +135,9 @@ class Query(RetrievalCommand):
                 selectuple = namedtuple(prop_prefix + '_props',
                     [Query.sanitise_prop_name(name)
                         for name in prop_names])
+                proj_handler = self._graph.parse_record_prop if params.get('resolve', True) else lambda r, _: r
+            elif prop_names:
+                proj_handler = self._graph.parse_record_prop if params.get('resolve', True) else lambda r, _: r
             wheres = self.build_wheres(params)
 
             g = self._graph
@@ -167,11 +169,11 @@ class Query(RetrievalCommand):
 
                             if len(prop_names) > 1:
                                 yield selectuple(
-                                    *tuple(self.parse_record_prop(
+                                    *tuple(proj_handler(
                                             response.oRecordData.get(name), cache)
                                         for name in prop_names))
                             else:
-                                yield self.parse_record_prop(
+                                yield proj_handler(
                                         response.oRecordData[prop_names[0]], cache)
                         else:
                             yield g.element_from_record(response, cache)
@@ -252,10 +254,11 @@ class Query(RetrievalCommand):
         return props, lets, where, optional_clauses
 
     def all(self):
+        params = self._params
         prop_names = []
-        if self._compiled is not None and 'count' not in self._params:
+        if self._compiled is not None and 'count' not in params:
             # Must do a little extra work, for projection queries
-            self.build_props(self._params, prop_names)
+            self.build_props(params, prop_names)
             select = self._compiled
         else:
             props, lets, where, optional_clauses = self.prepare(prop_names)
@@ -266,12 +269,12 @@ class Query(RetrievalCommand):
                     [Query.sanitise_prop_name(name)
                         for name in prop_names])
             select = self.build_select(props, lets + where + optional_clauses)
-            if 'count' not in self._params:
+            if 'count' not in params:
                 self._compiled = select
 
         g = self._graph
 
-        cache_param = self._params.get('cache', None)
+        cache_param = params.get('cache', None)
         caching = cache_param is not None
         if caching:
             response = g.client.command(select, None, None, cache_param[1])
@@ -281,27 +284,28 @@ class Query(RetrievalCommand):
             response = g.client.command(select)
         if response:
             # TODO Determine which other queries always take only one iteration
-            list_query = 'count' not in self._params
+            list_query = 'count' not in params
 
             if list_query:
                 if prop_names:
+                    proj_handler = self._graph.parse_record_prop if params.get('resolve', True) else lambda r, _: r
                     if len(prop_names) > 1:
                         return [
                             selectuple(*tuple(
-                                self.parse_record_prop(
+                                proj_handler(
                                     record.oRecordData.get(name), cache)
                                 for name in prop_names))
                             for record in response]
                     else:
                         prop_name = prop_names[0]
                         return [
-                            self.parse_record_prop(
+                            proj_handler(
                                 record.oRecordData[prop_name], cache)
                             for record in response]
                 else:
-                    if self._params.get('reify', False) and len(response) == 1:
+                    if params.get('reify', False) and len(response) == 1:
                         # Simplify query for subsequent uses
-                        del self._params['kw_filters']
+                        del params['kw_filters']
                         self.source_name = response[0]._rid
 
                     return g.elements_from_records(response, cache)
@@ -452,6 +456,14 @@ class Query(RetrievalCommand):
         self._params['cache'] = (fetch_cache, create_cache_callback(self._graph, fetch_cache))
         return self
 
+    def response_options(self, resolve_projections):
+        """Fine-tune how responses are processed
+        :param resolve_projections: True to resolve links in projection
+        queries (the default), False to return projections verbatim
+        """
+        self._params['resolve'] = resolve_projections
+        return self
+
     def lock(self):
         self.purge()
         self._params['lock'] = True
@@ -520,7 +532,7 @@ class Query(RetrievalCommand):
             return '{} {}'.format(
                 ArgConverter.convert_to(ArgConverter.Field, order_by[0], self),
                 'DESC' if order_by[1] else 'ASC')
-        return ArgConverter.convert_to(ArgConverter.Field, order_by)
+        return ArgConverter.convert_to(ArgConverter.Field, order_by, self)
 
     def build_optional_clauses(self, params, skip):
         '''LET, while being an optional clause, must precede WHERE
@@ -598,15 +610,6 @@ class Query(RetrievalCommand):
                 ','.join(props), (' FROM ' + src) if src else '', optional_string)
         else:
             return u'SELECT FROM {} {}'.format(src, optional_string)
-
-    def parse_record_prop(self, prop, cache):
-        if isinstance(prop, list):
-            g = self._graph
-            # NOTE For 'ridbags', even of length 1, returns a list.
-            return g.elements_from_links(prop, cache) if len(prop) > 0 and isinstance(prop[0], OrientRecordLink) else prop
-        elif isinstance(prop, OrientRecordLink):
-            return self._graph.element_from_link(prop, cache)
-        return prop
 
 class TempParams(object):
     def __init__(self, params, **kwargs):

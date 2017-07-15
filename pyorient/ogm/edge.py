@@ -12,8 +12,8 @@ class Edge(GraphElement):
         self._out = None
 
     @classmethod
-    def from_graph(cls, graph, element_id, in_hash, out_hash, props):
-        edge = super(Edge, cls).from_graph(graph, element_id, props);
+    def from_graph(cls, graph, element_id, in_hash, out_hash, props, cache=None):
+        edge = super(Edge, cls).from_graph(graph, element_id, props, cache)
         edge._in = in_hash
         edge._out = out_hash
 
