@@ -120,10 +120,10 @@ class Traverse(RetrievalCommand):
         """
         if what:
             if self._target:
-                warnings.warn('Arguments to all() forcing recompile; check if required.')
+                warnings.warn('Arguments to all() forcing recompile; check if required.', RuntimeWarning)
                 return False
             else:
-                warnings.warn('Arguments to all() ignored. If pre-written commands should vary, pre-write variants.')
+                warnings.warn('Arguments to all() ignored. If pre-written commands should vary, pre-write variants.', SyntaxWarning)
         return True
 
     def build_fields(self, what):

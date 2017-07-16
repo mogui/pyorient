@@ -56,6 +56,7 @@ class Query(RetrievalCommand):
             self._class_props = tuple()
         elif isinstance(first_entity, Traverse):
             self._subquery = first_entity
+            self.source_name = None
             self._class_props = tuple()
         elif isinstance(first_entity, LetVariable):
             self.source_name = self.build_what(first_entity)

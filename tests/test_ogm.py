@@ -1069,11 +1069,41 @@ class OGMTestTraversals(unittest.TestCase):
         b['leo'] = b.leos.create()
         b[:] = b[:'leo'](OGMTestTraversals.OnTopOf)>b[:'don']
         b[:] = g.update_edge(b[:'top']).set((OGMTestTraversals.LIFO.in_, b[:'leo']))
-        b['traversal'] = g.traverse(b[:'tgt'], in_(OGMTestTraversals.OnTopOf)).query().filter(QV.depth() > 0)
+
+        traverse = g.traverse(QT(), in_(OGMTestTraversals.OnTopOf))
+
+        b['traversal'] = traverse.query().filter(QV.depth() > 0).format(b[:'tgt'])
         traversals = b['$traversal']
 
         print('{}s all the way down'.format(traversals[0].species()))
         self.assertEqual(len(traversals), 8)
+
+        from copy import deepcopy
+        duplicate_traverse = deepcopy(traverse)
+        formatted = duplicate_traverse.format(traversals[0])
+        second_traversal = formatted.all()
+        self.assertEqual(len(second_traversal), 8)
+
+        # Since the target of the formatted traversal is a token, can not
+        # expect a meaningful result recompiling in Traverse.all(). Create
+        # a new Traverse to test all() argument
+        new_traverse = g.traverse(second_traversal[0])
+        self.assertEqual(len(second_traversal),
+                         len(new_traverse.all(in_(OGMTestTraversals.OnTopOf))))
+
+        # Trigger warning with recompile
+        import warnings
+        with warnings.catch_warnings(record=True) as w:
+            new_traverse.all(in_(OGMTestTraversals.OnTopOf))
+            self.assertEqual(len(w), 1)
+            self.assertTrue(issubclass(w[-1].category, RuntimeWarning))
+
+            # Trigger warning with attempted recompile without target
+            from pyorient.ogm.traverse import Traverse
+            from_str = Traverse.from_string(str(new_traverse), g)
+            from_str.all(in_(OGMTestTraversals.OnTopOf))
+            self.assertEqual(len(w), 2)
+            self.assertTrue(issubclass(w[-1].category, SyntaxWarning))
 
 class OGMFetchPlansCase(unittest.TestCase):
     Node = declarative_node()
