@@ -212,8 +212,18 @@ class BaseMessage(object):
 
                     # reset the nodelist
                     self._node_list = []
-                    for node in payload['members']:
-                        self._node_list.append( OrientNode( node ) )
+                    # TODO FIXME
+                    # For issues https://github.com/mogui/pyorient/issues/250,
+                    #        and https://github.com/mogui/pyorient/issues/251
+                    # Expected payload format appears to have changed.
+                    # Figure out the actual cause of this difference, and avoid
+                    # checking instance type.
+                    if isinstance(payload, list):
+                        for node in payload[1]['members']:
+                            self._node_list.append( OrientNode( node ) )
+                    else:
+                        for node in payload['members']:
+                            self._node_list.append( OrientNode( node ) )
 
                 end_flag = self._decode_field( FIELD_BYTE )
 

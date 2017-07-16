@@ -332,7 +332,7 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         # Syntactic sugar shorthand, via edge class
         valerius_claim = valerius(Carries)>inheritance
-        # ... or via edge class
+        # ... or via edge class broker
         oliver_carries = oliver(Carries.objects)>poor_pouch
 
         g.scripts.add(GroovyScripts.from_file(
