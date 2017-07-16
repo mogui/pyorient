@@ -78,9 +78,9 @@ class GraphElement(object):
         return object.__getattribute__(self, '_props')[key]
 
     def __eq__(self, other):
-        return type(self) is type(other) and \
-               self._id == other._id and \
-               self._props == other._props
+        return self._id == other._id and \
+               self._props == other._props and \
+               type(self) is type(other)
 
     def __ne__(self, other):
         return not self.__eq__(other)

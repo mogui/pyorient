@@ -74,6 +74,8 @@ class OGMAnimalsTestCaseBase(unittest.TestCase):
         g = self.g
 
         rat = g.animals.create(name='rat', specie='rodent')
+        self.assertEqual(rat.context, g)
+
         mouse = g.animals.create(name='mouse', specie='rodent')
         queried_rat = g.query(Animal).filter(
             Animal.name.endswith('at') | (Animal.name == 'tiger')).one()
@@ -327,8 +329,11 @@ class OGMMoneyTestCase(unittest.TestCase):
 
         # Django-style creation
         costanzo_claim = Carries.objects.create(costanzo, inheritance)
-        valerius_claim = Carries.objects.create(valerius, inheritance)
-        oliver_carries = Carries.objects.create(oliver, poor_pouch)
+
+        # Syntactic sugar shorthand, via edge class
+        valerius_claim = valerius(Carries)>inheritance
+        # ... or via edge class
+        oliver_carries = oliver(Carries.objects)>poor_pouch
 
         g.scripts.add(GroovyScripts.from_file(
             os.path.join(
@@ -408,6 +413,27 @@ class OGMClassTestCase(unittest.TestCase):
         else:
             assert False and 'Failed to enforce correct vertex base classes.'
 
+class OGMSplitPropertyCase(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMSplitPropertyCase, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('ogm_split_prop', 'root', 'root'
+                                           , initial_drop=True))
+
+    def testSplit(self):
+        g = self.g
+
+        Node = declarative_node()
+        with self.assertRaises(ValueError):
+            class A(Node):
+                element_plural = 'ayes'
+            class B(Node):
+                element_plural = 'bees'
+            split_prop = String(nullable=False)
+            A.prop = split_prop
+            B.prop = split_prop
 
 DateTimeNode = declarative_node()
 
@@ -646,9 +672,10 @@ class OGMEmbeddedDefaultsTestCase(unittest.TestCase):
 
         # On the next load, the node should have:
         # 'info' = [{'normal': False}]
-        node = g.DefaultEmbeddedNode.query().one()
-        self.assertIn('normal', node.info[0])
-        self.assertIs(node.info[0]['normal'], False)
+        node_queried = g.DefaultEmbeddedNode.query().one()
+        self.assertNotEqual(node, node_queried)
+        self.assertIn('normal', node_queried.info[0])
+        self.assertIs(node_queried.info[0]['normal'], False)
 
 
 if sys.version_info[0] < 3:
@@ -977,6 +1004,7 @@ class OGMTestSequences(unittest.TestCase):
         # Default start value is 0, so first call to next() gives 1
         # Want it to be 2
         seq = self.sequences.create('mycounter', Sequence.Ordered, start=1)
+        self.assertIn('mycounter', self.sequences)
         create_third = g.batch()
         create_third[:] = create_third.items.create(id=seq.next(), qty=30, price=2500)
         create_third.commit()
@@ -999,6 +1027,8 @@ class OGMTestSequences(unittest.TestCase):
             #id = Long(nullable=False, unique=True, default=sequence('item_ids').next())
             id = Long(nullable=False, unique=True)
         g.create_class(SequencedItem)
+
+        self.assertIn('item_ids', self.sequences)
 
         batch_create = g.batch()
         # Would be nice to use default value, but see NOTE above
