@@ -435,6 +435,57 @@ class OGMSplitPropertyCase(unittest.TestCase):
             A.prop = split_prop
             B.prop = split_prop
 
+class OGMArithmeticCase(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMArithmeticCase, self).__init__(*args, **kwargs)
+
+    def setUp(self):
+        pass
+
+    def testArithmetic(self):
+        from pyorient.ogm.expressions import ExpressionMixin
+        expr = ExpressionMixin()
+        dval = Double(name='dval')
+
+        add = dval + 1.0
+        self.assertEqual(expr.arithmetic_string(add), 'dval + 1.0')
+
+        add_paren = (dval + 1.0)[:]
+        self.assertEqual(expr.arithmetic_string(add_paren), '(dval + 1.0)')
+
+        var_add = dval + QV('var')
+        self.assertEqual(expr.arithmetic_string(var_add), 'dval + $var')
+
+        token_add = dval + QT()
+        self.assertEqual(expr.arithmetic_string(token_add), 'dval + {}')
+
+        radd = 1.0 + dval
+        self.assertEqual(expr.arithmetic_string(radd), '1.0 + dval')
+
+        sub = dval - 1.0
+        self.assertEqual(expr.arithmetic_string(sub), 'dval - 1.0')
+        rsub = 1.0 - dval
+        self.assertEqual(expr.arithmetic_string(rsub), '1.0 - dval')
+
+        mul = dval * 1.0
+        self.assertEqual(expr.arithmetic_string(mul), 'dval * 1.0')
+        rmul = 1.0 * dval
+        self.assertEqual(expr.arithmetic_string(rmul), '1.0 * dval')
+
+        div = dval / 1.0
+        self.assertEqual(expr.arithmetic_string(div), 'dval / 1.0')
+        rdiv = 1.0 / dval
+        self.assertEqual(expr.arithmetic_string(rdiv), '1.0 / dval')
+
+        ival = Integer(name='ival')
+
+        odd = ival % 2
+        self.assertEqual(expr.arithmetic_string(odd), 'ival % 2')
+
+        rodd = 2 % ival
+        self.assertEqual(expr.arithmetic_string(rodd), '2 % ival')
+
+
 DateTimeNode = declarative_node()
 
 
