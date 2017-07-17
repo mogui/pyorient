@@ -18,10 +18,6 @@ class MapperConfig(object):
         self.strict = strict
         self.decorate = decoration
 
-is_link_collection = \
-    lambda prop: isinstance(next_value(prop), OrientRecordLink) if isinstance(prop, dict) \
-        else isinstance(next(iter(prop)), OrientRecordLink)
-
 class Decorate(object):
     Nothing = None  # Handling links and link collections is up to you
     Elements = 1    # Light, obscures Link properties by pretending they are what they link to
@@ -81,12 +77,6 @@ class ElementLink(object):
     def __getattr__(self, name):
         return getattr(self._cache[self._link], name)
 
-from sys import version_info
-if version_info[0] < 3:
-    next_value = lambda d: next(d.itervalues())
-else:
-    next_value = lambda d: next(iter(d.values()))
-
 class ElementLinkCollection(object):
     """Resolves linked-to elements in a collection."""
     def __init__(self, collection, cache):
@@ -119,3 +109,14 @@ class ElementLinkCollection(object):
         for link in next_value(self._collection):
             yield self._cache[link]
 
+# Utilities for use by the preceding classes
+
+is_link_collection = \
+    lambda prop: len(prop) > 0 and (isinstance(next_value(prop), OrientRecordLink) if isinstance(prop, dict) \
+        else isinstance(next(iter(prop)), OrientRecordLink))
+
+from sys import version_info
+if version_info[0] < 3:
+    next_value = lambda d: next(d.itervalues())
+else:
+    next_value = lambda d: next(iter(d.values()))
