@@ -476,7 +476,7 @@ class Query(RetrievalCommand):
             lets = ['LET {}'.format(
                 ','.join('{} = {}'.format(
                     PropertyEncoder.encode_name(k),
-                    u'({})'.format(v) if isinstance(v, Query) else
+                    u'({})'.format(v) if isinstance(v, RetrievalCommand) else
                     self.build_what(v)) for k,v in let.items()))]
         else:
             lets = []
