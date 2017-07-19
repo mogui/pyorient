@@ -72,8 +72,8 @@ class Property(PropertyWhat):
         A property should not be shared between multiple contexts."""
         self._context = context
 
-        if not self.props:
-            self.props.append(self.context_name())
+        if not self._props:
+            self._props.append(self.context_name())
 
     def context_name(self):
         if self._name:
@@ -88,7 +88,7 @@ class Property(PropertyWhat):
         return repr(self.context_name())
 
     def __getattr__(self, attr):
-        self = AnyPropertyWhat(self.chain, deepcopy(self.props))
+        self = AnyPropertyWhat(self._chain, deepcopy(self._props))
         return self.__getattr__(attr)
 
 class UUID:

@@ -240,13 +240,13 @@ def all():
 class ChainableWhat(What, Operand):
     def __init__(self, chain, props):
         super(ChainableWhat, self).__init__()
-        self.chain = chain
-        self.props = props
+        self._chain = chain
+        self._props = props
 
     def as_(self, name_override):
         if type(self) is not ChainableWhat:
             # Prevent further chaining
-            self = ChainableWhat(self.chain, self.props)
+            self = ChainableWhat(self._chain, self._props)
         self.name_override = name_override
 
         return self
@@ -357,7 +357,7 @@ class MapMethodMixin(CollectionMethodMixin):
 
 class WhatFilterMixin(object):
     def __getitem__(self, filter_exp):
-        self.chain.append((What.WhatFilter, filter_exp))
+        self._chain.append((What.WhatFilter, filter_exp))
         return self
 
 # Concrete method chaining types
@@ -365,7 +365,7 @@ class MethodWhat(MethodWhatMixin, ChainableWhat):
     def __init__(self, chain=[], props=[]):
         super(MethodWhat, self).__init__(chain, props)
         # Methods can also be chained to props
-        self.method_chain = self.chain
+        self._method_chain = self._chain
 
     @staticmethod
     def prepare_next_link(current, chainer_type, link):
@@ -375,13 +375,13 @@ class MethodWhat(MethodWhatMixin, ChainableWhat):
                 # Constrain next link to type-compatible methods
                 try:
                     current.__getattribute__('_immutable')
-                    next_link = chainer_type(current.chain[:], current.props[:])
+                    next_link = chainer_type(current._chain[:], current._props[:])
                 except:
-                    next_link = chainer_type(current.chain, current.props)
-                next_link.method_chain.append(link)
+                    next_link = chainer_type(current._chain, current._props)
+                next_link._method_chain.append(link)
                 return next_link
             else:
-                current.method_chain.append(link)
+                current._method_chain.append(link)
         else:
             return chainer_type([current, link], [])
 
@@ -392,58 +392,61 @@ class PropertyWhat(MethodWhatMixin, ChainableWhat):
         super(PropertyWhat, self).__init__(chain, props)
 
     def __getattr__(self, attr):
-        self.props.append(attr)
+        self._props.append(attr)
         # Subsequent methods acting on props, not on chain
-        self.method_chain = self.props
+        self._method_chain = self._props
         return self
 
 # Can't make assumptions about type of property
 # Provide all method mixins, and assume user knows what they're doing
 class AnyPropertyWhat(StringMethodMixin, MapMethodMixin, PropertyWhat):
     def __getitem__(self, item):
-        self.props.append((What.WhatFilter, item))
+        self._props.append((What.WhatFilter, item))
         return self
 
 class AnyPropertyMixin(object):
     def __getattr__(self, attr):
         # Prevent further chaining or use as record
-        self = AnyPropertyWhat(self.chain, self.props)
+        self = AnyPropertyWhat(self._chain, self._props)
         return self.__getattr__(attr)
 
 class ElementWhat(RecordMethodMixin, CollectionMethodMixin, WhatFilterMixin, MethodWhat, AnyPropertyMixin):
     def at_rid(self):
         return MethodWhat.prepare_next_link(self, AtRid, (What.AtRid,))
 
+    def at_class(self):
+        return MethodWhat.prepare_next_link(self, AtClass, (What.AtClass,))
+
     def __call__(self):
         raise TypeError(
             '{} is not callable here.'.format(
-                repr(self.props[-1]) if self.props else 'Query function'))
+                repr(self._props[-1]) if self._props else 'Query function'))
 
 class VertexWhatMixin(object):
     def out(self, *labels):
-        self.chain.append((What.Out, labels))
+        self._chain.append((What.Out, labels))
         return self
 
     def in_(self, *labels):
-        self.chain.append((What.In, labels))
+        self._chain.append((What.In, labels))
         return self
 
     def both(self, *labels):
-        self.chain.append((What.Both, labels))
+        self._chain.append((What.Both, labels))
         return self
 
     def outE(self, *labels):
-        chain = self.chain
+        chain = self._chain
         chain.append((What.OutE, labels))
         return EdgeWhat(chain)
 
     def inE(self, *labels):
-        chain = self.chain
+        chain = self._chain
         chain.append((What.InE, labels))
         return EdgeWhat(chain)
 
     def bothE(self, *labels):
-        chain = self.chain
+        chain = self._chain
         chain.append((What.BothE, labels))
         return EdgeWhat(chain)
 
@@ -467,12 +470,12 @@ inV = VertexWhatBegin(What.InV)
 
 class EdgeWhatMixin(object):
     def outV(self):
-        chain = self.chain
+        chain = self._chain
         chain.append((What.OutV,))
         return VertexWhat(chain)
 
     def inV(self):
-        chain = self.chain
+        chain = self._chain
         chain.append((What.InV,))
         return VertexWhat(chain)
 
@@ -506,7 +509,7 @@ class LetVariable(ElementWhat):
         super(LetVariable, self).__init__([(What.WhatLet, (name,))], [])
 
     def QV(self, name):
-        self.chain.append((What.WhatLet, (name,)))
+        self._chain.append((What.WhatLet, (name,)))
         return self
 
     def query(self):

@@ -83,9 +83,6 @@ class Operand(RelativeOperand):
     def contains(self, contained):
         return LogicalConnective(Operator.Contains, (self, contained))
 
-    def endswith(self, trailing):
-        return LogicalConnective(Operator.EndsWith, (self, trailing))
-
     def is_(self, value):
         """ Test if a property is null
 
@@ -105,6 +102,9 @@ class Operand(RelativeOperand):
 
     def matches(self, expression):
         return LogicalConnective(Operator.Matches, (self, expression))
+
+    def endswith(self, trailing):
+        return LogicalConnective(Operator.EndsWith, (self, trailing))
 
     def startswith(self, leading):
         return LogicalConnective(Operator.StartsWith, (self, leading))
@@ -156,12 +156,10 @@ class ArithmeticOperation(ArithmeticMixin, RelativeOperand):
 
 # Record Attributes
 class InstanceOfMixin(object):
-    @classmethod
-    def instanceof(cls, left, right=None):
-        if cls is InstanceOfMixin:
-            return LogicalConnective(Operator.InstanceOf, (left, right))
-        else: # Subclass
-            return LogicalConnective(Operator.InstanceOf, (cls, left))
+    def instanceof(self, left, right=None):
+        if type(self) is not InstanceOfMixin:
+            right = left; left = self
+        return LogicalConnective(Operator.InstanceOf, (left, right))
 
 def instanceof(left, right):
     return InstanceOfMixin.instanceof(left, right)

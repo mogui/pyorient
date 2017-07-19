@@ -58,13 +58,13 @@ class Sequence(ChainableWhat):
         super(Sequence, self).__init__([(What.Sequence, (name, ))], [])
 
     def __format__(self, _):
-        return self.chain[0][1][0]
+        return self._chain[0][1][0]
 
     def current(self):
-        return ChainableWhat(self.chain + [(What.Current, )], [])
+        return ChainableWhat(self._chain + [(What.Current, )], [])
 
     def next(self):
-        return ChainableWhat(self.chain + [(What.Next, )], [])
+        return ChainableWhat(self._chain + [(What.Next, )], [])
 
 def sequence(name):
     return Sequence(name)

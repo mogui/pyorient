@@ -13,8 +13,9 @@ from pyorient.utils import STR_TYPES
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
     Boolean, String, Date, DateTime, Float, Decimal, Double, Integer, Short,
-    Long, EmbeddedMap, EmbeddedSet, Link, LinkList, UUID)
-from pyorient.ogm.what import expand, in_, out, outV, inV, distinct, sysdate, QV, unionall
+    Long, EmbeddedMap, EmbeddedSet, EmbeddedList, Link, LinkList, UUID)
+from pyorient.ogm.what import expand, in_, out, outV, inV, distinct, sysdate, QV, unionall, at_this, at_class
+from pyorient.ogm.operators import instanceof
 
 from pyorient.ogm.update import Update
 from pyorient.ogm.sequence import Sequence, NewSequence, sequence
@@ -434,6 +435,85 @@ class OGMSplitPropertyCase(unittest.TestCase):
             split_prop = String(nullable=False)
             A.prop = split_prop
             B.prop = split_prop
+
+class OGMFilterCase(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMFilterCase, self).__init__(*args, **kwargs)
+
+    def setUp(self):
+        pass
+
+    def testFilters(self):
+        from pyorient.ogm.expressions import ExpressionMixin
+        expr = ExpressionMixin
+
+        ival = Integer(name='ival')
+        eq = ival == 1
+        self.assertEqual(expr.filter_string(eq), 'ival = 1')
+
+        ge = ival >= 1
+        self.assertEqual(expr.filter_string(ge), 'ival >= 1')
+
+        gt = ival > 1
+        self.assertEqual(expr.filter_string(gt), 'ival > 1')
+
+        le = ival <= 1
+        self.assertEqual(expr.filter_string(le), 'ival <= 1')
+
+        lt = ival < 1
+        self.assertEqual(expr.filter_string(lt), 'ival < 1')
+
+        ne = ival != 1
+        self.assertEqual(expr.filter_string(ne), 'ival <> 1')
+
+        is_ = ival.is_(None)
+        self.assertEqual(expr.filter_string(is_), 'ival is null')
+
+        is_not = ival.is_not(None)
+        self.assertEqual(expr.filter_string(is_not), 'ival is not null')
+
+        between = ival.between(0, 2)
+        self.assertEqual(expr.filter_string(between), 'ival BETWEEN 0 and 2')
+
+        sval = String(name='sval')
+        self.assertEqual(expr.filter_string(sval.like('xyz')), 'sval like "xyz"')
+        self.assertEqual(expr.filter_string(sval.startswith('xyz')), 'sval like "xyz%"')
+        self.assertEqual(expr.filter_string(sval.endswith('xyz')), 'sval like "%xyz"')
+
+        simple_email_exp = '\b[\w0-9.%+-]+@[\w0-9.-]+\.[\w]{2,4}\b'
+        import json
+        self.assertEqual(expr.filter_string(sval.matches(simple_email_exp)), 'sval matches {}'.format(json.dumps(simple_email_exp)))
+
+        stringlist = EmbeddedList(name='strings', linked_to=String)
+        self.assertEqual(expr.filter_string(stringlist.contains(sval)), 'sval in strings')
+        self.assertEqual(expr.filter_string(stringlist.contains('xyz')), '"xyz" in strings')
+
+        #self.assertEqual(expr.filter_string(), 'yval < 1')
+        #self.assertEqual(expr.filter_string(), 'yval < 1')
+        #self.assertEqual(expr.filter_string(), 'yval < 1')
+
+        # The declarative_* functions avoid coupling to a particular graph,
+        # and therefore avoid setting the registry_name for vertex and edge
+        # base classes. Not too much of an imposition to specify ourselves.
+        Node = declarative_node(registry_name='V')
+        self.assertEqual(expr.filter_string(at_this.instanceof(Node)), "@this instanceof 'V'")
+
+        class Foo(Node):
+            name = String()
+            value = Short()
+        self.assertEqual(expr.filter_string(at_this.instanceof(Foo)), "@this instanceof 'foo'")
+        self.assertEqual(expr.filter_string(instanceof(at_this, Foo)), "@this instanceof 'foo'")
+        self.assertEqual(expr.filter_string(at_class.instanceof(Foo)), "@class instanceof 'foo'")
+
+        foo_data = EmbeddedMap(name='foo', linked_to=Foo)
+        self.assertEqual(expr.filter_string(foo_data.contains(Foo.name=='bar')), 'foo contains (name = "bar")')
+
+        # TODO Optimise brackets added by filter_string() to preserve logic
+        cond = (Foo.name=='bar') | (Foo.name=='baz') & (Foo.value==5)
+        self.assertEqual(expr.filter_string(cond), '(name = "bar" or (name = "baz" and value = 5))')
+
+        cond = ((Foo.name=='bar') | (Foo.name=='baz')) & (Foo.value==5)
+        self.assertEqual(expr.filter_string(cond), '((name = "bar" or name = "baz") and value = 5)')
 
 class OGMArithmeticCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):

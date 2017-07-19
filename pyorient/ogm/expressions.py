@@ -200,13 +200,11 @@ class ExpressionMixin(object):
                     left_str, PropertyEncoder.encode_value(right, cls), far_right)
             elif op is Operator.Contains:
                 if isinstance(right, LogicalConnective):
-                    return u'{0} contains({1})'.format(
+                    return u'{0} contains ({1})'.format(
                         left_str, cls.filter_string(right))
                 else:
                     return u'{} in {}'.format(
                         PropertyEncoder.encode_value(right, cls), left_str)
-            elif op is Operator.EndsWith:
-                return u'{0} like {1}'.format(left_str, PropertyEncoder.encode_value('%' + right, cls))
             elif op is Operator.Is:
                 if not right: # :)
                     return '{0} is null'.format(left_str)
@@ -219,6 +217,8 @@ class ExpressionMixin(object):
             elif op is Operator.Matches:
                 return u'{0} matches {1}'.format(
                     left_str, PropertyEncoder.encode_value(right, cls))
+            elif op is Operator.EndsWith:
+                return u'{0} like {1}'.format(left_str, PropertyEncoder.encode_value('%' + right, cls))
             elif op is Operator.StartsWith:
                 return u'{0} like {1}'.format(
                     left_str, PropertyEncoder.encode_value(right + '%', cls))
@@ -228,7 +228,8 @@ class ExpressionMixin(object):
             else:
                 raise AssertionError('Unhandled Operator type: {}'.format(op))
         else:
-            return u'{0} {1} {2}'.format(
+            # TODO? Optimise brackets added to preserve logic
+            return u'({0} {1} {2})'.format(
                 cls.filter_string(left)
                 , 'and' if op is Operator.And else 'or'
                 , cls.filter_string(right))
@@ -299,7 +300,7 @@ class ExpressionMixin(object):
             return what_str
 
         if isinstance(what, FunctionWhat):
-            func = what.chain[0][0]
+            func = what._chain[0][0]
             what_function = cls.WhatFunctions[func]
 
             name_override = what.name_override
@@ -314,10 +315,10 @@ class ExpressionMixin(object):
             return '{}{}'.format(
                 what_function.fmt.format(
                     ','.join(cls.what_args(what_function.expected,
-                                            what.chain[0][1]))), as_str)
+                                            what._chain[0][1]))), as_str)
         elif isinstance(what, ChainableWhat):
             chain = []
-            for func_args in what.chain:
+            for func_args in what._chain:
                 func_key = func_args[0]
                 if func_key == What.WhatFilter:
                     filter_exp = func_args[1]
@@ -329,7 +330,7 @@ class ExpressionMixin(object):
 
                 cls.append_what_function(chain, func_key, func_args)
 
-            for prop in what.props:
+            for prop in what._props:
                 if isinstance(prop, tuple):
                     func_key = prop[0]
                     if func_key == What.WhatFilter:
