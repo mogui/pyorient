@@ -15,7 +15,7 @@ from pyorient.ogm.property import (
     Boolean, String, Date, DateTime, Float, Decimal, Double, Integer, Short,
     Long, EmbeddedMap, EmbeddedSet, EmbeddedList, Link, LinkList, UUID)
 from pyorient.ogm.what import expand, in_, out, outV, inV, distinct, sysdate, QV, unionall, at_this, at_class
-from pyorient.ogm.operators import instanceof
+from pyorient.ogm.operators import instanceof, and_, or_
 
 from pyorient.ogm.update import Update
 from pyorient.ogm.sequence import Sequence, NewSequence, sequence
@@ -488,10 +488,6 @@ class OGMFilterCase(unittest.TestCase):
         self.assertEqual(expr.filter_string(stringlist.contains(sval)), 'sval in strings')
         self.assertEqual(expr.filter_string(stringlist.contains('xyz')), '"xyz" in strings')
 
-        #self.assertEqual(expr.filter_string(), 'yval < 1')
-        #self.assertEqual(expr.filter_string(), 'yval < 1')
-        #self.assertEqual(expr.filter_string(), 'yval < 1')
-
         # The declarative_* functions avoid coupling to a particular graph,
         # and therefore avoid setting the registry_name for vertex and edge
         # base classes. Not too much of an imposition to specify ourselves.
@@ -513,7 +509,12 @@ class OGMFilterCase(unittest.TestCase):
         self.assertEqual(expr.filter_string(cond), '(name = "bar" or (name = "baz" and value = 5))')
 
         cond = ((Foo.name=='bar') | (Foo.name=='baz')) & (Foo.value==5)
-        self.assertEqual(expr.filter_string(cond), '((name = "bar" or name = "baz") and value = 5)')
+        nonnative_prec = '((name = "bar" or name = "baz") and value = 5)'
+        self.assertEqual(expr.filter_string(cond), nonnative_prec)
+
+        # Or reverse-polish form
+        cond = and_(or_((Foo.name=='bar'), (Foo.name=='baz')), (Foo.value==5))
+        self.assertEqual(expr.filter_string(cond), nonnative_prec)
 
 class OGMArithmeticCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
