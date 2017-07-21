@@ -153,9 +153,8 @@ class Query(RetrievalCommand):
 
             while True:
                 current_skip = params['skip']
-                where = u'WHERE {0}'.format(
-                    u' and '.join(
-                        [self.rid_lower(current_skip)] + wheres))
+                where = u'WHERE ' + u' and '.join(
+                        [self.rid_lower(current_skip)] + wheres)
 
                 select = self.build_select(props, lets + [where] + optional_clauses)
 
@@ -250,7 +249,7 @@ class Query(RetrievalCommand):
         optional_clauses = self.build_optional_clauses(params, skip)
 
         wheres = rid_clause + self.build_wheres(params)
-        where = [u'WHERE {0}'.format(u' and '.join(wheres))] if wheres else []
+        where = [u'WHERE ' + u' and '.join(wheres)] if wheres else []
 
         return props, lets, where, optional_clauses
 
@@ -511,7 +510,7 @@ class Query(RetrievalCommand):
 
     def build_wheres(self, params):
         kw_filters = params.get('kw_filters')
-        kw_where = [u' and '.join(u'{0}={1}'
+        kw_where = [u' and '.join(u'{}={}'
             .format(PropertyEncoder.encode_name(k),
                     ArgConverter.convert_to(ArgConverter.Vertex, v, self))
                 for k,v in kw_filters.items())] if kw_filters else []
@@ -519,7 +518,7 @@ class Query(RetrievalCommand):
         filter_exp = params.get('filter')
         from .what import QT
         if isinstance(filter_exp, QT):
-            exp_where = ['{{{}}}'.format(filter_exp.token) if filter_exp.token is not None else '{}']
+            exp_where = ['{' + filter_exp.token + '}' if filter_exp.token is not None else '{}']
         else:
             exp_where = [self.filter_string(filter_exp)] if filter_exp else []
 
@@ -542,35 +541,33 @@ class Query(RetrievalCommand):
 
         group_by = params.get('group_by')
         if group_by:
-            group_clause = 'GROUP BY {}'.format(
-                ','.join([by.context_name() for by in group_by]))
+            group_clause = 'GROUP BY ' + \
+                ','.join([by.context_name() for by in group_by])
             optional_clauses.append(group_clause)
 
         order_by = params.get('order_by')
         if order_by:
-            order_clause = 'ORDER BY {0}'.format(
-                ','.join([self.build_order_expression(by) for by in order_by]))
+            order_clause = 'ORDER BY ' + \
+                ','.join([self.build_order_expression(by) for by in order_by])
             optional_clauses.append(order_clause)
 
         unwind = params.get('unwind')
         if unwind:
-           unwind_clause = 'UNWIND {}'.format(
-                    unwind.context_name()
-                    if isinstance(unwind, Property) else unwind)
+           unwind_clause = 'UNWIND ' + (unwind.context_name() if isinstance(unwind, Property) else unwind)
            optional_clauses.append(unwind_clause)
 
         if skip:
-            optional_clauses.append('SKIP {}'.format(skip))
+            optional_clauses.append('SKIP ' + str(skip))
 
         # TODO Determine other functions for which limit is useless
         if 'count' not in params:
             limit = params.get('limit')
             if limit:
-                optional_clauses.append('LIMIT {}'.format(limit))
+                optional_clauses.append('LIMIT ' + str(limit))
 
         fetch = params.get('fetch')
         if fetch:
-            optional_clauses.append('FETCHPLAN {}'.format(fetch))
+            optional_clauses.append('FETCHPLAN ' + fetch)
 
         lock = params.get('lock')
         if lock:
@@ -607,10 +604,10 @@ class Query(RetrievalCommand):
 
         optional_string = ' '.join(optional_clauses)
         if props:
-            return u'SELECT {}{} {}'.format(
-                ','.join(props), (' FROM ' + src) if src else '', optional_string)
+            return u'SELECT ' + ','.join(props) + \
+                    ((' FROM ' + src) if src else '') + ' ' + optional_string
         else:
-            return u'SELECT FROM {} {}'.format(src, optional_string)
+            return u'SELECT FROM ' + src + ' ' + optional_string
 
 class TempParams(object):
     def __init__(self, params, **kwargs):

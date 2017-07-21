@@ -481,7 +481,7 @@ class Graph(object):
 
             try:
                 self.client.command(
-                    'CREATE PROPERTY {0} {1} {2}'
+                    'CREATE PROPERTY {} {} {}'
                         .format(class_prop
                                 , type(prop_value).__name__
                                 , linked_to or ''))
@@ -492,7 +492,7 @@ class Graph(object):
             if prop_value._default is not None:
                 if self.server_version >= (2,1,0):
                     self.client.command(
-                        'ALTER PROPERTY {0} DEFAULT {1}'
+                        'ALTER PROPERTY {} DEFAULT {}'
                             .format(class_prop,
                                     ArgConverter.convert_to(ArgConverter.Value,
                                                             prop_value._default,
@@ -500,7 +500,7 @@ class Graph(object):
 
             if not prop_value._nullable:
                 self.client.command(
-                        'ALTER PROPERTY {0} NOTNULL {1}'
+                        'ALTER PROPERTY {} NOTNULL {}'
                             .format(class_prop
                                     , str(not prop_value._nullable).lower()))
 
@@ -520,7 +520,7 @@ class Graph(object):
             if prop_value._indexed:
                 try:
                     self.client.command(
-                        'CREATE INDEX {0} {1}'
+                        'CREATE INDEX {} {}'
                             .format(class_prop
                                     , 'UNIQUE' if prop_value._unique
                                       else 'NOTUNIQUE'))
@@ -546,10 +546,9 @@ class Graph(object):
         """
         if ignore_instances:
             self.client.command(
-                'DROP CLASS {} UNSAFE'.format(cls.registry_name))
+                'DROP CLASS ' + cls.registry_name + ' UNSAFE')
         else:
-            self.client.command(
-                'DROP CLASS {}'.format(cls.registry_name))
+            self.client.command('DROP CLASS ' + cls.registry_name)
 
     def define_class(self, cls):
         cls_name = cls.registry_name
@@ -642,22 +641,21 @@ class Graph(object):
         if where is not None:
             where_clause = ''
             if isinstance(where, dict):
-                where_clause = u' and '.join(u'{0}={1}'
+                where_clause = u' and '.join(u'{}={}'
                     .format(PropertyEncoder.encode_name(k)
                             , PropertyEncoder.encode_value(v, ExpressionMixin()))
                     for k,v in where.items())
             else:
                 where_clause = ExpressionMixin.filter_string(where)
 
-            delete_clause += ' WHERE {}'.format(where_clause)
+            delete_clause += ' WHERE ' + where_clause
         if limit is not None:
-            delete_clause += ' LIMIT {}'.format(limit)
+            delete_clause += ' LIMIT ' + str(limit)
         if batch is not None:
-            delete_clause += ' BATCH {}'.format(batch)
+            delete_clause += ' BATCH ' + str(batch)
 
         return VertexCommand(
-            u'DELETE VERTEX {}{}'.format(
-                vertex_clause, delete_clause))
+            u'DELETE VERTEX ' + vertex_clause + delete_clause)
 
     def create_edge(self, edge_cls, from_vertex, to_vertex, **kwargs):
         result = self.client.command(
@@ -674,11 +672,11 @@ class Graph(object):
         expressions = ExpressionMixin()
         if kwargs:
             db_props = Graph.props_to_db(edge_cls, kwargs, self._strict)
-            set_clause = u' SET {}'.format(
+            set_clause = u' SET ' + \
                 u','.join(u'{}={}'.format(
                     PropertyEncoder.encode_name(k),
                     ArgConverter.convert_to(ArgConverter.Vertex, v, expressions))
-                    for k, v in db_props.items()))
+                    for k, v in db_props.items())
         else:
             set_clause = ''
 
@@ -697,15 +695,15 @@ class Graph(object):
                 name, code, parameter_str, 'true' if idempotent else 'false', language))
 
     def get_vertex(self, vertex_id):
-        record = self.client.command('SELECT FROM {}'.format(vertex_id))
+        record = self.client.command('SELECT FROM ' + vertex_id)
         return self.vertex_from_record(record[0]) if record else None
 
     def get_edge(self, edge_id):
-        record = self.client.command('SELECT FROM {}'.format(edge_id))
+        record = self.client.command('SELECT FROM ' + edge_id)
         return self.edge_from_record(record[0]) if record else None
 
     def get_element(self, elem_id):
-        record = self.client.command('SELECT FROM {}'.format(elem_id))
+        record = self.client.command('SELECT FROM ' + elem_id)
         return self.element_from_record(record[0]) if record else None
 
     def save_element(self, element_class, props, elem_id):
@@ -719,14 +717,14 @@ class Graph(object):
 
         if props:
             db_props = Graph.props_to_db(element_class, props, self._strict, skip_if='_readonly')
-            set_clause = u' SET {}'.format(
+            set_clause = u' SET ' + \
                 u','.join(u'{}={}'.format(
                     PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v, ExpressionMixin()))
-                    for k, v in db_props.items()))
+                    for k, v in db_props.items())
         else:
             set_clause = ''
 
-        result = self.client.command(u'UPDATE {}{}'.format(elem_id, set_clause))
+        result = self.client.command(u'UPDATE ' + elem_id + set_clause)
         return result and (result[0] == 1 or result[0] == b'1')
 
     def query(self, first_entity, *entities):
@@ -771,7 +769,7 @@ class Graph(object):
         :param from_: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-        records = self.client.query('SELECT EXPAND( outE({0}) ) FROM {1}'
+        records = self.client.query('SELECT EXPAND( outE({}) ) FROM {}'
             .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
                     , self.coerce_class_names(from_)), -1)
         return [self.edge_from_record(r) for r in records] \
@@ -783,7 +781,7 @@ class Graph(object):
         :param to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-        records = self.client.query('SELECT EXPAND( inE({0}) ) FROM {1}'
+        records = self.client.query('SELECT EXPAND( inE({}) ) FROM {}'
             .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
                     , self.coerce_class_names(to)), -1)
         return [self.edge_from_record(r) for r in records] \
@@ -795,7 +793,7 @@ class Graph(object):
         :param from_to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-        records = self.client.query('SELECT EXPAND( bothE({0}) ) FROM {1}'
+        records = self.client.query('SELECT EXPAND( bothE({}) ) FROM {}'
             .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
                     , self.coerce_class_names(from_to)), -1)
         return [self.edge_from_record(r) for r in records] \
@@ -807,7 +805,7 @@ class Graph(object):
         :param from_: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-        records = self.client.query('SELECT EXPAND( out({0}) ) FROM {1}'
+        records = self.client.query('SELECT EXPAND( out({}) ) FROM {}'
             .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
                     , self.coerce_class_names(from_)), -1)
         return [self.vertex_from_record(v) for v in records] \
@@ -819,7 +817,7 @@ class Graph(object):
         :param to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-        records = self.client.query('SELECT EXPAND( in({0}) ) FROM {1}'
+        records = self.client.query('SELECT EXPAND( in({}) ) FROM {}'
             .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
                     , self.coerce_class_names(to)), -1)
         return [self.vertex_from_record(v) for v in records] \
@@ -831,7 +829,7 @@ class Graph(object):
         :param from_to: Vertex id, class, or class name
         :param edge_classes: Filter by these edges
         """
-        records = self.client.query('SELECT EXPAND( both({0}) )FROM {1}'
+        records = self.client.query('SELECT EXPAND( both({}) )FROM {}'
             .format(','.join(Graph.coerce_class_names_to_quoted(edge_classes))
                     , self.coerce_class_names(from_to)), -1)
         return [self.vertex_from_record(v) for v in records] \

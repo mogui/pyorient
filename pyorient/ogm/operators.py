@@ -46,7 +46,7 @@ def and_(a, b):
         return LogicalConnective(Operator.And, (a, b))
     else:
         raise TypeError('Both operands to conjunction must be '
-                        'LogicalConnective objects; got {0} & {1}'.format(
+                        'LogicalConnective objects; got {} & {}'.format(
                             type(a), type(b)))
 
 def or_(a, b):
@@ -54,7 +54,7 @@ def or_(a, b):
         return LogicalConnective(Operator.Or, (a, b))
     else:
         raise TypeError('Both operands to disjunction must be LogicalConnective '
-                        'objects; got {0} | {1}'.format(type(a), type(b)))
+                        'objects; got {} | {}'.format(type(a), type(b)))
 
 class IdentityOperand(object):
     def __eq__(self, value):

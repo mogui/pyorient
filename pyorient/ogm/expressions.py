@@ -163,7 +163,7 @@ class ExpressionMixin(object):
             if isinstance(left, Property):
                 left_str = left.context_name()
             elif isinstance(left, ArithmeticOperation):
-                left_str = u'({})'.format(cls.arithmetic_string(left))
+                left_str = u'(' + cls.arithmetic_string(left) + u')'
             elif isinstance(left, ChainableWhat):
                 left_str = cls.build_what(left)
             else:
@@ -171,65 +171,65 @@ class ExpressionMixin(object):
                     'Operator {} not supported as a filter'.format(op))
 
             if op is Operator.Equal:
-                return u'{0} = {1}'.format(
+                return u'{} = {}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Vertex
                                                       , right, cls))
             elif op is Operator.GreaterEqual:
-                return u'{0} >= {1}'.format(
+                return u'{} >= {}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, cls))
             elif op is Operator.Greater:
-                return u'{0} > {1}'.format(
+                return u'{} > {}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, cls))
             elif op is Operator.LessEqual:
-                return u'{0} <= {1}'.format(
+                return u'{} <= {}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, cls))
             elif op is Operator.Less:
-                return u'{0} < {1}'.format(
+                return u'{} < {}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Value
                                                       , right, cls))
             elif op is Operator.NotEqual:
-                return u'{0} <> {1}'.format(
+                return u'{} <> {}'.format(
                     left_str, ArgConverter.convert_to(ArgConverter.Vertex
                                                       , right, cls))
             elif op is Operator.Between:
                 far_right = PropertyEncoder.encode_value(expression_root.operands[2], cls)
-                return u'{0} BETWEEN {1} and {2}'.format(
+                return u'{} BETWEEN {} and {}'.format(
                     left_str, PropertyEncoder.encode_value(right, cls), far_right)
             elif op is Operator.Contains:
                 if isinstance(right, LogicalConnective):
-                    return u'{0} contains ({1})'.format(
+                    return u'{} contains ({})'.format(
                         left_str, cls.filter_string(right))
                 else:
                     return u'{} in {}'.format(
                         PropertyEncoder.encode_value(right, cls), left_str)
             elif op is Operator.Is:
                 if not right: # :)
-                    return '{0} is null'.format(left_str)
+                    return '{} is null'.format(left_str)
             elif op is Operator.IsNot:
                 if not right:
                     return '{} is not null'.format(left_str)
             elif op is Operator.Like:
-                return u'{0} like {1}'.format(
+                return u'{} like {}'.format(
                     left_str, PropertyEncoder.encode_value(right, cls))
             elif op is Operator.Matches:
-                return u'{0} matches {1}'.format(
+                return u'{} matches {}'.format(
                     left_str, PropertyEncoder.encode_value(right, cls))
             elif op is Operator.EndsWith:
-                return u'{0} like {1}'.format(left_str, PropertyEncoder.encode_value('%' + right, cls))
+                return u'{} like {}'.format(left_str, PropertyEncoder.encode_value('%' + right, cls))
             elif op is Operator.StartsWith:
-                return u'{0} like {1}'.format(
+                return u'{} like {}'.format(
                     left_str, PropertyEncoder.encode_value(right + '%', cls))
             elif op is Operator.InstanceOf:
-                return u'{0} instanceof {1}'.format(
+                return u'{} instanceof {}'.format(
                     left_str, repr(right.registry_name))
             else:
                 raise AssertionError('Unhandled Operator type: {}'.format(op))
         else:
             # TODO? Optimise brackets added to preserve logic
-            return u'({0} {1} {2})'.format(
+            return u'({} {} {})'.format(
                 cls.filter_string(left)
                 , 'and' if op is Operator.And else 'or'
                 , cls.filter_string(right))
@@ -304,7 +304,7 @@ class ExpressionMixin(object):
             what_function = cls.WhatFunctions[func]
 
             name_override = what.name_override
-            as_str = ' AS {}'.format(name_override) if name_override else ''
+            as_str = (' AS ' + name_override) if name_override else ''
             if prop_names is not None:
                 # Projections not allowed with Expand
                 counted = func is not What.Expand
@@ -312,10 +312,9 @@ class ExpressionMixin(object):
                     prop_names.append(
                         cls.parse_prop_name(what_function.fmt, name_override))
 
-            return '{}{}'.format(
-                what_function.fmt.format(
+            return what_function.fmt.format(
                     ','.join(cls.what_args(what_function.expected,
-                                            what._chain[0][1]))), as_str)
+                                            what._chain[0][1]))) + as_str
         elif isinstance(what, ChainableWhat):
             chain = []
             for func_args in what._chain:
@@ -341,14 +340,14 @@ class ExpressionMixin(object):
                     chain.append(prop)
 
             name_override = what.name_override
-            as_str = ' AS {}'.format(name_override) if name_override else ''
+            as_str = (' AS ' + name_override) if name_override else ''
             if prop_names is not None:
                 prop_names.append(
                     cls.parse_prop_name(chain[0], name_override))
             return '.'.join(chain) + as_str
         else:
             # For now, can assume it's a Token
-            return '{{{}}}'.format(what.token) if what.token is not None else '{}'
+            return ('{' + what.token + '}') if what.token is not None else '{}'
 
     @staticmethod
     def parse_prop_name(from_str, override):
