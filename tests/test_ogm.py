@@ -1120,7 +1120,12 @@ class OGMUpdateCase(unittest.TestCase):
         create_stock = g.batch()
         create_stock['i1'] = create_stock.items.create(id=123, qty=3, price=decimal.Decimal('123.45'))
         create_stock['i2'] = create_stock.items.create(id=456, qty=6, price=decimal.Decimal('456.78'))
-        create_stock['bag'] = create_stock.bags.create(flat=[create_stock[:'i1'], create_stock[:'i2']], map={'i1':create_stock[:'i1'], 'i2':create_stock[:'i2']})
+        # https://github.com/orientechnologies/orientdb/issues/7435
+        if g.server_version >= (2,2,21):
+            create_stock['bag'] = create_stock.bags.create(flat=[create_stock[:'i1'], create_stock[:'i2']], map={'i1':create_stock[:'i1'], 'i2':create_stock[:'i2']})
+        else:
+            create_stock['i_list'] = [create_stock[:'i1'], create_stock[:'i2']]
+            create_stock['bag'] = create_stock.bags.create(flat=create_stock[:'i_list'], map={'i1':create_stock[:'i1'], 'i2':create_stock[:'i2']})
         self.bag = create_stock['$bag']
 
     def testUpdates(self):
