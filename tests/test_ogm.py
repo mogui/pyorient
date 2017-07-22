@@ -13,7 +13,7 @@ from pyorient.utils import STR_TYPES
 from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
     Boolean, String, Date, DateTime, Float, Decimal, Double, Integer, Short,
-    Long, EmbeddedMap, EmbeddedSet, EmbeddedList, Link, LinkList, UUID)
+    Long, EmbeddedMap, EmbeddedSet, EmbeddedList, Link, LinkList, LinkMap, UUID)
 from pyorient.ogm.what import expand, in_, out, outV, inV, distinct, sysdate, QV, unionall, at_this, at_class
 from pyorient.ogm.operators import instanceof, and_, or_
 
@@ -1084,7 +1084,7 @@ class OGMTestAbstractField(unittest.TestCase):
         self.assertFalse(subclass.abstract)
         self.assertEqual(subclass.__bases__[0], abstractClass)
 
-class OGMTestSequences(unittest.TestCase):
+class OGMUpdateCase(unittest.TestCase):
     Node = declarative_node()
     class Counter(Node):
         element_plural = 'counters'
@@ -1092,39 +1092,77 @@ class OGMTestSequences(unittest.TestCase):
         name = String(nullable=False)
         value = Long(nullable=False, default=0)
 
-    class Items(Node):
+    class Item(Node):
         element_plural = 'items'
 
         id = Long(nullable=False, unique=True)
         qty = Short(nullable=False)
         price = Decimal(nullable=False)
 
+    class Bag(Node):
+        element_plural = 'bags'
+
+    Bag.flat = LinkList(linked_to=Item)
+    Bag.map = LinkMap(linked_to=Item)
+
     def __init__(self, *args, **kwargs):
-        super(OGMTestSequences, self).__init__(*args, **kwargs)
+        super(OGMUpdateCase, self).__init__(*args, **kwargs)
         self.g = None
 
     def setUp(self):
         g = self.g = Graph(Config.from_url('ogm_updates', 'root', 'root'
                                            , initial_drop=True))
 
-        g.create_all(OGMTestSequences.Node.registry)
+        g.create_all(OGMUpdateCase.Node.registry)
         self.mycounter = g.counters.create(name='mycounter')
         self.sequences = g.sequences
 
+        create_stock = g.batch()
+        create_stock['i1'] = create_stock.items.create(id=123, qty=3, price=decimal.Decimal('123.45'))
+        create_stock['i2'] = create_stock.items.create(id=456, qty=6, price=decimal.Decimal('456.78'))
+        create_stock['bag'] = create_stock.bags.create(flat=[create_stock[:'i1'], create_stock[:'i2']], map={'i1':create_stock[:'i1'], 'i2':create_stock[:'i2']})
+        self.bag = create_stock['$bag']
+
+    def testUpdates(self):
+        g = self.g
+
+        no_update = g.update(OGMUpdateCase.Item)
+        self.assertEqual(str(no_update), 'UPDATE item')
+
+        upserted = g.items.update().content('{"id":789, "qty":9, "price":789.01}').upsert().return_(Update.After, QV.current()).where(OGMUpdateCase.Item.id == 789).limit(1).do()
+        self.assertEqual(len(upserted), 1)
+        self.assertEqual(upserted[0].id, 789)
+        self.assertEqual(upserted[0].qty, 9)
+        self.assertEqual(upserted[0].price, decimal.Decimal('789.01'))
+
+        self.assertEqual(1, g.items.update().merge({"qty":10}).where(OGMUpdateCase.Item.id == 789).do())
+        self.assertEqual(10, g.items.query(OGMUpdateCase.Item.qty).filter(OGMUpdateCase.Item.id == 789).first())
+
+        self.assertEqual(1, g.items.update().set(("qty",11)).where(OGMUpdateCase.Item.id == 789).do())
+        self.assertEqual(11, g.items.query(OGMUpdateCase.Item.qty).filter(OGMUpdateCase.Item.id == 789).first())
+
+        bigger_bag = self.bag.update().add((OGMUpdateCase.Bag.flat, upserted[0])).put((OGMUpdateCase.Bag.map, ('i3', upserted[0]))).return_(Update.After, QV.current()).do()
+        self.assertEqual(len(bigger_bag[0].flat), 3)
+        self.assertEqual(len(bigger_bag[0].flat), len(bigger_bag[0].map))
+        self.assertEqual(bigger_bag[0].map['i3'].get_hash(), upserted[0]._id)
+
+        smaller_bag = self.bag.update().remove((OGMUpdateCase.Bag.flat, upserted[0]), (OGMUpdateCase.Bag.map, 'i3')).return_(Update.After, QV.current()).do()
+        self.assertEqual(len(smaller_bag[0].flat), 2)
+        self.assertEqual(len(smaller_bag[0].flat), len(smaller_bag[0].map))
 
     def testSequences(self):
         g = self.g
 
         # A solution to auto-incrementing ids, when sequences not available (pre-OrientDB 2.2)
-        Counter = OGMTestSequences.Counter
+        Counter = OGMUpdateCase.Counter
 
         create_first = g.batch()
-        create_first['counter'] = g.counters.update().increment((Counter.value, 1)).return_(Update.Before, QV.current()).where(Counter.name=='mycounter')
+        create_first['counter'] = g.counters.update().increment((Counter.value, 1)).return_(Update.Before, QV.current()).where(Counter.name=='mycounter').lock(Update.Default)
         create_first[:] = create_first.items.create(id=create_first[:'counter'].value[0], qty=10, price=1000)
         create_first.commit()
 
         create_second = g.batch()
-        create_second['counter'] = self.mycounter.update().increment((Counter.value, 1)).return_(Update.Before, QV.current())
+        create_second['counter'] = self.mycounter.update().increment((Counter.value, 1)).return_(Update.Before, QV.current()).lock(Update.Record).timeout(1000)
         create_second['item'] = create_second.items.create(id=create_second[:'counter'].value[0], qty=20, price=1800)
         second_item = create_second['$item']
 
@@ -1151,7 +1189,7 @@ class OGMTestSequences(unittest.TestCase):
         self.sequences.drop(seq)
 
 
-        class SequencedItem(OGMTestSequences.Node):
+        class SequencedItem(OGMUpdateCase.Node):
             element_plural = 'sequenced'
 
             item_ids = NewSequence(Sequence.Ordered, start=-1)

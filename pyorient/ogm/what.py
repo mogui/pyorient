@@ -516,52 +516,88 @@ class LetVariable(ElementWhat):
         from .query import Query
         return Query(None, (self, ))
 
-    def traverse(self, *what):
+    def traverse(self, *what, **kwargs):
         from .traverse import Traverse
-        return Traverse(None, self, *what)
+        return Traverse(None, self, *what, **kwargs)
 
 class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMethodMixin, ArithmeticMixin):
+    """Query Variable, used in graph SELECTs and TRAVERSEs.
+       Specifies a number of classmethods for predefined variables; can also be
+       created in LET clauses.
+    """
     def __init__(self, name):
+        """Reference a query variable
+        :param name: Referenced variable (without leading '$')
+        """
         super(QV, self).__init__(name)
 
     @classmethod
     def parent(cls):
+        """Parent context from a sub-query (SELECT and TRAVERSE)"""
         return cls('parent')
 
     @classmethod
     def current(cls):
+        """Current record in context of use (SELECT and TRAVERSE)"""
         return cls('current')
 
     @classmethod
     def parent_current(cls):
+        """Shorthand for current record in parent's context (SELECT and TRAVERSE)"""
         return cls('parent').QV('current')
 
     @classmethod
+    def root(cls):
+        """Root context from a sub-query (SELECT and TRAVERSE)"""
+        return cls('root')
+
+    @classmethod
+    def root_current(cls):
+        """Shorthand for current record in root context (SELECT and TRAVERSE)"""
+        return cls('root').QV('current')
+
+    @classmethod
     def depth(cls):
+        """The current depth of nesting (TRAVERSE)"""
         return cls('depth')
 
     @classmethod
     def path(cls):
+        """String representation of the current (TRAVERSE) path"""
         return cls('path')
 
     @classmethod
     def stack(cls):
+        """List of operations. Use to access the (TRAVERSE) history."""
         return cls('stack')
 
     @classmethod
     def history(cls):
+        """All records traversed, as a Set<ORID> (TRAVERSE)"""
         return cls('history')
 
 class QT(What):
-    """Query token; for substitutions by RetrievalCommand.format()"""
+    """Query token; for substitutions by RetrievalCommand.format() and its
+    overrides
+    :param ref: A token name, for matching keyword arguments
+    """
     def __init__(self, ref=None):
         self.token = ref
 
     def query(self):
+        """Query against a yet-unspecified source"""
         from .query import Query
         return Query(None, (self, ))
 
+    def traverse(self, *what, **kwargs):
+        """Traverse from a yet-unspecified target"""
+        from .traverse import Traverse
+        return Traverse(None, self, *what, **kwargs)
+
 class FunctionWhat(MethodWhat):
+    """Derived from MethodWhat for the chain of which they might be the
+    beginning
+    """
     def __init__(self, func, args):
         super(FunctionWhat, self).__init__([(func, args)], [])
 
@@ -575,34 +611,41 @@ def custom_function_handle(name, expected=(ArgConverter.Value,)):
 # Record attributes
 
 class RecordAttribute(object):
+    """Base class for attributes which may be predefined for given records"""
     @classmethod
     def create_immutable(cls):
+        """Mark created record attribute instance as read-only"""
         attribute = cls()
         setattr(attribute, '_immutable', True)
         return attribute
 
 class AtThis(RecordAttribute, InstanceOfMixin, RecordMethodMixin, StringMethodWhat):
+    """Denotes the record itself"""
     def __init__(self, chain=[(What.AtThis, tuple())], props=[]):
         super(AtThis, self).__init__(chain, props)
 
-
 class AtRid(RecordAttribute, StringMethodWhat):
+    """The record-id. null for embedded queries"""
     def __init__(self, chain=[(What.AtRid, tuple())], props=[]):
         super(AtRid, self).__init__(chain, props)
 
 class AtClass(RecordAttribute, InstanceOfMixin, RecordMethodMixin, StringMethodWhat):
+    """Class name, for schema-aware types"""
     def __init__(self, chain=[(What.AtClass, tuple())], props=[]):
         super(AtClass, self).__init__(chain, props)
 
 class AtVersion(RecordAttribute, MethodWhat):
+    """Integer record version; starts from zero"""
     def __init__(self, chain=[(What.AtVersion, tuple())], props=[]):
         super(AtVersion, self).__init__(chain, props)
 
 class AtSize(RecordAttribute, MethodWhat):
+    """The number of fields in the document"""
     def __init__(self, chain=[(What.AtSize, tuple())], props=[]):
         super(AtSize, self).__init__(chain, props)
 
 class AtType(RecordAttribute, StringMethodWhat):
+    """The record type"""
     def __init__(self, chain=[(What.AtType, tuple())], props=[]):
         super(AtType, self).__init__(chain, props)
 
@@ -612,3 +655,4 @@ at_rid = AtRid.create_immutable()
 at_version = AtVersion.create_immutable()
 at_size = AtSize.create_immutable()
 at_type = AtType.create_immutable()
+

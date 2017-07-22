@@ -3,7 +3,7 @@ from .element import GraphElement
 from .exceptions import MultipleResultsFound, NoResultFound
 from .query_utils import ArgConverter
 from .commands import RetrievalCommand
-from .mapping import create_cache_callback
+from .mapping import CacheMixin
 
 from collections import namedtuple
 from keyword import iskeyword
@@ -18,7 +18,7 @@ else:
         , ord(':'): '_'
     }
 
-class Query(RetrievalCommand):
+class Query(RetrievalCommand, CacheMixin):
     def __init__(self, graph, entities):
         """Query against a class or a selection of its properties.
 
@@ -30,6 +30,7 @@ class Query(RetrievalCommand):
         self._graph = graph
         self._subquery = None
         self._params = {}
+        self._cacher = None # If _cacher None, no _cache
 
         if not entities:
             self.source_name = None
@@ -142,11 +143,9 @@ class Query(RetrievalCommand):
             wheres = self.build_wheres(params)
 
             g = self._graph
-            cache_param = params.get('cache', None)
-            caching = cache_param is not None
-            if caching:
-                cache = cache_param[0]
-                command_suffix = (None, None, cache_param[1])
+            if self._cacher:
+                cache = self._cache
+                command_suffix = (None, None, self._cacher)
             else:
                 cache = None
                 command_suffix = tuple()
@@ -274,11 +273,9 @@ class Query(RetrievalCommand):
 
         g = self._graph
 
-        cache_param = params.get('cache', None)
-        caching = cache_param is not None
-        if caching:
-            response = g.client.command(select, None, None, cache_param[1])
-            cache = cache_param[0]
+        if self._cacher:
+            response = g.client.command(select, None, None, self._cacher)
+            cache = self._cache
         else:
             cache = None
             response = g.client.command(select)
@@ -453,7 +450,7 @@ class Query(RetrievalCommand):
         """
         self.purge()
         self._params['fetch'] = plan
-        self._params['cache'] = (fetch_cache, create_cache_callback(self._graph, fetch_cache))
+        self.cache = fetch_cache
         return self
 
     def response_options(self, resolve_projections):

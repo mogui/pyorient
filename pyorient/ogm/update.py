@@ -4,6 +4,7 @@ from .property import PropertyEncoder
 from .query_utils import ArgConverter
 from .commands import Command
 
+import json
 
 class Update(ExpressionMixin, Command):
     Default = 0
@@ -40,6 +41,7 @@ class Update(ExpressionMixin, Command):
 
     def __str__(self):
         if not self._updates:
+            # NOTE Not usable as a command, but reflects the current state
             return u'UPDATE ' + self._source
 
         actions = ''.join([Update.BuildAction._(action_type, self, nvp) for action_type,nvp in self._updates.items()])
@@ -63,6 +65,14 @@ class Update(ExpressionMixin, Command):
         if wheres:
             where = u' WHERE ' + u' and '.join(wheres)
 
+        limit = params.get('limit', '')
+        if limit:
+            limit = ' LIMIT ' + str(limit)
+
+        timeout = params.get('timeout', '')
+        if timeout:
+            timeout = ' TIMEOUT ' + str(timeout)
+
         # Don't prevent upsert when updating an edge; may be supported by future OrientDB,
         # and when it's not supported, failure should be obvious, not concealed by OGM 
         return u'UPDATE {}{}{}{}{}{}{}{}'.format(
@@ -73,13 +83,17 @@ class Update(ExpressionMixin, Command):
             , ret
             , where
             , lock if lock is not None else ''
-            , u' LIMIT {}'.format(params['limit']) if 'limit' in params else ''
-            , u' TIMEOUT {}'.format(params['timeout']) if 'timeout' in params else ''
+            , limit
+            , timeout
                 )
 
     def do(self):
         g = self._graph
-        response = g.client.command(str(self))
+
+        ret = self._params.get('return', Update.Count)
+        if ret is Update.Count or ret == 'COUNT':
+            return g.client.command(str(self))[0]
+        return g.elements_from_records(g.client.command(str(self)))
 
     def set(self, *nvps):
         """Set field values.
@@ -115,7 +129,8 @@ class Update(ExpressionMixin, Command):
 
     def put(self, *nvps):
         """Put into map.
-        :param nvps: Sequence of 2-tuple name-value pairs
+        :param nvps: Sequence of 2-tuples; first element is the collection
+        name, second element a 2-tuple name-value pair
         """
         self._updates.pop('json', None)
         self._updates['put'] = nvps
@@ -128,7 +143,7 @@ class Update(ExpressionMixin, Command):
         return self
 
     def merge(self, json):
-        """Replace record content with JSON"""
+        """Merge record content with JSON"""
         self._updates.clear()
         self._updates['json'] = (False, json)
         return self
@@ -184,23 +199,32 @@ class Update(ExpressionMixin, Command):
             return ' ADD ' + ','.join([cls.eq(nvp[0], nvp[1], update) for nvp in spec])
         @classmethod
         def rem(cls, update, spec):
+            # TODO FIXME This won't provide the full range of available behaviours
             return ' REMOVE ' + ','.join([cls.eq(nvp[0], nvp[1], update) for nvp in spec])
         @classmethod
         def put(cls, update, spec):
-            return ' PUT ' + ','.join([cls.eq(nvp[0], nvp[1], update) for nvp in spec])
+            return ' PUT ' + ','.join([cls.pair(nvp[0], nvp[1], update) for nvp in spec])
 
         @classmethod
         def json(cls, update, usage):
             replace = usage[0]
             json = usage[1]
 
+            json = json if isinstance(json, str) else PropertyEncoder.encode_value(json, update)
             if replace:
-                return ' CONTENT ' + PropertyEncoder.encode_value(json, update)
-            return ' MERGE ' + PropertyEncoder.encode_value(json, update)
+                return ' CONTENT ' + json
+            return ' MERGE ' + json
 
         @classmethod
         def eq(cls, key, value, update):
             return '{}={}'.format(
                 ArgConverter.convert_to(ArgConverter.Field, key, update),
                 PropertyEncoder.encode_value(value, update))
+
+        @classmethod
+        def pair(cls, collection, nvp, update):
+            return '{}={},{}'.format(
+                ArgConverter.convert_to(ArgConverter.Field, collection, update),
+                json.dumps(nvp[0]), 
+                PropertyEncoder.encode_value(nvp[1], update))
 
