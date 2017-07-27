@@ -70,6 +70,8 @@ class CommandTestCase( unittest.TestCase ):
         rec = self.client.command( 'create vertex v content {"a":false,'
                                    '"q":TRUE}' )
 
+        self.assertIn('a', rec[0])
+        self.assertIn('q', rec[0])
         assert rec[0].a is False
         assert rec[0].q is True
         import re
@@ -94,6 +96,9 @@ class CommandTestCase( unittest.TestCase ):
         # this can differ from orientDB versions, so i use a regular expression
         assert re.match( '[0-1]', str( res[0]._version ) )
         assert res[0]._rid == '#3:0'
+
+        hashed_records = {rec_position: 1, res[0]: 2}
+        self.assertEqual(len(hashed_records), 1)
 
         print( res[0].oRecordData['a'] )
 

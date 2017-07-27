@@ -14,6 +14,7 @@ from .commands import VertexCommand, CreateEdgeCommand
 from ..utils import to_unicode
 from .sequence import Sequences
 from .mapping import MapperConfig, Decorate
+from .what import QT
 
 import pyorient
 from collections import namedtuple
@@ -606,29 +607,20 @@ class Graph(object):
             for cls in reversed(list(reg.values())):
                 self.drop_class(cls, ignore_instances=True)
 
-    def create_vertex(self, vertex_cls, **kwargs):
+    def create_vertex(self, vertex_cls, *args, **kwargs):
         result = self.client.command(
-            to_unicode(self.create_vertex_command(vertex_cls, **kwargs)))[0]
+            to_unicode(self.create_vertex_command(vertex_cls, *args, **kwargs)))[0]
 
         props = result.oRecordData
         return vertex_cls.from_graph(self, result._rid,
                                      self.props_from_db[vertex_cls](props, None))
 
-    def create_vertex_command(self, vertex_cls, **kwargs):
+    def create_vertex_command(self, vertex_cls, *args, **kwargs):
         class_name = vertex_cls.registry_name
 
-        if kwargs:
-            db_props = Graph.props_to_db(vertex_cls, kwargs, self._strict)
-            set_clause = u' SET {}'.format(
-                u','.join(u'{}={}'.format(
-                    PropertyEncoder.encode_name(k),
-                    ArgConverter.convert_to(ArgConverter.Vertex, v, ExpressionMixin()))
-                    for k, v in db_props.items()))
-        else:
-            set_clause = u''
-
+        expressions = ExpressionMixin()
         return VertexCommand(
-            u'CREATE VERTEX {}{}'.format(class_name, set_clause))
+            u'CREATE VERTEX {}{}'.format(class_name, self.create_content_clause(vertex_cls, expressions, *args, **kwargs)))
 
     def delete_vertex(self, vertex, where = None, limit=None, batch=None):
         # TODO FIXME Parse delete result
@@ -657,35 +649,26 @@ class Graph(object):
         return VertexCommand(
             u'DELETE VERTEX ' + vertex_clause + delete_clause)
 
-    def create_edge(self, edge_cls, from_vertex, to_vertex, **kwargs):
+    def create_edge(self, edge_cls, from_vertex, to_vertex, *args, **kwargs):
         result = self.client.command(
             to_unicode(self.create_edge_command(edge_cls
                                      , from_vertex
                                      , to_vertex
+                                     , *args
                                      , **kwargs)))[0]
 
         return self.edge_from_record(result, edge_cls)
 
-    def create_edge_command(self, edge_cls, from_vertex, to_vertex, **kwargs):
+    def create_edge_command(self, edge_cls, from_vertex, to_vertex, *args, **kwargs):
         class_name = edge_cls.registry_name
 
         expressions = ExpressionMixin()
-        if kwargs:
-            db_props = Graph.props_to_db(edge_cls, kwargs, self._strict)
-            set_clause = u' SET ' + \
-                u','.join(u'{}={}'.format(
-                    PropertyEncoder.encode_name(k),
-                    ArgConverter.convert_to(ArgConverter.Vertex, v, expressions))
-                    for k, v in db_props.items())
-        else:
-            set_clause = ''
-
         return CreateEdgeCommand(
             u'CREATE EDGE {} FROM {} TO {}{}'.format(
                 class_name,
                 ArgConverter.convert_to(ArgConverter.Vertex, from_vertex, expressions),
                 ArgConverter.convert_to(ArgConverter.Vertex, to_vertex, expressions),
-                set_clause))
+                self.create_content_clause(edge_cls, expressions, *args, **kwargs)))
 
     def create_function(self, name, code, parameters=None, idempotent=False, language='javascript'):
         parameter_str = ' PARAMETERS [' + ','.join(parameters) + ']' if parameters else ''
@@ -836,6 +819,27 @@ class Graph(object):
             if records else []
 
     # The following mostly intended for internal use
+
+    def create_content_clause(self, element_cls, expressions, *args, **kwargs):
+        if args:
+            content = args[0]
+            # Problematic to accept JSON strings directly, as workflow may put
+            # this function's output through str.format()
+            if isinstance(content, QT):
+                content = expressions.build_token(content)
+            else:
+                raise TypeError("Token expected for content argument")
+            return u' CONTENT ' + content
+        elif kwargs:
+            db_props = Graph.props_to_db(element_cls, kwargs, self._strict)
+            return u' SET {}'.format(
+                u','.join(u'{}={}'.format(
+                    PropertyEncoder.encode_name(k),
+                    ArgConverter.convert_to(ArgConverter.Vertex, v, expressions))
+                    for k, v in db_props.items()))
+        else:
+            return u''
+
 
     def vertex_from_record(self, record, vertex_cls=None, cache=None):
         if not vertex_cls:

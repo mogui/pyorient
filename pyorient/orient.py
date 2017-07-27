@@ -57,14 +57,17 @@ class OrientSocket(object):
 
     :param host: hostname of the server to connect
     :param port: integer port of the server
+    :param serialization_type: Whether to use CSV or Binary serialization
+    :param ssl_context: An instance of ssl.SSLContext
 
     '''
-    def __init__(self, host, port, serialization_type=OrientSerialization.CSV ):
-
+    def __init__(self, host, port, serialization_type=OrientSerialization.CSV, ssl_context=None ):
         self.connected = False
         self.host = host
-        self.port = port
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.port = port
+        if 2434 <= port <= 2440 and ssl_context:
+            self._socket = ssl_context.wrap_socket(self._socket)
         self.protocol = -1
         self.session_id = -1
         self.auth_token = b''
@@ -232,9 +235,9 @@ class OrientDB(object):
         TxCommitMessage="pyorient.messages.commands",
     )
 
-    def __init__(self, host='localhost', port=2424, serialization_type=OrientSerialization.CSV):
+    def __init__(self, host='localhost', port=2424, serialization_type=OrientSerialization.CSV, ssl_context=None):
         if not isinstance(host, OrientSocket):
-            connection = OrientSocket(host, port, serialization_type)
+            connection = OrientSocket(host, port, serialization_type, ssl_context)
         else:
             connection = host
 

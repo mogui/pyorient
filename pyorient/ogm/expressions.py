@@ -155,6 +155,9 @@ class ExpressionMixin(object):
 
     @classmethod
     def filter_string(cls, expression_root):
+        if isinstance(expression_root, QT):
+            return cls.build_token(expression_root)
+
         op = expression_root.operator
 
         left = expression_root.operands[0]
@@ -347,7 +350,11 @@ class ExpressionMixin(object):
             return '.'.join(chain) + as_str
         else:
             # For now, can assume it's a Token
-            return ('{' + what.token + '}') if what.token is not None else '{}'
+            return cls.build_token(what)
+
+    @classmethod
+    def build_token(cls, token):
+        return token.token and '{' + str(token.token) + '}' or '{}'
 
     @staticmethod
     def parse_prop_name(from_str, override):
@@ -375,7 +382,7 @@ class ExpressionMixin(object):
     def append_what_function(cls, chain, func_key, func_args):
         what_function = cls.WhatFunctions[func_key]
         max_args = what_function.max_args
-        if max_args > 0 or max_args is None:
+        if max_args is None or max_args > 0:
             chain.append(
                 what_function.fmt.format(
                     ','.join(cls.what_args(what_function.expected,

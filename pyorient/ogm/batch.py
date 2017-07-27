@@ -157,17 +157,14 @@ class Batch(ExpressionMixin, CacheMixin):
             command_source = CompiledBatch(str(self), g, self._cache, self._cacher)
             finalise_batch = lambda executor: command_source.set_executor(executor)
         else:
-            command_source = str(self)
             finalise_batch = lambda executor: executor(self)
-
-        self.clear()
 
         def make_batch_executor(returned, caching):
             # A notable constraint; batch is only compiled for caching if source batch has cache set
             if caching:
-                getter = lambda batch: g.client.batch(str(command_source), None, None, batch._cacher)
+                getter = lambda batch: g.client.batch(str(batch), None, None, batch._cacher)
             else:
-                getter = lambda _: g.client.batch(str(command_source))
+                getter = lambda batch: g.client.batch(str(batch))
 
             if returned:
                 if returned[0] in ('[', '{'):
@@ -188,7 +185,9 @@ class Batch(ExpressionMixin, CacheMixin):
                     getter(batch)
                 return handler
 
-        return finalise_batch(make_batch_executor(returned, self._cacher is not None))
+        finalised = finalise_batch(make_batch_executor(returned, self._cacher is not None))
+        self.clear()
+        return finalised
 
     def collect(self, *variables, **kwargs):
         """Commit batch, collecting batch variables in a dict.
@@ -237,16 +236,13 @@ class Batch(ExpressionMixin, CacheMixin):
             command_source = CompiledBatch(str(self), g, self._cache, self._cacher)
             finalise_batch = lambda executor: command_source.set_executor(executor)
         else:
-            command_source = str(self)
             finalise_batch = lambda executor: executor(self)
-
-        self.clear()
 
         # A notable constraint; batch is only compiled for caching if source batch has cache set
         if self._cacher:
-            getter = lambda batch: g.client.batch(str(command_source), None, None, batch._cacher)
+            getter = lambda batch: g.client.batch(str(batch), None, None, batch._cacher)
         else:
-            getter = lambda _: g.client.batch(str(command_source))
+            getter = lambda batch: g.client.batch(str(batch))
 
         if rle:
             def collect(batch):
@@ -262,7 +258,9 @@ class Batch(ExpressionMixin, CacheMixin):
                     run_idx = sentinel + 1
                 return collected
 
-        return finalise_batch(collect)
+        finalised = finalise_batch(collect)
+        self.clear()
+        return finalised
 
     def commit(self, retries=None):
         """Commit batch with no return value.
@@ -278,17 +276,26 @@ class Batch(ExpressionMixin, CacheMixin):
             command_source = CompiledBatch(str(self), g, self._cache, self._cacher)
             finalise_batch = lambda executor: command_source.set_executor(executor, suppress_return=True)
         else:
-            command_source = str(self)
             finalise_batch = lambda executor: executor(self) and None
 
-        self.clear()
         # A notable constraint; batch is only compiled for caching if source batch has cache set
         if self._cacher:
-            execute_batch = lambda batch: g.client.batch(str(command_source), None, None, batch._cacher)
+            execute_batch = lambda batch: g.client.batch(str(batch), None, None, batch._cacher)
         else:
-            execute_batch = lambda _: g.client.batch(str(command_source))
+            execute_batch = lambda batch: g.client.batch(str(batch))
 
-        return finalise_batch(execute_batch)
+        finalised = finalise_batch(execute_batch)
+        self.clear()
+        return finalised
+
+    def return_(self, value):
+        """Add return statement to batch without committing.
+        Useful for early-out conditional logic
+
+        :param value: Return value
+        """
+        self.stack[-1].append('RETURN ' + self.return_string(value))
+        return self
 
     @staticmethod
     def return_string(variables):

@@ -58,6 +58,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         res = req_msg.prepare( [ "#11:0", "*:2", _test_callback ] ) \
             .send().fetch_response()
 
+        self.assertIn('#11:0', [res])
         assert res._rid == "#11:0"
         assert res._class == 'followed_by'
         assert isinstance(res._in, OrientRecordLink)

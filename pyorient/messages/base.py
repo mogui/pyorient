@@ -485,7 +485,6 @@ class BaseMessage(object):
                 # bug in orientdb csv serialization in snapshot 2.0
                 class_name, data = self.get_serializer().decode(__res['content'].rstrip())
 
-
             res = OrientRecord(
                 dict(
                     __o_storage=data,

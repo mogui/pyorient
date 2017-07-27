@@ -122,6 +122,11 @@ class Query(RetrievalCommand, CacheMixin):
         """Get graph being queried. May be None for subqueries"""
         return self._graph
 
+    @graph.setter
+    def graph(self, graph):
+        """Set graph being queried"""
+        self._graph = graph
+
     def __iter__(self):
         params = self._params
 

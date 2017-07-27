@@ -9,6 +9,11 @@ try:
 except NameError:
     basestring = str
 
+if sys.version_info[0] < 3:
+    iteritems = lambda d: d.iteritems()
+else:
+    iteritems = lambda d: d.items()
+
 class OrientRecord(object):
     """
     Object that represent an Orient Document / Record
@@ -37,7 +42,6 @@ class OrientRecord(object):
         return string
 
     def __init__(self, content=None):
-
         self.__rid = None
         self.__version = None
         self.__o_class = None
@@ -45,31 +49,27 @@ class OrientRecord(object):
 
         if not content:
             content = {}
-        for key in content.keys():
+        for key, value in iteritems(content):
             if key == '__rid':  # Ex: select @rid, field from v_class
-                self.__rid = content[ key ]
+                self.__rid = value
                 # self.__rid = OrientRecordLink( content[ key ][ 1: ] )
             elif key == '__version':  # Ex: select @rid, @version from v_class
-                self.__version = content[key]
+                self.__version = value
             elif key == '__o_class':
-                self.__o_class = content[ key ]
+                self.__o_class = value
             elif key[0:1] == '@':
                 # special case dict
                 # { '@my_class': { 'accommodation': 'hotel' } }
                 self.__o_class = key[1:]
-                for _key, _value in content[key].items():
+                for _key, _value in iteritems(value):
                     if isinstance(_value, basestring):
                         self.__o_storage[_key] = self.addslashes( _value )
                     else:
                         self.__o_storage[_key] = _value
             elif key == '__o_storage':
-                self.__o_storage = content[key]
+                self.__o_storage = value
             else:
-                self.__o_storage[key] = content[key]
-
-    def _set_keys(self, content=dict):
-        for key in content.keys():
-                self._set_keys( content[key] )
+                self.__o_storage[key] = value
 
     @property
     def _in(self):
@@ -117,6 +117,14 @@ class OrientRecord(object):
             raise AttributeError( "'OrientRecord' object has no attribute "
                                   "'" + item + "'" )
 
+    def __eq__(self, other):
+        return self.__rid == other or self.__dict__ == other.__dict__
+
+    def __hash__(self):
+        return hash((self.__rid, self.__version, self.__o_class, frozenset(iteritems(self.__o_storage))))
+
+    def __contains__(self, key):
+        return key in self.__o_storage
 
 class OrientRecordLink(object):
     def __init__(self, recordlink):
