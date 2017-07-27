@@ -174,7 +174,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( ( cluster, rec_position._rid, rec ) )\
             .send().fetch_response()
 
-        assert update_success[0] != 0
+        self.assertTrue(update_success[0])
 
         if connection.protocol <= 21:
             return unittest.skip("Protocol {!r} does not works well".format(

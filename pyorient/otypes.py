@@ -117,6 +117,13 @@ class OrientRecord(object):
             raise AttributeError( "'OrientRecord' object has no attribute "
                                   "'" + item + "'" )
 
+    def __bool__(self):
+        return True if self.__rid or len(self.__o_storage) else False
+    __nonzero__ = __bool__
+
+    def __len__(self):
+        return len(self.__o_storage)
+
     def __eq__(self, other):
         return self.__rid == other or self.__dict__ == other.__dict__
 

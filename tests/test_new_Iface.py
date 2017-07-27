@@ -37,8 +37,7 @@ class CommandTestCase(unittest.TestCase):
             assert result[0].weight == 1
 
             def _callback(item):
-                assert True
-                assert item != []
+                self.assertTrue(item)
                 assert isinstance( item, OrientRecord )
 
             result = client.query_async("select from followed_by",
