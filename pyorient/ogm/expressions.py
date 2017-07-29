@@ -363,7 +363,7 @@ class ExpressionMixin(object):
         else:
             paren_idx = from_str.find('(')
             if paren_idx < 0:
-                return from_str
+                return from_str[1:] if from_str[0] == '@' else from_str
             else:
                 return from_str[:paren_idx]
 

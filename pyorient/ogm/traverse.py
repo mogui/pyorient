@@ -66,6 +66,16 @@ class Traverse(RetrievalCommand):
         from .query import Query
         return Query(self._graph, (self, ))
 
+    @property
+    def graph(self):
+        """Get graph being queried. May be None for subqueries"""
+        return self._graph
+
+    @graph.setter
+    def graph(self, graph):
+        """Set graph being queried"""
+        self._graph = graph
+
     def maxdepth(self, depth):
         self.purge()
         self._params['pred'] = (False, depth)

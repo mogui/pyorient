@@ -14,7 +14,7 @@ from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
     Boolean, String, Date, DateTime, Float, Decimal, Double, Integer, Short,
     Long, EmbeddedMap, EmbeddedSet, EmbeddedList, Link, LinkList, LinkMap, UUID)
-from pyorient.ogm.what import expand, in_, out, outV, inV, distinct, sysdate, QV, unionall, at_this, at_class
+from pyorient.ogm.what import expand, in_, out, outV, inV, distinct, sysdate, QV, unionall, at_this, at_class, at_rid, any
 from pyorient.ogm.operators import instanceof, and_, or_
 
 from pyorient.ogm.update import Update
@@ -1644,6 +1644,16 @@ class OGMTokensCase(unittest.TestCase):
         b['self'] = b.self.query()
         self.self_query = b.collect('self', 'self')
 
+        self.template_query = QT().query().what(at_class, at_rid, QV.current())
+        # So any queries formatted from this template will run against
+        # the expected graph, rather than setting per-format()
+        self.template_query.graph = g
+        # Otherwise Query will resolve element referenced by @rid attribute
+        self.template_query.response_options(resolve_projections=False)
+
+        self.template_traverse = QT().traverse(any())
+        self.template_traverse.graph = g
+
     def testTokens(self):
         g = self.g
 
@@ -1715,4 +1725,21 @@ class OGMTokensCase(unittest.TestCase):
 
         auto_callback = CompiledBatch('BEGIN\nCOMMIT', self.g, {})
         self.assertIsNotNone(auto_callback._cacher)
+
+        one_query = g.foos.query(value=1.0)
+        formatted = self.template_query.format(one_query)
+        self.assertEqual(formatted.graph, g)
+
+        one = formatted.first()
+        # '_' suffix added to python keyword 'class'
+        # 'qv_' prefix substituted automatically for '$' in '$current'/QV.current()
+        self.assertEqual(one.class_, 'foo')
+        from pyorient import OrientRecordLink
+        self.assertIsInstance(one.rid, OrientRecordLink)
+        self.assertEqual(one.rid, one.qv_current)
+
+        formatted = self.template_traverse.format(one_query)
+        self.assertEqual(formatted.graph, g)
+        one_traversed = formatted.all()
+        self.assertEqual(len(one_traversed), 2)
 

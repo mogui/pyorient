@@ -11,11 +11,14 @@ from keyword import iskeyword
 import sys
 if sys.version < '3':
     import string
-    sanitise_ids = string.maketrans('#:', '__')
+    # Sanitises tokens, too
+    sanitise_ids = string.maketrans('#:{}', '____')
 else:
     sanitise_ids = {
         ord('#'): '_'
         , ord(':'): '_'
+        , ord('{'): '_'
+        , ord('}'): '_'
     }
 
 class Query(RetrievalCommand, CacheMixin):
@@ -30,7 +33,8 @@ class Query(RetrievalCommand, CacheMixin):
         self._graph = graph
         self._subquery = None
         self._params = {}
-        self._cacher = None # If _cacher None, no _cache
+        self._cacher = None # If _cacher None, no _cache, and vice versa
+        self._cache = None
 
         if not entities:
             self.source_name = None
@@ -39,7 +43,7 @@ class Query(RetrievalCommand, CacheMixin):
 
         first_entity = entities[0]
 
-        from .what import What, LetVariable
+        from .what import What, LetVariable, QT
         from .traverse import Traverse
 
         if isinstance(first_entity, Property):
@@ -59,7 +63,7 @@ class Query(RetrievalCommand, CacheMixin):
             self._subquery = first_entity
             self.source_name = None
             self._class_props = tuple()
-        elif isinstance(first_entity, LetVariable):
+        elif isinstance(first_entity, (LetVariable, QT)):
             self.source_name = self.build_what(first_entity)
             self._class_props = tuple()
         elif isinstance(first_entity, What):
@@ -132,7 +136,7 @@ class Query(RetrievalCommand, CacheMixin):
 
         # TODO Don't ignore initial skip value
         with TempParams(params, skip='#-1:-1', limit=1):
-            optional_clauses = self.build_optional_clauses(params, None)
+            optional_clauses, command_suffix = self.build_optional_clauses(params, None)
 
             prop_names = []
             props, lets = self.build_props(params, prop_names, for_iterator=True)
@@ -148,13 +152,7 @@ class Query(RetrievalCommand, CacheMixin):
             wheres = self.build_wheres(params)
 
             g = self._graph
-            if self._cacher:
-                cache = self._cache
-                command_suffix = (None, None, self._cacher)
-            else:
-                cache = None
-                command_suffix = tuple()
-
+            cache = self._cache
             while True:
                 current_skip = params['skip']
                 where = u'WHERE ' + u' and '.join(
@@ -218,7 +216,7 @@ class Query(RetrievalCommand, CacheMixin):
 
     def __str__(self):
         def compiler():
-            props, lets, where, optional_clauses = self.prepare()
+            props, lets, where, optional_clauses, _ = self.prepare()
             return self.build_select(props, lets + where + optional_clauses)
         return self.compile(compiler)
 
@@ -250,12 +248,12 @@ class Query(RetrievalCommand, CacheMixin):
             skip = None
         else:
             rid_clause = []
-        optional_clauses = self.build_optional_clauses(params, skip)
+        optional_clauses, command_suffix = self.build_optional_clauses(params, skip)
 
         wheres = rid_clause + self.build_wheres(params)
         where = [u'WHERE ' + u' and '.join(wheres)] if wheres else []
 
-        return props, lets, where, optional_clauses
+        return props, lets, where, optional_clauses, command_suffix
 
     def all(self):
         params = self._params
@@ -264,26 +262,24 @@ class Query(RetrievalCommand, CacheMixin):
             # Must do a little extra work, for projection queries
             self.build_props(params, prop_names)
             select = self._compiled
+            command_suffix = self.build_command_suffix(params.get('limit', None))
         else:
-            props, lets, where, optional_clauses = self.prepare(prop_names)
-            if len(prop_names) > 1:
-                prop_prefix = self.source_name.translate(sanitise_ids)
-
-                selectuple = namedtuple(prop_prefix + '_props',
-                    [Query.sanitise_prop_name(name)
-                        for name in prop_names])
+            props, lets, where, optional_clauses, command_suffix = self.prepare(prop_names)
             select = self.build_select(props, lets + where + optional_clauses)
             if 'count' not in params:
                 self._compiled = select
 
-        g = self._graph
+        if len(prop_names) > 1:
+            prop_prefix = self.source_name.translate(sanitise_ids)
 
-        if self._cacher:
-            response = g.client.command(select, None, None, self._cacher)
-            cache = self._cache
-        else:
-            cache = None
-            response = g.client.command(select)
+            selectuple = namedtuple(prop_prefix + '_props',
+                [Query.sanitise_prop_name(name)
+                    for name in prop_names])
+
+        g = self._graph
+        cache = self._cache
+
+        response = g.client.command(*((select,) + command_suffix))
         if response:
             # TODO Determine which other queries always take only one iteration
             list_query = 'count' not in params
@@ -536,6 +532,13 @@ class Query(RetrievalCommand, CacheMixin):
                 'DESC' if order_by[1] else 'ASC')
         return ArgConverter.convert_to(ArgConverter.Field, order_by, self)
 
+    def build_command_suffix(self, limit=None):
+        if self._cacher:
+            # TODO? Add macro to keep synchronised with default CommandMessage _limit
+            return (limit or 20, None, self._cacher)
+        else:
+            return (limit,) if limit else tuple()
+
     def build_optional_clauses(self, params, skip):
         '''LET, while being an optional clause, must precede WHERE
         and is therefore handled separately.'''
@@ -561,8 +564,8 @@ class Query(RetrievalCommand, CacheMixin):
         if skip:
             optional_clauses.append('SKIP ' + str(skip))
 
-        # TODO Determine other functions for which limit is useless
-        if 'count' not in params:
+        limit = None
+        if 'count' not in params: # TODO Determine other functions for which limit is useless
             limit = params.get('limit')
             if limit:
                 optional_clauses.append('LIMIT ' + str(limit))
@@ -575,7 +578,7 @@ class Query(RetrievalCommand, CacheMixin):
         if lock:
             optional_clauses.append('LOCK RECORD')
 
-        return optional_clauses
+        return optional_clauses, self.build_command_suffix(limit)
 
     @staticmethod
     def unique_prop_name(name, used_names):
