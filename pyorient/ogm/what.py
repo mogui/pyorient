@@ -529,6 +529,12 @@ class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMeth
         """Reference a query variable
         :param name: Referenced variable (without leading '$')
         """
+        if '.' in name:
+            split = name.split('.')
+            raise ValueError('Use QV({!r}).{} instead of QV({!r})'.format(
+                split[0],
+                '.'.join(['QV({!r})'.format(s[1:]) if s[0] == '$' else s for s in split[1:]]),
+                name))
         super(QV, self).__init__(name)
 
     @classmethod

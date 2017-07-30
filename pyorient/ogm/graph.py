@@ -908,6 +908,8 @@ class Graph(object):
             cached = cache.get(link, None)
             if cached is not None:
                 return cached
+        elif link.is_temporary():
+            return link
         return self.get_element(link.get_hash())
 
     def elements_from_links(self, links, cache=None):

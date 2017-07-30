@@ -282,6 +282,42 @@ class ExpressionMixin(object):
             return operation_root
 
     @classmethod
+    def extract_prop_name(cls, what):
+        """Simplified form of build_what, when only prop names are needed"""
+        if isinstance(what, Property):
+            return what.context_name()
+        elif not isinstance(what, What):
+            period = what_str.find('.')
+            if period >= 0:
+                return what_str[0:period]
+            else:
+                return what_str.replace('"', '')
+        if isinstance(what, FunctionWhat):
+            # Projections not allowed with Expand
+            func = what._chain[0][0]
+            counted = func is not What.Expand
+            if counted:
+                return cls.parse_prop_name(cls.WhatFunctions[func].fmt, what.name_override)
+        elif isinstance(what, ChainableWhat):
+            if what._chain:
+                start = what._chain[0]
+                start_key = start[0]
+                if start_key == What.WhatCustom:
+                    return start[1]
+                else:
+                    fmt = cls.WhatFunctions[start_key].fmt
+                    if start_key == What.WhatLet:
+                        fmt = fmt.format(start[1][0])
+                    return cls.parse_prop_name(fmt, what.name_override)
+            if what._props:
+                if isinstance(prop, tuple):
+                    start_key = what._props[0][0]
+                    return cls.parse_prop_name(cls.WhatFunctions[start_key].fmt, what.name_override)
+                else:
+                    return what.name_override or prop
+        return None
+
+    @classmethod
     def build_what(cls, what, prop_names=None):
         if isinstance(what, Property):
             prop_name = what.context_name()

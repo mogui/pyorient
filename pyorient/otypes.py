@@ -149,6 +149,10 @@ class OrientRecordLink(object):
     def __eq__(self, other):
         return self.__link == other.__link
 
+    def is_temporary(self):
+        """:return: True for temporary links (with no corresponding record)"""
+        return self.clusterID[0] == '-'
+
     def get(self):
         return self.__link
 

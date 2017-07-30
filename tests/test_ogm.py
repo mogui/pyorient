@@ -1743,3 +1743,10 @@ class OGMTokensCase(unittest.TestCase):
         one_traversed = formatted.all()
         self.assertEqual(len(one_traversed), 2)
 
+        with self.assertRaises(ValueError) as ve:
+            QV('parent.$current')
+        print(ve.exception, '(or better yet, QV.parent_current())')
+        with self.assertRaises(ValueError) as ve:
+            QV('foo.bar')
+        print(ve.exception)
+

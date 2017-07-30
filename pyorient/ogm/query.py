@@ -257,13 +257,13 @@ class Query(RetrievalCommand, CacheMixin):
 
     def all(self):
         params = self._params
-        prop_names = []
         if self._compiled is not None and 'count' not in params:
-            # Must do a little extra work, for projection queries
-            self.build_props(params, prop_names)
             select = self._compiled
             command_suffix = self.build_command_suffix(params.get('limit', None))
+            # Must do a little extra work, for projection queries
+            prop_names = self.extract_prop_names(params)
         else:
+            prop_names = []
             props, lets, where, optional_clauses, command_suffix = self.prepare(prop_names)
             select = self.build_select(props, lets + where + optional_clauses)
             if 'count' not in params:
@@ -467,6 +467,8 @@ class Query(RetrievalCommand, CacheMixin):
         self._params['lock'] = True
         return self
 
+    # Internal methods, beyond this point
+
     def build_props(self, params, prop_names=None, for_iterator=False):
         let = params.get('let')
         if let:
@@ -505,6 +507,16 @@ class Query(RetrievalCommand, CacheMixin):
             props[0:0] = ['@rid']
 
         return props, lets
+
+    def extract_prop_names(self, params):
+        whats = params.get('what')
+        if whats:
+            used_names = {}
+            return [self.unique_prop_name(n, used_names)
+                        for n in (self.extract_prop_name(what) for what in whats)
+                        if n is not None]
+        else:
+            return [p.context_name() for p in self._class_props]
 
     def build_wheres(self, params):
         kw_filters = params.get('kw_filters')
