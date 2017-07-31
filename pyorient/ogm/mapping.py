@@ -7,6 +7,7 @@ class MapperConfig(object):
         """:param kwargs: 
         strict (bool, default False): Strict property checking. Raise
         AttributeError when class lacks expected property.
+
         decoration: There are two variants of dynamic link resolution.
         Decorate.Elements will have graph elements (Vertex or Edge) resolve Link
         properties as they are accessed.

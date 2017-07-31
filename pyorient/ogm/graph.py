@@ -20,6 +20,8 @@ import pyorient
 from collections import namedtuple
 from os.path import isfile
 
+import warnings
+
 ServerVersion = namedtuple('orientdb_version', ['major', 'minor', 'build'])
 
 class Graph(object):
@@ -904,11 +906,12 @@ class Graph(object):
         return [self.element_from_record(record, cache) for record in records]
 
     def element_from_link(self, link, cache=None):
-        if cache:
-            cached = cache.get(link, None)
-            if cached is not None:
-                return cached
-        elif link.is_temporary():
+        if cache is not None:
+            try:
+                return cache[link]
+            except KeyError:
+                warnings.warn('Cache miss on link ' + link.get_hash(), RuntimeWarning)
+        if link.is_temporary():
             return link
         return self.get_element(link.get_hash())
 
