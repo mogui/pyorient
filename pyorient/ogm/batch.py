@@ -413,7 +413,8 @@ class CompiledBatch(RetrievalCommand, CacheMixin):
     def __str__(self):
         """A simplified version of format()"""
         if not self._formatted:
-            self._formatted = self._compiled.format()
+            # May contain tokens.
+            return self._compiled
         return self._formatted
 
     def set_executor(self, executor, suppress_return=False):
