@@ -11,6 +11,7 @@ from .query_utils import ArgConverter
 import re
 import string
 from copy import copy
+import sys
 
 class Batch(ExpressionMixin, CacheMixin):
     READ_COMMITTED = 0
@@ -306,18 +307,20 @@ class Batch(ExpressionMixin, CacheMixin):
         # '$' must be used when a variable is referenced
         if isinstance(variables, str):
             if variables[0] == '$':
-                return '{}'.format('$' + cleaned(variables[1:]))
+                return '$' + cleaned(variables[1:])
             else:
                 return repr(variables)
         elif isinstance(variables, Query):
-            return '({})'.format(variables)
+            return '(' + str(variables) + ')'
         elif isinstance(variables, (list, tuple)):
             return '[' + ','.join(
                 '$'+cleaned(var) for var in variables) + ']'
         elif isinstance(variables, dict):
             return '{' + ','.join(
-                '{}:${}'.format(repr(k),cleaned(v))
+                repr(k) + ':$' + cleaned(v)
                     for k,v in variables.items()) + '}'
+        elif isinstance(variables, LetVariable):
+            return '$' + variables._chain[0][1][0]
         else:
             return '{}'.format(variables)
 
@@ -380,6 +383,16 @@ class BatchCompiler(object):
         # Don't suppress exceptions during compile
         return False
 
+class DefaultFormat(dict):
+    def __missing__(self, key):
+        return '{' + str(key) + '}'
+default_format = DefaultFormat()
+
+if sys.version_info < (3, 2):
+    default_formatter = lambda s: string.Formatter().vformat(s, (), default_format)
+else:
+    default_formatter = lambda s: s.format_map(default_format)
+
 class CompiledBatch(RetrievalCommand, CacheMixin):
     def __init__(self, compiled, graph, cache, cacher=None):
         """Create a compiled batch
@@ -414,7 +427,7 @@ class CompiledBatch(RetrievalCommand, CacheMixin):
         """A simplified version of format()"""
         if not self._formatted:
             # May contain tokens.
-            return self._compiled
+            self._formatted = default_formatter(self._compiled)
         return self._formatted
 
     def set_executor(self, executor, suppress_return=False):
