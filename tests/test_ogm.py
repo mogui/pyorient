@@ -1750,3 +1750,52 @@ class OGMTokensCase(unittest.TestCase):
             QV('foo.bar')
         print(ve.exception)
 
+class OGMPrettyCase(unittest.TestCase):
+    Node = declarative_node()
+    Relationship = declarative_relationship()
+
+    class A(Node):
+        element_plural = 'ayes'
+
+    class B(Node):
+        element_plural = 'bees'
+
+    class AB(Relationship):
+        label = 'ayebee'
+
+    def __init__(self, *args, **kwargs):
+        super(OGMPrettyCase, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+        g = self.g = Graph(Config.from_url('pretty', 'root', 'root'
+                                           , initial_drop=True))
+        g.create_all(OGMPrettyCase.Node.registry)
+        g.create_all(OGMPrettyCase.Relationship.registry)
+
+        b = g.batch()
+        b['a'] = b.ayes.create()
+        b['b'] = b.bees.create()
+        b[:] = b.ayebee.create(b[:'a'], b[:'b'])
+        b.commit()
+
+    def testPretty(self):
+        g = self.g
+
+        q = g.ayes.query().what(QV.current(), QV('ab'), QV('b')).let(ab=QV.current().outE(OGMPrettyCase.AB), b=QV.current().out(OGMPrettyCase.AB))
+        compiled = str(q)
+        p = q.pretty()
+        self.assertEqual(compiled, q._compiled)
+        print(p)
+        print('\n')
+
+        from pyorient.ogm.query import Query
+        q = Query.sub(g.ayes.query()).what(QV.current())
+        print(q.pretty())
+        print('\n')
+
+        q = Query.sub(g.ayes.query()).what(QV('a')).let(a=QV.current())
+        print(q.pretty())
+        print('\n')
+
+

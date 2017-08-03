@@ -56,10 +56,12 @@ class Query(RetrievalCommand, CacheMixin):
             pass
         elif isinstance(first_entity, Query):
             # Subquery
+            first_entity._params['indent'] = first_entity._params.get('indent', 0) + 4
             self._subquery = first_entity
             self.source_name = first_entity.source_name
             self._class_props = tuple()
         elif isinstance(first_entity, Traverse):
+            first_entity._params['indent'] = first_entity._params.get('indent', 0) + 4
             self._subquery = first_entity
             self.source_name = None
             self._class_props = tuple()
@@ -219,6 +221,25 @@ class Query(RetrievalCommand, CacheMixin):
             props, lets, where, optional_clauses, _ = self.prepare()
             return self.build_select(props, lets + where + optional_clauses)
         return self.compile(compiler)
+
+    def pretty(self):
+        """Pretty-print this query, to ease debugging."""
+        build_select = self.build_select
+        build_lets = self.build_lets
+
+        import types
+        # TODO FIXME Improve indentation of subqueries, especially in LET clause
+        self.build_select = types.MethodType(build_pretty_select, self)
+        self.build_lets = types.MethodType(build_pretty_lets, self)
+
+        compiled = self._compiled
+        self._compiled = None
+        prettified = str(self)
+        self._compiled = compiled
+
+        self.build_select = build_select
+        self.build_lets = build_lets
+        return prettified
 
     def __len__(self):
         return self.count()
@@ -470,15 +491,7 @@ class Query(RetrievalCommand, CacheMixin):
     # Internal methods, beyond this point
 
     def build_props(self, params, prop_names=None, for_iterator=False):
-        let = params.get('let')
-        if let:
-            lets = ['LET {}'.format(
-                ','.join('{} = {}'.format(
-                    PropertyEncoder.encode_name(k),
-                    u'({})'.format(v) if isinstance(v, RetrievalCommand) else
-                    self.build_what(v)) for k,v in let.items()))]
-        else:
-            lets = []
+        lets = self.build_lets(params)
 
         count_field = params.get('count')
         if count_field:
@@ -508,6 +521,29 @@ class Query(RetrievalCommand, CacheMixin):
 
         return props, lets
 
+    def build_assign_what(self, k, v):
+        if isinstance(v, RetrievalCommand):
+            v._params['indent'] = self._params.get('indent', 0)
+            val = u'(' + str(v) + ')'
+        else:
+            val = self.build_what(v)
+        return PropertyEncoder.encode_name(k) + u' = ' + val
+
+    def build_assign_vertex(self, k, v):
+        return PropertyEncoder.encode_name(k) + u' = ' + \
+            ArgConverter.convert_to(ArgConverter.Vertex, v, self)
+
+    def build_lets(self, params):
+        let = params.get('let')
+        if let:
+            return [
+                'LET ' + ','.join(
+                    self.build_assign_what(k, v)
+                    for k,v in let.items())
+            ]
+        else:
+            return []
+
     def extract_prop_names(self, params):
         whats = params.get('what')
         if whats:
@@ -520,9 +556,7 @@ class Query(RetrievalCommand, CacheMixin):
 
     def build_wheres(self, params):
         kw_filters = params.get('kw_filters')
-        kw_where = [u' and '.join(u'{}={}'
-            .format(PropertyEncoder.encode_name(k),
-                    ArgConverter.convert_to(ArgConverter.Vertex, v, self))
+        kw_where = [u' and '.join(self.build_assign_vertex(k,v)
                 for k,v in kw_filters.items())] if kw_filters else []
 
         filter_exp = params.get('filter')
@@ -615,7 +649,7 @@ class Query(RetrievalCommand, CacheMixin):
         # This 'is not None' is important; don't want to implicitly call
         # __len__ (which invokes count()) on subquery.
         if self._subquery is not None:
-            src = u'({})'.format(self._subquery)
+            src = u'(' + str(self._subquery) + ')'
         else:
             src = self.source_name
 
@@ -625,6 +659,51 @@ class Query(RetrievalCommand, CacheMixin):
                     ((' FROM ' + src) if src else '') + ' ' + optional_string
         else:
             return u'SELECT FROM ' + src + ' ' + optional_string
+
+def build_pretty_select(self, props, optional_clauses):
+    query_spaces = self._params.get('indent', 0)
+    prop_spaces = 7 + query_spaces
+    prop_idt = ' ' * prop_spaces
+
+    clause_spaces = 4 + query_spaces
+    idt = ' ' * clause_spaces
+    new_idt = '\n' + idt
+
+    if self._subquery is not None:
+        src = u'(' + new_idt + str(self._subquery) + new_idt + ')'
+    else:
+        src = self.source_name
+
+    optional_string = (new_idt).join(optional_clauses)
+    if props:
+        if len(props) > 1:
+            prop_divider = '\n' + prop_idt + ', '
+            return u'SELECT ' + props[0] + prop_divider + prop_divider.join(props[1:]) + \
+                ((new_idt + 'FROM ' + src) if src else '') + (new_idt + optional_string if optional_string else '')
+        else:
+            return u'SELECT ' + props[0] + ((new_idt + 'FROM ' + src) if src else '') + (new_idt + optional_string if optional_string else '')
+    else:
+        return u'SELECT FROM ' + src + (new_idt + optional_string if optional_string else '')
+
+def build_pretty_lets(self, params):
+    prefix_spaces = 8 + self._params.get('indent', 0)
+    idt = ' ' * prefix_spaces
+
+    let = params.get('let')
+    if let:
+        lets = iter(let.items())
+        k, v = next(lets)
+        let_divider = '\n' + idt + ', '
+        if len(let) > 1:
+            return [
+                'LET ' + self.build_assign_what(k, v) + let_divider + let_divider.join(self.build_assign_what(k,v) for k,v in lets)
+            ]
+        else:
+            return [
+                'LET ' + self.build_assign_what(k, v)
+            ]
+    else:
+        return []
 
 class TempParams(object):
     def __init__(self, params, **kwargs):
