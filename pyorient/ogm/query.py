@@ -525,7 +525,7 @@ class Query(RetrievalCommand, CacheMixin):
 
     def build_assign_what(self, k, v):
         return PropertyEncoder.encode_name(k) + u' = ' + \
-            (u'(' + str(v) + ')') if isinstance(v, RetrievalCommand) else self.build_what(v)
+            (u'(' + str(v) + ')' if isinstance(v, RetrievalCommand) else self.build_what(v))
 
     def build_assign_vertex(self, k, v):
         return PropertyEncoder.encode_name(k) + u' = ' + \
