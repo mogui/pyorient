@@ -226,11 +226,13 @@ class Query(RetrievalCommand, CacheMixin):
         """Pretty-print this query, to ease debugging."""
         build_select = self.build_select
         build_lets = self.build_lets
+        build_assign_what = self.build_assign_what
 
         import types
         # TODO FIXME Improve indentation of subqueries, especially in LET clause
         self.build_select = types.MethodType(build_pretty_select, self)
         self.build_lets = types.MethodType(build_pretty_lets, self)
+        self.build_assign_what = types.MethodType(build_pretty_assign_what, self)
 
         compiled = self._compiled
         self._compiled = None
@@ -239,6 +241,7 @@ class Query(RetrievalCommand, CacheMixin):
 
         self.build_select = build_select
         self.build_lets = build_lets
+        self.build_assign_what = build_assign_what
         return prettified
 
     def __len__(self):
@@ -522,12 +525,8 @@ class Query(RetrievalCommand, CacheMixin):
         return props, lets
 
     def build_assign_what(self, k, v):
-        if isinstance(v, RetrievalCommand):
-            v._params['indent'] = self._params.get('indent', 0)
-            val = u'(' + str(v) + ')'
-        else:
-            val = self.build_what(v)
-        return PropertyEncoder.encode_name(k) + u' = ' + val
+        return PropertyEncoder.encode_name(k) + u' = ' + \
+            (u'(' + str(v) + ')') if isinstance(v, RetrievalCommand) else self.build_what(v)
 
     def build_assign_vertex(self, k, v):
         return PropertyEncoder.encode_name(k) + u' = ' + \
@@ -662,6 +661,7 @@ class Query(RetrievalCommand, CacheMixin):
 
 def build_pretty_select(self, props, optional_clauses):
     query_spaces = self._params.get('indent', 0)
+    query_idt = ' ' * query_spaces
     prop_spaces = 7 + query_spaces
     prop_idt = ' ' * prop_spaces
 
@@ -670,7 +670,7 @@ def build_pretty_select(self, props, optional_clauses):
     new_idt = '\n' + idt
 
     if self._subquery is not None:
-        src = u'(' + new_idt + str(self._subquery) + new_idt + ')'
+        src = u'(' + new_idt + self._subquery.pretty() + new_idt + ')'
     else:
         src = self.source_name
 
@@ -678,12 +678,12 @@ def build_pretty_select(self, props, optional_clauses):
     if props:
         if len(props) > 1:
             prop_divider = '\n' + prop_idt + ', '
-            return u'SELECT ' + props[0] + prop_divider + prop_divider.join(props[1:]) + \
+            return query_idt + u'SELECT ' + props[0] + prop_divider + prop_divider.join(props[1:]) + \
                 ((new_idt + 'FROM ' + src) if src else '') + (new_idt + optional_string if optional_string else '')
         else:
-            return u'SELECT ' + props[0] + ((new_idt + 'FROM ' + src) if src else '') + (new_idt + optional_string if optional_string else '')
+            return query_idt + u'SELECT ' + props[0] + ((new_idt + 'FROM ' + src) if src else '') + (new_idt + optional_string if optional_string else '')
     else:
-        return u'SELECT FROM ' + src + (new_idt + optional_string if optional_string else '')
+        return query_idt + u'SELECT FROM ' + src + (new_idt + optional_string if optional_string else '')
 
 def build_pretty_lets(self, params):
     prefix_spaces = 8 + self._params.get('indent', 0)
@@ -704,6 +704,14 @@ def build_pretty_lets(self, params):
             ]
     else:
         return []
+
+def build_pretty_assign_what(self, k, v):
+    if isinstance(v, RetrievalCommand):
+        v._params['indent'] = self._params.get('indent', 0)
+        val = u'(' + v.pretty() + ')'
+    else:
+        val = self.build_what(v)
+    return PropertyEncoder.encode_name(k) + u' = ' + val
 
 class TempParams(object):
     def __init__(self, params, **kwargs):
