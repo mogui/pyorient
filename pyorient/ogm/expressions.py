@@ -410,7 +410,7 @@ class ExpressionMixin(object):
                     for arg, conversion in
                         zip_longest(args, expected
                                     , fillvalue=expected[-1])
-                        if arg is not None]
+                        if arg is not None or conversion != ArgConverter.Label]
         else:
             return []
 

@@ -1790,7 +1790,7 @@ class OGMPrettyCase(unittest.TestCase):
         print('\n')
 
         from pyorient.ogm.query import Query
-        q = Query.sub(g.ayes.query()).what(QV.current())
+        q = Query.sub(g.ayes.query().let(foo='bar', dup=g.ayes.query().let(baz='quux'))).what(QV.current())
         print(q.pretty())
         print('\n')
 
