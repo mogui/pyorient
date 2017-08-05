@@ -110,7 +110,7 @@ class PropertyEncoder:
         from pyorient.ogm.what import What
 
         if isinstance(value, decimal.Decimal):
-            return u'"{:f}"'.format(value)
+            return u'"' + str(value) + '"'
         elif isinstance(value, float):
             with decimal.localcontext() as ctx:
                 ctx.prec = 20  # floats are max 80-bits wide = 20 significant digits

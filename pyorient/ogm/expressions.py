@@ -5,6 +5,7 @@ from pyorient.ogm.property import Property, PropertyEncoder
 from pyorient.ogm.query_utils import ArgConverter
 
 from collections import namedtuple
+from decimal import Decimal
 
 import json
 
@@ -278,6 +279,8 @@ class ExpressionMixin(object):
         elif isinstance(operation_root, LetVariable) or isinstance(operation_root, QT):
             # TODO This condition suggests common base for variables and tokens, below What
             return cls.build_what(operation_root)
+        elif isinstance(operation_root, Decimal):
+            return 'Decimal("' + str(operation_root) + '")'
         else:
             return operation_root
 
