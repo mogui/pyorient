@@ -139,7 +139,10 @@ class Query(RetrievalCommand, CacheMixin):
             optional_clauses, command_suffix = self.build_optional_clauses(params, None)
 
             prop_names = []
-            props, lets = self.build_props(params, prop_names, for_iterator=True)
+            props, lets = self.build_props(params, prop_names)
+            if 'what' not in params or prop_names:
+                # Shouldn't be prepended in the case of expand()
+                props[0:0] = ['@rid']
             if len(prop_names) > 1:
                 prop_prefix = self.source_name.translate(sanitise_ids)
 
@@ -165,7 +168,7 @@ class Query(RetrievalCommand, CacheMixin):
                     response = response[0]
 
                     if prop_names:
-                        next_skip = response.oRecordData.get('rid')
+                        next_skip = response.oRecordData.get('rid', response._rid)
                         if next_skip:
                             self.skip(next_skip)
 
@@ -492,7 +495,7 @@ class Query(RetrievalCommand, CacheMixin):
 
     # Internal methods, beyond this point
 
-    def build_props(self, params, prop_names=None, for_iterator=False):
+    def build_props(self, params, prop_names=None):
         lets = self.build_lets(params)
 
         count_field = params.get('count')
@@ -517,9 +520,6 @@ class Query(RetrievalCommand, CacheMixin):
             props = [e.context_name() for e in self._class_props]
             if prop_names is not None:
                 prop_names.extend(props)
-
-        if props and for_iterator:
-            props[0:0] = ['@rid']
 
         return props, lets
 
