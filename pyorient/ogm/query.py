@@ -140,7 +140,7 @@ class Query(RetrievalCommand, CacheMixin):
 
             prop_names = []
             props, lets = self.build_props(params, prop_names)
-            if 'what' not in params or prop_names:
+            if props and ('what' not in params) or prop_names:
                 # Shouldn't be prepended in the case of expand()
                 props[0:0] = ['@rid']
             if len(prop_names) > 1:

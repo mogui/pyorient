@@ -14,7 +14,7 @@ from pyorient.ogm.declarative import declarative_node, declarative_relationship
 from pyorient.ogm.property import (
     Boolean, String, Date, DateTime, Float, Decimal, Double, Integer, Short,
     Long, EmbeddedMap, EmbeddedSet, EmbeddedList, Link, LinkList, LinkMap, UUID)
-from pyorient.ogm.what import expand, in_, out, outV, inV, distinct, sysdate, QV, unionall, at_this, at_class, at_rid, any
+from pyorient.ogm.what import expand, in_, out, outV, inV, distinct, sysdate, QV, unionall, at_this, at_class, at_rid, any, all as traverse_all
 from pyorient.ogm.operators import instanceof, and_, or_
 
 from pyorient.ogm.update import Update
@@ -1808,7 +1808,8 @@ class OGMPrettyCase(unittest.TestCase):
         print(q.pretty())
         print('\n')
 
-        q = Query.sub(g.ayes.query()).what(QV('a')).let(a=QV.current())
+        # traverse_all() in traverse() call used as an alias for pyorient.ogm.what.all(); see import line
+        q = Query.sub(g.ayes.query()).what(QV('a'), QV('t')).let(a=QV.current(), t=QV.current().traverse(traverse_all()))
         print(q.pretty())
         print('\n')
 
