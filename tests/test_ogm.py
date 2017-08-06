@@ -1373,6 +1373,7 @@ class OGMFetchPlansCase(unittest.TestCase):
             result = b.collect('ayes', 'bees', fetch='*:-1')
 
             self.assertEqual(len(result), 2)
+            ayes, bees = result.values()
             # Cache will only include the edge, now
             self.assertEqual(len(cache), 1)
             from pyorient.ogm.edge import Edge

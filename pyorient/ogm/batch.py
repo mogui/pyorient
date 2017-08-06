@@ -11,6 +11,7 @@ from .query_utils import ArgConverter
 import re
 import string
 from copy import copy
+from collections import OrderedDict
 import sys
 
 class Batch(ExpressionMixin, CacheMixin):
@@ -191,7 +192,7 @@ class Batch(ExpressionMixin, CacheMixin):
         return finalised
 
     def collect(self, *variables, **kwargs):
-        """Commit batch, collecting batch variables in a dict.
+        """Commit batch, collecting batch variables in an OrderedDict
 
         :param variables: Names of variables to collect.
         :param kwargs: 'retries', a limit for retries in event of
@@ -211,7 +212,7 @@ class Batch(ExpressionMixin, CacheMixin):
         rle = True # TODO Once OrientDB supports multiple expand()s
 
         # Ignore duplicates
-        variables = set(variables)
+        variables = OrderedDict([(v, None) for v in variables])
         if rle:
             for var in variables:
                 self.stack[-1].append('LET _{0} = SELECT ${0}.size() as size'.format(var))
@@ -249,9 +250,9 @@ class Batch(ExpressionMixin, CacheMixin):
             def collect(batch):
                 response = getter(batch)
 
-                collected = {}
                 run_idx = 1
-                for var in variables:
+                collected = variables.copy()
+                for var in collected:
                     run_length = response[run_idx-1].oRecordData['size']
 
                     sentinel = run_idx + run_length
