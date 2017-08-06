@@ -35,6 +35,7 @@ class CreateEdgeCommand(Command):
 from .expressions import ExpressionMixin
 from .property import PropertyEncoder
 from .operators import LogicalConnective
+from .what import QS
 class RetrievalCommand(Command, ExpressionMixin):
     def __init__(self, command_text=None):
         self._compiled = command_text
@@ -59,9 +60,11 @@ class RetrievalCommand(Command, ExpressionMixin):
 
     def FORMAT_ENCODER(self, v):
         if isinstance(v, RetrievalCommand):
-            return '({})'.format(v.compile()) 
+            return '(' + v.compile() + ')'
         elif isinstance(v, LogicalConnective):
             return self.filter_string(v)
+        elif isinstance(v, QS):
+            return v
         else:
             return PropertyEncoder.encode_value(v, self)
 

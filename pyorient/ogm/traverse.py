@@ -190,9 +190,10 @@ def build_pretty_compiler(self):
     def compiler():
         traverse_spaces = self._params.get('indent', 0)
         traverse_idt = ' ' * traverse_spaces
+        target = self._target
         return traverse_idt + Traverse.TEMPLATE.format(self.build_fields(tuple()),
-            u'(' + self._target.pretty() + ')' if isinstance(self._target, Query)
-                else ArgConverter.convert_to(ArgConverter.Vertex, self._target, self),
+            u'(' + target.pretty() + ')' if isinstance(target, Query)
+                else ArgConverter.convert_to(ArgConverter.Vertex, target, self),
             *self.build_optional())
     return compiler
 

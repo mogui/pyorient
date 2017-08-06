@@ -600,6 +600,10 @@ class QT(What):
         from .traverse import Traverse
         return Traverse(None, self, *what, **kwargs)
 
+class QS(str):
+    """Query string. Unquoted string substitutes to query tokens"""
+    pass
+
 class FunctionWhat(MethodWhat):
     """Derived from MethodWhat for the chain of which they might be the
     beginning
