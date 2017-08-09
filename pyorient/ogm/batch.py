@@ -150,7 +150,7 @@ class Batch(ExpressionMixin, CacheMixin):
                     val = self[key] = isinstance(variable, BatchQueryVariable) 
                     return val
             check = memodict().__getitem__
-            return lambda response: len(response) > 1 or check('bqv')
+            return lambda response: len(response) > 1 or returned[0] == '(' or check('bqv')
         # Before variables are cleared...
         is_query_response = memoized_query_response(self.variables) 
 
