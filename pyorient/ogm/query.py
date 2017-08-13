@@ -567,13 +567,12 @@ class Query(RetrievalCommand, CacheMixin):
         return kw_where + exp_where
 
     def rid_lower(self, skip):
-        return '@rid > {}'.format(skip)
+        return '@rid > ' + str(skip)
 
     def build_order_expression(self, order_by):
         if isinstance(order_by, tuple):
-            return '{} {}'.format(
-                ArgConverter.convert_to(ArgConverter.Field, order_by[0], self),
-                'DESC' if order_by[1] else 'ASC')
+            return ArgConverter.convert_to(ArgConverter.Field, order_by[0], self) + \
+                    ' ' + ('DESC' if order_by[1] else 'ASC')
         return ArgConverter.convert_to(ArgConverter.Field, order_by, self)
 
     def build_command_suffix(self, limit=None):

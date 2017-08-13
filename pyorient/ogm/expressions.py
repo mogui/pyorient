@@ -276,8 +276,8 @@ class ExpressionMixin(object):
             return lp+exp+rp
         elif isinstance(operation_root, Property):
             return operation_root.context_name()
-        elif isinstance(operation_root, LetVariable) or isinstance(operation_root, QT):
-            # TODO This condition suggests common base for variables and tokens, below What
+        elif isinstance(operation_root, What):
+            # Usually LetVariable (or some variant on it, like AnyPropertyWhat) or QT
             return cls.build_what(operation_root)
         elif isinstance(operation_root, Decimal):
             return 'Decimal("' + str(operation_root) + '")'
