@@ -393,7 +393,7 @@ class ExpressionMixin(object):
 
     @classmethod
     def build_token(cls, token):
-        return token.token and '{' + str(token.token) + '}' or '{}'
+        return token.token is not None and '{' + str(token.token) + '}' or '{}'
 
     @staticmethod
     def parse_prop_name(from_str, override):

@@ -44,6 +44,7 @@ class ArgConverter(object):
             else:
                 return pyorient.ogm.property.PropertyEncoder.encode_value(arg, for_query)
         elif conversion is ArgConverter.Value:
+            from pyorient.ogm.commands import RetrievalCommand
             if isinstance(arg, pyorient.ogm.property.Property):
                 return arg.context_name()
             elif isinstance(arg, GraphElement):
@@ -52,6 +53,9 @@ class ArgConverter(object):
                 return for_query.build_what(arg)
             elif isinstance(arg, ArithmeticOperation):
                 return for_query.arithmetic_string(arg)
+            elif isinstance(arg, RetrievalCommand):
+                # e.g., in What.if_()
+                return '(' + str(arg) + ')'
             else:
                 return pyorient.ogm.property.PropertyEncoder.encode_value(arg, for_query)
         elif conversion is ArgConverter.Boolean:
