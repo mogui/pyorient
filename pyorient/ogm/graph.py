@@ -475,11 +475,9 @@ class Graph(object):
                 # need to bypass __getattr__()
                 if type_linked_to.__dict__.get('registry_name', None):
                     linked_to = type_linked_to.registry_name
-                else:
-                    link_bases = type_linked_to.__dict__.get('__bases__', None)
-                    if link_bases and \
-                            isinstance(prop_value, LinkedProperty) and \
-                            link_bases[0] is Property:
+                elif isinstance(prop_value, LinkedProperty):
+                    link_bases = type_linked_to.__bases__
+                    if link_bases[0] is Property:
                         linked_to = type_linked_to.__name__
 
             try:

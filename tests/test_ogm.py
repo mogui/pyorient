@@ -642,7 +642,7 @@ class UnicodeV(UnicodeNode):
 
     name = String(nullable=False, unique=True)
     value = String(nullable=False)
-    alias = EmbeddedSet(linked_to=String(), nullable=True)
+    alias = EmbeddedSet(linked_to=String, nullable=True)
 
 
 class OGMUnicodeTestCase(unittest.TestCase):

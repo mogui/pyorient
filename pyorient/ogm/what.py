@@ -399,7 +399,7 @@ class PropertyWhat(MethodWhatMixin, ChainableWhat):
 
 # Can't make assumptions about type of property
 # Provide all method mixins, and assume user knows what they're doing
-class AnyPropertyWhat(StringMethodMixin, MapMethodMixin, PropertyWhat):
+class AnyPropertyWhat(StringMethodMixin, MapMethodMixin, ArithmeticMixin, PropertyWhat):
     def __getitem__(self, item):
         self._props.append((What.WhatFilter, item))
         return self
