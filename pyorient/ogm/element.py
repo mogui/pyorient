@@ -49,6 +49,11 @@ class GraphElement(object):
         """Get containing (graph) context"""
         return self._graph
 
+    def load(self, cache=None):
+        """(Re)populate element, retrieving data from graph"""
+        self._props.update(self._graph.load_element(self.__class__, self._id, cache))
+        return self
+
     def save(self):
         """:return: True if successful, False otherwise"""
         if not self._graph:

@@ -178,9 +178,9 @@ class Graph(object):
                 prop_name = p['name']
                 # Special-case in property, mainly on edges
                 if is_edge:
-                    if p['name'] == 'in':
+                    if prop_name == 'in':
                         prop_name = 'in_'
-                    elif p['name'] == 'out':
+                    elif prop_name == 'out':
                         prop_name = 'out_'
 
                 props[prop_name] = Graph.property_from_schema(p, linked_class)
@@ -194,6 +194,21 @@ class Graph(object):
             ]
             return class_record
 
+        if auto_plural:
+            def set_vertex_props(props, class_name):
+                props['element_plural'] = class_name
+                props['registry_plural'] = class_name
+                props['element_type'] = class_name
+        else:
+            def set_vertex_props(props, class_name):
+                props['element_type'] = class_name
+
+        def set_edge_props(props, class_name):
+            props['label'] = class_name
+            props['registry_name'] = class_name
+
+        BASE_PROPS = [(set_vertex_props, False), (set_edge_props, True)]
+
         # We need to topologically sort classes, since we cannot rely on any ordering
         # in the database. In particular defaultClusterId is set to -1 for all abstract
         # classes. Additionally, superclass(es) can be changed post-create, changing the
@@ -206,16 +221,42 @@ class Graph(object):
 
         for class_def in schema:
             class_name = class_def['name']
-            props = {}
+            props = {
+                # Slightly odd construct ensures class_fields is never None
+                'class_fields': class_def.get('customFields', None) or {}
+                , 'abstract': class_def.get('abstract', False)
+            }
             # Resolve all of the base classes
             base_names = Graph.list_superclasses(class_def)
             bases = []
-            for base_name in base_names:
-                if base_name == 'V':
+            is_edge = False
+
+            if base_names:
+                base_iter = iter(base_names)
+                first_base = next(base_iter)
+
+                if first_base == 'V':
                     bases.append(vertex)
-                elif base_name == 'E':
+                    props['decl_type'] = vertex.decl_type
+                    set_base_props = set_vertex_props
+                elif first_base == 'E':
                     bases.append(edge)
+                    props['decl_type'] = edge.decl_type
+                    is_edge = True
+                    set_base_props = set_edge_props
                 else:
+                    base = resolve_class(first_base, registries)
+                    if base:
+                        bases.append(base)
+                        decl_type = base.decl_type
+                        props['decl_type'] = decl_type
+                        set_base_props, is_edge = BASE_PROPS[decl_type]
+                    else:
+                        # Worst-case scenario -- the base is not a graph type
+                        props.update(non_graph_properties.get(base_name, {}))
+                set_base_props(props, class_name)
+
+                for base_name in base_iter:
                     base = resolve_class(base_name, registries)
                     if base:
                         bases.append(base)
@@ -223,31 +264,19 @@ class Graph(object):
                         # Worst-case scenario -- the base is not a graph type
                         props.update(non_graph_properties.get(base_name, {}))
 
-            is_edge = bases and bases[0].decl_type == DeclarativeType.Edge
-            props.update(extract_properties(class_def['properties'], is_edge))
-
-            props['class_fields'] = class_def.get('customFields', None) or {}
-            props['abstract'] = class_def.get('abstract', False)
-
-            if bases:
-                # Create class for the graph type
-                props['decl_type'] = bases[0].decl_type
-
-                if is_edge:
-                    props['label'] = class_name
-                    props['registry_name'] = class_name
-                else:
-                    if auto_plural:
-                        props['element_plural'] = class_name
-                        props['registry_plural'] = class_name
-                    props['element_type'] = class_name
-
+                # Create class for the graph type.
+                definitions = registry
                 # Shouldn't always assume DeclarativeMeta metaclass when constructing the OGM class
                 # inheritance is passed through bases
-                registry[class_name] = type(bases[0])(class_name, tuple(bases), props)
+                define_class = lambda props: type(bases[0])(class_name, tuple(bases), props) 
             else:
                 # Otherwise preserve the properties in case a graph type derives from it.
-                non_graph_properties[class_name] = props
+                definitions = non_graph_properties
+                define_class = lambda props: props
+
+            props.update(extract_properties(class_def['properties'], is_edge))
+
+            definitions[class_name] = define_class(props)
 
         return registry
 
@@ -451,12 +480,11 @@ class Graph(object):
         props = sorted([(k,v) for k,v in cls.__dict__.items()
                         if isinstance(v, Property)]
                        , key=lambda p:p[1]._instance_idx)
+        guard_reserved_words = Graph.get_reserved_validator(cls)
         for prop_name, prop_value in props:
-            value_name = prop_value._name
-            if value_name:
-                prop_name = value_name
+            prop_name = prop_value._name or prop_name
 
-            Graph.guard_reserved_words(prop_name, cls)
+            guard_reserved_words(prop_name)
 
             # Special case in_ and out_ properties for edges
             if cls.decl_type == DeclarativeType.Edge:
@@ -555,16 +583,15 @@ class Graph(object):
         cls_name = cls.registry_name
 
         bases = [base for base in cls.__bases__ if Graph.valid_element_base(base)]
-        if not bases:
+        try:
+            if bases[0] is bases[0].decl_root:
+                extends = ['V', 'E'][bases[0].decl_type]
+            else:
+                extends = ','.join([base.registry_name for base in bases])
+        except IndexError:
             raise TypeError(
                 'Unexpected base class(es) in Graph.create_class'
                 ' - try the declarative bases')
-
-        extends = None
-        if bases[0] is bases[0].decl_root:
-            extends = ['V', 'E'][bases[0].decl_type]
-        else:
-            extends = ','.join([base.registry_name for base in bases])
 
         #if not self.client.command(
         #    'SELECT FROM ( SELECT expand( classes ) FROM metadata:schema ) WHERE name = "{}"'
@@ -679,15 +706,40 @@ class Graph(object):
 
     def get_vertex(self, vertex_id):
         record = self.client.command('SELECT FROM ' + vertex_id)
-        return self.vertex_from_record(record[0]) if record else None
+        try:
+            return self.vertex_from_record(record[0])
+        except:
+            return None
 
     def get_edge(self, edge_id):
         record = self.client.command('SELECT FROM ' + edge_id)
-        return self.edge_from_record(record[0]) if record else None
+        try:
+            return self.edge_from_record(record[0])
+        except:
+            return None
 
     def get_element(self, elem_id):
         record = self.client.command('SELECT FROM ' + elem_id)
-        return self.element_from_record(record[0]) if record else None
+        try:
+            return self.element_from_record(record[0])
+        except:
+            return None
+
+    def load_element(self, element_class, elem_id, cache):
+        record = self.client.command('SELECT FROM ' + elem_id)
+        try:
+            return self.props_from_db[element_class](record[0].oRecordData, cache)
+        except:
+            return {}
+
+    def load_edge(self, element_class, elem_id, cache):
+        record = self.client.command('SELECT FROM ' + elem_id)
+        try:
+            props = record[0].oRecordData
+            # Need to heed changes to in/out from UPDATE EDGE
+            return self.edge_hashes(props) + (self.props_from_db[element_class](props, cache),)
+        except:
+            return None
 
     def save_element(self, element_class, props, elem_id):
         """:return: True if successful, False otherwise"""
@@ -860,20 +912,9 @@ class Graph(object):
     def edge_from_record(self, record, edge_cls=None, cache=None):
         props = record.oRecordData
 
-        in_hash = None
-        in_prop = props['in']
-        # Currently it is possible to override 'in' and 'out' with custom
-        # properties, which breaks inV()/outV()
-        if type(in_prop) is pyorient.OrientRecordLink:
-            in_hash = in_prop.get_hash()
-
-        out_hash = None
-        out_prop = props['out']
-        if type(out_prop) is pyorient.OrientRecordLink:
-            out_hash = out_prop.get_hash()
-
         if not edge_cls:
             edge_cls = self.registry.get(record._class)
+        in_hash, out_hash = self.edge_hashes(props)
         return edge_cls.from_graph(self, record._rid
            , in_hash, out_hash
            , self.props_from_db[edge_cls](props, cache)
@@ -881,6 +922,14 @@ class Graph(object):
             else Edge.from_graph(self, record._rid, in_hash, out_hash,
                                  self._generic_props_mapping(props, cache),
                                  self._element_cache(cache))
+
+    def edge_hashes(self, props):
+        try:
+            in_hash, out_hash = props['in'].get_hash(), props['out'].get_hash()
+        except AttributeError:
+            return None, None
+        else:
+            return in_hash, out_hash
 
     def edges_from_records(self, records, cache=None):
         return [self.edge_from_record(record, none, cache) for record in records]
@@ -975,14 +1024,20 @@ class Graph(object):
             return False
 
     @staticmethod
-    def guard_reserved_words(word, cls):
-        reserved_words = [[],['in', 'out']][cls.decl_type]
-        if word in reserved_words:
+    def guard_reserved_words(word):
+        if word == 'in' or word == 'out':
             # Should the class also be dropped from the database?
             raise ReservedWordError(
                 "'{0}' as a property name will render"
                 " class '{1}' unusable.".format(word,
                                                 cls.registry_name))
+
+    @staticmethod
+    def get_reserved_validator(cls):
+        if cls.decl_type == DeclarativeType.Edge:
+            return Graph.guard_reserved_words
+        else:
+            return lambda word: None
 
     @staticmethod
     def create_props_mapping(db_to_element, wrapper):
@@ -1031,15 +1086,13 @@ class Graph(object):
                 props.append((m, p))
 
         props = sorted(props, key=lambda p:p[1]._instance_idx)
-        for prop_name, prop_value in props:
-            value_name = prop_value._name
-            if value_name:
-                all_properties[value_name] = prop_name
-                prop_name = value_name
-            else:
-                all_properties[prop_name] = prop_name
 
-            Graph.guard_reserved_words(prop_name, cls)
+        guard_reserved_words = Graph.get_reserved_validator(cls)
+        for prop_name, prop_value in props:
+            value_name = prop_value._name or prop_name
+            all_properties[value_name] = prop_name
+            guard_reserved_words(value_name)
+
         return all_properties
 
     @staticmethod

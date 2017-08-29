@@ -19,6 +19,13 @@ class Edge(GraphElement):
 
         return edge
 
+    def load(self, cache=None):
+        loaded = self._graph.load_edge(self.__class__, self._id, cache)
+        if loaded is not None:
+            self._in, self._out, props = loaded
+            self._props.update(props)
+        return self
+
     def outV(self):
         g = self._graph
         return g.get_vertex(self._out) if g else None

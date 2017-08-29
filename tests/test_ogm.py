@@ -95,6 +95,7 @@ class OGMAnimalsTestCaseBase(unittest.TestCase):
         assert mouse == queried_mouse
         assert mouse == g.get_vertex(mouse._id)
         assert mouse == g.get_element(mouse._id)
+        self.assertEqual(mouse, Animal.from_graph(g, mouse._id, {}).load())
 
         try:
             rat2 = g.animals.create(name='rat', specie='rodent')
@@ -117,6 +118,8 @@ class OGMAnimalsTestCaseBase(unittest.TestCase):
         assert rat_eats_pea.modifier == 'lots'
         assert rat_eats_pea == g.get_edge(rat_eats_pea._id)
         assert rat_eats_pea == g.get_element(rat_eats_pea._id)
+
+        self.assertEqual(rat_eats_pea, Eats.from_graph(g, rat_eats_pea._id, None, None, {}).load())
 
         water = g.beverages.create(name='water', color='clear')
         mouse_drinks_water = g.drinks.create(mouse, water)

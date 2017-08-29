@@ -53,7 +53,6 @@ class Query(RetrievalCommand, CacheMixin):
             # Vertex or edge instance
             self.source_name = first_entity._id
             self._class_props = tuple()
-            pass
         elif isinstance(first_entity, Query):
             # Subquery
             self._subquery = first_entity
@@ -356,21 +355,21 @@ class Query(RetrievalCommand, CacheMixin):
         with TempParams(self._params, limit=2):
             responses = self.all()
             num_responses = len(responses)
-            if num_responses > 1:
-                raise MultipleResultsFound(
-                    'Expecting one result for query; got more.')
-            elif num_responses < 1:
-                raise NoResultFound('Expecting one result for query; got none.')
-            else:
+            if num_responses == 1:
                 return responses[0]
+            else:
+                if num_responses > 1:
+                    raise MultipleResultsFound(
+                        'Expecting one result for query; got more.')
+                else:
+                    raise NoResultFound('Expecting one result for query; got none.')
 
     def scalar(self):
         try:
             response = self.one()
+            return response[0] if isinstance(response, tuple) else response
         except NoResultFound:
             return None
-        else:
-            return response[0] if isinstance(response, tuple) else response
 
     def count(self, field=None):
         params = self._params
