@@ -166,16 +166,19 @@ class BaseMessage(object):
 
             while more:
                 # read num bytes by the field definition
-                exception_class += self._decode_field( FIELD_STRING )
+                if not exception_class:
+                    exception_class += self._decode_field( FIELD_STRING )
+                else:
+                    exception_message += b', %s: ' % self._decode_field( FIELD_STRING )
                 exception_message += self._decode_field( FIELD_STRING )
                 more = self._decode_field( FIELD_BOOLEAN )
 
-                if self.get_protocol() > 18:  # > 18 1.6-snapshot
-                    # read serialized version of exception thrown on server side
-                    # useful only for java clients
-                    serialized_exception = self._decode_field( FIELD_STRING )
-                    # trash
-                    del serialized_exception
+            if self.get_protocol() > 18:  # > 18 1.6-snapshot
+                # read serialized version of exception thrown on server side
+                # useful only for java clients
+                serialized_exception = self._decode_field( FIELD_STRING )
+                # trash
+                del serialized_exception
 
             raise PyOrientCommandException(
                 exception_class.decode( 'utf8' ),
