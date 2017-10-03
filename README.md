@@ -321,6 +321,10 @@ for food in animal_foods:
 - [mogui](https://github.com/mogui/)
 - [ostico](https://github.com/ostico/)
 
+## Thanks
+To **Jetbrains** tools support, coded with:    
+[<img src="https://i.imgur.com/LcUZzzW.png" width="70"/>](https://www.jetbrains.com/)
+
 ## Copyright
 
 Copyright (c) 2014 Niko Usai, Domenico Lupinetti. See LICENSE for details.
