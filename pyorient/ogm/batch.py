@@ -171,10 +171,10 @@ class Batch(ExpressionMixin, CacheMixin):
             if returned:
                 if returned[0] in ('[', '{'):
                     processor = lambda response, batch: \
-                        g.elements_from_records(response, batch._cache) if response else None
+                        g.elements_from_records(response, batch._cache) if response is not None else None
                 else:
                     def processor(response, batch):
-                        if response:
+                        if response is not None:
                             if is_query_response(response):
                                 return g.elements_from_records(response, batch._cache)
                             else:
