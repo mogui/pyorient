@@ -1,6 +1,7 @@
 import re
 import sys
 import time
+import calendar
 from datetime import date, datetime
 from decimal import Decimal, localcontext
 from .otypes import OrientRecordLink, OrientRecord, OrientBinaryObject
@@ -88,10 +89,21 @@ binRegex = re.compile('[^_,)>\}\]]*')
 
 class OrientSerializationCSV(object):
 
-    def __init__(self):
+    def __init__(self, props=None):
         self.className = None
         self.data = {}
         self.type = OrientSerialization.CSV
+
+        if props is None or not props.get('utc', False):
+            self.encode_date = lambda value: str(int(time.mktime(value.timetuple())) * 1000) + 'a'
+            self.encode_datetime = lambda value: str(int(time.mktime(value.timetuple())) * 1000) + 't'
+            self.decode_date = lambda collected: date.fromtimestamp(float(collected) / 1000)
+            self.decode_datetime = lambda collected: datetime.fromtimestamp(float(collected) / 1000)
+        else:
+            self.encode_date = lambda value: str(int(calendar.timegm(value.timetuple())) * 1000) + 'a'
+            self.encode_datetime = lambda value: str(int(calendar.timegm(value.timetuple())) * 1000) + 't'
+            self.decode_date = lambda collected: datetime.utcfromtimestamp(float(collected) / 1000).date()
+            self.decode_datetime = lambda collected: datetime.utcfromtimestamp(float(collected) / 1000)
 
     def decode(self, content):
         """
@@ -185,9 +197,9 @@ class OrientSerializationCSV(object):
         elif isinstance(value, int):
             ret = str(value)
         elif isinstance(value, datetime):
-            ret = str(int(time.mktime(value.timetuple())) * 1000) + 't'
+            ret = self.encode_datetime(value)
         elif isinstance(value, date):
-            ret = str(int(time.mktime(value.timetuple())) * 1000) + 'a'
+            ret = self.encode_date(value)
         elif isinstance(value, Decimal):
             ret = '{:f}c'.format(value)
         elif isinstance(value, list):
@@ -322,8 +334,7 @@ class OrientSerializationCSV(object):
             collected = escRegex.sub(lambda m: m.group(0)[-1:], collected)
         return collected, offset
 
-    @staticmethod
-    def _parse_number(content, offset):
+    def _parse_number(self, content, offset):
         """
           Consume a number.
             If the number has a suffix, consume it also and instantiate the
@@ -353,11 +364,12 @@ class OrientSerializationCSV(object):
             collected = float(collected)
             offset += 1
         elif c == 'a':
-            collected = date.fromtimestamp(float(collected) / 1000)
+            # date
+            collected = self.decode_date(collected)
             offset += 1
         elif c == 't':
-            # date
-            collected = datetime.fromtimestamp(float(collected) / 1000)
+            # datetime
+            collected = self.decode_datetime(collected)
             offset += 1
         elif c == 'b' or c == 's':
             collected = int(collected)
@@ -590,7 +602,7 @@ class CSVRidBagDecoder(object):
             rid_idx += 1
             yield OrientRecordLink(str(cid) + ':' + str(cpos))
 
-class OrientSerialization(object):
+class OrientSerialization(dict):
     """
     Enum representing the available serialization
     """
@@ -600,20 +612,16 @@ class OrientSerialization(object):
     #: Now unimplemented
     Binary = "ORecordSerializerBinary"
 
+    def __missing__(self, impl):
+        raise PyOrientBadMethodCallException(
+            impl + ' is not an available serialization type', []
+        )
+
     @classmethod
     def get_impl(cls, impl, props=None):
-        impl_map = {
-            cls.CSV: OrientSerializationCSV,
-            cls.Binary: OrientSerializationBinary,
-        }
-        implementation = impl_map.get(impl, False)
-        if not implementation:
-            raise PyOrientBadMethodCallException(
-                impl + ' is not an available serialization type', []
-            )
-        if impl == cls.Binary:
-            if not binary_support:
-                raise Exception( "To support Binary Serialization, pyorient_native must be installed" )
-            return implementation(props)
-        else:
-            return implementation()
+        if impl == cls.Binary and not binary_support:
+            raise Exception( "To support Binary Serialization, pyorient_native must be installed" )
+        impl_map = cls(((cls.CSV, OrientSerializationCSV),
+                        (cls.Binary, OrientSerializationBinary)))
+        return impl_map[impl](props)
+

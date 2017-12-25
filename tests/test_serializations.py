@@ -241,6 +241,32 @@ class SerializationTestCase(unittest.TestCase):
         assert rec.oRecordData == data
 
     @skip_binary_if_pyorient_native_not_installed
+    def test_binary_utc(self):
+        serializer = OrientSerialization.get_impl(OrientSerialization.Binary)
+        utc_serializer = OrientSerialization.get_impl(OrientSerialization.Binary, {'utc':True})
+
+        from datetime import date, datetime
+        dates = OrientRecord({
+            '__o_class': 'dates',
+            'd': date(2017, 7, 9),
+            'dt': datetime(2017, 7, 9, 12, 34, 56),
+        })
+
+        local_serialized = serializer.encode(dates)
+        utc_serialized = utc_serializer.encode(dates)
+        if not datetime.now().replace(second=0, microsecond=0) == datetime.utcnow().replace(second=0, microsecond=0):
+            self.assertNotEqual(local_serialized, utc_serialized)
+
+        # TODO Figure out how to test these reliably
+        #self.assertIn(b'\x02d\x00\x00\x00\x17\x13', utc_serialized) 
+        #self.assertIn(b'\x04dt\x00\x00\x00\x1a\x06\x00\x98\x8f\x02\x80', utc_serialized) 
+
+        local_deserialized = serializer.decode(local_serialized)
+        self.assertDictEqual(dates.oRecordData, local_deserialized[1])
+        utc_deserialized = utc_serializer.decode(utc_serialized)
+        self.assertDictEqual(dates.oRecordData, utc_deserialized[1])
+
+    @skip_binary_if_pyorient_native_not_installed
     def test_binary_none(self):
         DB = binary_db_connect()
         DB.command("CREATE CLASS MyModel EXTENDS V")[0]
@@ -357,3 +383,28 @@ class SerializationTestCase(unittest.TestCase):
         rec5 = DB.record_load("#" + _n_rid + ":5")
         # assert rec5._class == "MyModel"
         assert rec5.oRecordData == data5
+
+    def test_csv_utc(self):
+        serializer = OrientSerialization.get_impl(OrientSerialization.CSV)
+        utc_serializer = OrientSerialization.get_impl(OrientSerialization.CSV, {'utc':True})
+
+        from datetime import date, datetime
+        dates = OrientRecord({
+            '__o_class': 'dates',
+            'd': date(2017, 7, 9),
+            'dt': datetime(2017, 7, 9, 12, 34, 56),
+        })
+
+        local_serialized = serializer.encode(dates)
+        utc_serialized = utc_serializer.encode(dates)
+        if not datetime.now().replace(second=0, microsecond=0) == datetime.utcnow().replace(second=0, microsecond=0):
+            self.assertNotEqual(local_serialized, utc_serialized)
+
+        self.assertIn('d:1499558400000a', utc_serialized)
+        self.assertIn('dt:1499603696000t', utc_serialized)
+
+        local_deserialized = serializer.decode(local_serialized)
+        self.assertDictEqual(dates.oRecordData, local_deserialized[1])
+        utc_deserialized = utc_serializer.decode(utc_serialized)
+        self.assertDictEqual(dates.oRecordData, utc_deserialized[1])
+

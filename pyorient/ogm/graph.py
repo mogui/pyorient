@@ -38,7 +38,9 @@ class Graph(object):
         :note: user only meaningful when cred also provided.
         """
 
-        self.client = pyorient.OrientDB(config.host, config.port, config.serialization_type)
+        self.client = pyorient.OrientDB(config.host, config.port,
+                                        config.serialization_type,
+                                        config.serialize_props)
         self.client.connect(config.user, config.cred)
 
         self.config = config
