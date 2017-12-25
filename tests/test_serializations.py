@@ -1,6 +1,6 @@
 import unittest
-from pyorient.serializations import OrientSerialization
-from pyorient.otypes import OrientBinaryObject, OrientRecord
+from pyorient.serializations import OrientSerialization, CSVRidBagDecoder
+from pyorient.otypes import OrientBinaryObject, OrientRecord, OrientRecordLink
 
 
 def binary_db_connect():
@@ -169,7 +169,6 @@ class SerializationTestCase(unittest.TestCase):
 
     @skip_binary_if_pyorient_native_not_installed
     def test_binary_link(self):
-        from pyorient.otypes import OrientRecordLink
         DB = binary_db_connect()
         DB.command("CREATE CLASS MyModel EXTENDS V")
         cluster_id = DB.command("select classes[name='MyModel']" + \
@@ -294,6 +293,11 @@ class SerializationTestCase(unittest.TestCase):
         assert isinstance(record, dict)
         assert record['name'] == 'rat'
         assert isinstance(record['out_Eat'], OrientBinaryObject)
+
+        eat_decoder = CSVRidBagDecoder(record['out_Eat'].getBin())
+        eat = next(eat_decoder.decode_embedded())
+        self.assertIsInstance(eat, OrientRecordLink)
+        self.assertEqual(eat.get_hash(), '#13:0')
 
         # TODO: add several more complex tests to have more coverage
 

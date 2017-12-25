@@ -554,6 +554,53 @@ class OrientSerializationCSV(object):
         collected = binRegex.match(content, offset).group(0)
         return collected, offset + len(collected) + 1
 
+import struct
+class CSVRidBagDecoder(object):
+    """The CSV serializer encodes RidBags into Base64. PyOrient captures these
+    in OrientBinaryObject. This class decodes such RidBags into
+    OrientRecordLink instances.
+
+    TODO Currently handles only embedded RidBags"""
+    def __init__(self, binary):
+        """:param binary: The bytearray returned by OrientBinaryObject.getBin()"""
+        self.data = binary
+        self.embedded = binary[0] & 1 != 0
+        self.has_uuid = binary[0] & 2 != 0
+        self.content_begin = 17 if self.has_uuid else 1
+        self.size = None
+
+    def __len__(self):
+        """Number of record-ids in RidBag"""
+        if self.size is None:
+            if self.embedded:
+                size_idx = self.content_begin
+            else:
+                # After the 20 byte collection pointer
+                size_idx = self.content_begin + 20
+            self.size = struct.unpack('>L', self.data[size_idx:size_idx+4])[0]
+        return self.size
+
+    def decode_embedded(self):
+        """:return: A generator for decoding record-ids"""
+        if not self.embedded:
+            return
+
+        size = len(self)
+        # 4-byte size field
+        pos = self.content_begin + 4
+
+        data = self.data
+
+        rid_idx = 0
+        while rid_idx < size:
+            next_pos = pos + 2
+            cid = struct.unpack('>H', data[pos:next_pos])[0]
+            pos = next_pos
+            next_pos = pos + 8
+            cpos = struct.unpack('>Q', data[pos:next_pos])[0]
+            pos = next_pos
+            rid_idx += 1
+            yield OrientRecordLink(str(cid) + ':' + str(cpos))
 
 class OrientSerialization(dict):
     """

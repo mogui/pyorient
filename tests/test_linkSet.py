@@ -60,6 +60,7 @@ class LinkSetTestCase(unittest.TestCase):
 
     def test_read_LinkSet(self):
         res = self.client.query("SELECT FROM sites where id = 3")
+        self.assertIn('link', res[0])
         assert len(res[0].oRecordData['link']) == 4
         for link in res[0].oRecordData['link']:
             # can no more cheeck on the fixed clustedID, so the "only thing"(?) i can assert is not empty rid

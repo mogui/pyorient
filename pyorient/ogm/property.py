@@ -72,8 +72,8 @@ class Property(PropertyWhat):
         A property should not be shared between multiple contexts."""
         self._context = context
 
-        if not self.props:
-            self.props.append(self.context_name())
+        if not self._props:
+            self._props.append(self.context_name())
 
     def context_name(self):
         if self._name:
@@ -88,7 +88,7 @@ class Property(PropertyWhat):
         return repr(self.context_name())
 
     def __getattr__(self, attr):
-        self = AnyPropertyWhat(self.chain, deepcopy(self.props))
+        self = AnyPropertyWhat(self._chain, deepcopy(self._props))
         return self.__getattr__(attr)
 
 class UUID:
@@ -110,13 +110,13 @@ class PropertyEncoder:
         from pyorient.ogm.what import What
 
         if isinstance(value, decimal.Decimal):
-            return u'"{:f}"'.format(value)
+            return u'"' + str(value) + '"'
         elif isinstance(value, float):
             with decimal.localcontext() as ctx:
                 ctx.prec = 20  # floats are max 80-bits wide = 20 significant digits
                 return u'"{:f}"'.format(decimal.Decimal(value))
         elif isinstance(value, datetime.datetime) or isinstance(value, datetime.date):
-            return u'"{}"'.format(value)
+            return u'"' + str(value) + '"'
         elif isinstance(value, STR_TYPES):
             # it just so happens that JSON in ASCII mode has the same limitations
             # and escape sequences as what we need: \u00c5 vs \xc5 representation,
@@ -127,14 +127,14 @@ class PropertyEncoder:
         elif isinstance(value, int) or (sys.version_info[0] < 3 and isinstance(value, long)):
             return str(value)
         elif isinstance(value, list) or isinstance(value, set):
-            return u'[{}]'.format(u','.join([PropertyEncoder.encode_value(v, expressions) for v in value]))
+            return u'[' + u','.join([PropertyEncoder.encode_value(v, expressions) for v in value]) + u']'
         elif isinstance(value, dict):
             contents = u','.join([
-                '{}: {}'.format(PropertyEncoder.encode_value(k, expressions),
-                                PropertyEncoder.encode_value(v, expressions))
+                PropertyEncoder.encode_value(k, expressions) + ': ' +
+                PropertyEncoder.encode_value(v, expressions)
                 for k, v in value.items()
             ])
-            return u'{{ {} }}'.format(contents)
+            return u'{' + contents + u'}'
         elif isinstance(value, GraphElement):
             return value._id
         elif isinstance(value, What):

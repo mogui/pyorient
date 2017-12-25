@@ -75,22 +75,19 @@ class CommandMessage(BaseMessage):
 
     @need_db_opened
     def prepare(self, params=None ):
+        try:
+            self.set_command_type( params[0] )
 
-        if isinstance( params, tuple ) or isinstance( params, list ):
-            try:
-                self.set_command_type( params[0] )
+            self._query = params[1]
+            self._limit = params[2]
+            self._fetch_plan = params[3]
 
-                self._query = params[1]
-                self._limit = params[2]
-                self._fetch_plan = params[3]
-
-                # callback function use to operate
-                # over the async fetched records
-                self.set_callback( params[4] )
-
-            except IndexError:
-                # Use default for non existent indexes
-                pass
+            # callback function use to operate
+            # over the async fetched records
+            self.set_callback( params[4] )
+        except:
+            # Use default for non existent indexes
+            pass
 
         if self._command_type == QUERY_CMD \
                 or self._command_type == QUERY_SYNC \

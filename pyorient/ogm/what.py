@@ -240,13 +240,13 @@ def all():
 class ChainableWhat(What, Operand):
     def __init__(self, chain, props):
         super(ChainableWhat, self).__init__()
-        self.chain = chain
-        self.props = props
+        self._chain = chain
+        self._props = props
 
     def as_(self, name_override):
         if type(self) is not ChainableWhat:
             # Prevent further chaining
-            self = ChainableWhat(self.chain, self.props)
+            self = ChainableWhat(self._chain, self._props)
         self.name_override = name_override
 
         return self
@@ -357,7 +357,7 @@ class MapMethodMixin(CollectionMethodMixin):
 
 class WhatFilterMixin(object):
     def __getitem__(self, filter_exp):
-        self.chain.append((What.WhatFilter, filter_exp))
+        self._chain.append((What.WhatFilter, filter_exp))
         return self
 
 # Concrete method chaining types
@@ -365,7 +365,7 @@ class MethodWhat(MethodWhatMixin, ChainableWhat):
     def __init__(self, chain=[], props=[]):
         super(MethodWhat, self).__init__(chain, props)
         # Methods can also be chained to props
-        self.method_chain = self.chain
+        self._method_chain = self._chain
 
     @staticmethod
     def prepare_next_link(current, chainer_type, link):
@@ -375,13 +375,13 @@ class MethodWhat(MethodWhatMixin, ChainableWhat):
                 # Constrain next link to type-compatible methods
                 try:
                     current.__getattribute__('_immutable')
-                    next_link = chainer_type(current.chain[:], current.props[:])
+                    next_link = chainer_type(current._chain[:], current._props[:])
                 except:
-                    next_link = chainer_type(current.chain, current.props)
-                next_link.method_chain.append(link)
+                    next_link = chainer_type(current._chain, current._props)
+                next_link._method_chain.append(link)
                 return next_link
             else:
-                current.method_chain.append(link)
+                current._method_chain.append(link)
         else:
             return chainer_type([current, link], [])
 
@@ -392,58 +392,61 @@ class PropertyWhat(MethodWhatMixin, ChainableWhat):
         super(PropertyWhat, self).__init__(chain, props)
 
     def __getattr__(self, attr):
-        self.props.append(attr)
+        self._props.append(attr)
         # Subsequent methods acting on props, not on chain
-        self.method_chain = self.props
+        self._method_chain = self._props
         return self
 
 # Can't make assumptions about type of property
 # Provide all method mixins, and assume user knows what they're doing
-class AnyPropertyWhat(StringMethodMixin, MapMethodMixin, PropertyWhat):
+class AnyPropertyWhat(StringMethodMixin, MapMethodMixin, ArithmeticMixin, PropertyWhat):
     def __getitem__(self, item):
-        self.props.append((What.WhatFilter, item))
+        self._props.append((What.WhatFilter, item))
         return self
 
 class AnyPropertyMixin(object):
     def __getattr__(self, attr):
         # Prevent further chaining or use as record
-        self = AnyPropertyWhat(self.chain, self.props)
+        self = AnyPropertyWhat(self._chain, self._props)
         return self.__getattr__(attr)
 
 class ElementWhat(RecordMethodMixin, CollectionMethodMixin, WhatFilterMixin, MethodWhat, AnyPropertyMixin):
     def at_rid(self):
         return MethodWhat.prepare_next_link(self, AtRid, (What.AtRid,))
 
+    def at_class(self):
+        return MethodWhat.prepare_next_link(self, AtClass, (What.AtClass,))
+
     def __call__(self):
         raise TypeError(
             '{} is not callable here.'.format(
-                repr(self.props[-1]) if self.props else 'Query function'))
+                repr(self._props[-1]) if self._props else 'Query function'))
 
 class VertexWhatMixin(object):
     def out(self, *labels):
-        self.chain.append((What.Out, labels))
+        self._chain.append((What.Out, labels))
         return self
 
     def in_(self, *labels):
-        self.chain.append((What.In, labels))
+        self._chain.append((What.In, labels))
         return self
 
     def both(self, *labels):
-        self.chain.append((What.Both, labels))
+        self._chain.append((What.Both, labels))
         return self
 
     def outE(self, *labels):
-        chain = self.chain
+        chain = self._chain
         chain.append((What.OutE, labels))
         return EdgeWhat(chain)
 
     def inE(self, *labels):
-        chain = self.chain
+        chain = self._chain
         chain.append((What.InE, labels))
         return EdgeWhat(chain)
 
     def bothE(self, *labels):
-        chain = self.chain
+        chain = self._chain
         chain.append((What.BothE, labels))
         return EdgeWhat(chain)
 
@@ -467,12 +470,12 @@ inV = VertexWhatBegin(What.InV)
 
 class EdgeWhatMixin(object):
     def outV(self):
-        chain = self.chain
+        chain = self._chain
         chain.append((What.OutV,))
         return VertexWhat(chain)
 
     def inV(self):
-        chain = self.chain
+        chain = self._chain
         chain.append((What.InV,))
         return VertexWhat(chain)
 
@@ -506,59 +509,105 @@ class LetVariable(ElementWhat):
         super(LetVariable, self).__init__([(What.WhatLet, (name,))], [])
 
     def QV(self, name):
-        self.chain.append((What.WhatLet, (name,)))
+        self._chain.append((What.WhatLet, (name,)))
         return self
 
     def query(self):
         from .query import Query
         return Query(None, (self, ))
 
-    def traverse(self, *what):
+    def traverse(self, *what, **kwargs):
         from .traverse import Traverse
-        return Traverse(None, self, *what)
+        return Traverse(None, self, *what, **kwargs)
 
 class QV(LetVariable, VertexWhatMixin, EdgeWhatMixin, StringMethodMixin, MapMethodMixin, ArithmeticMixin):
+    """Query Variable, used in graph SELECTs and TRAVERSEs.
+       Specifies a number of classmethods for predefined variables; can also be
+       created in LET clauses.
+    """
     def __init__(self, name):
+        """Reference a query variable
+        :param name: Referenced variable (without leading '$')
+        """
+        if '.' in name:
+            split = name.split('.')
+            raise ValueError('Use QV({!r}).{} instead of QV({!r})'.format(
+                split[0],
+                '.'.join(['QV({!r})'.format(s[1:]) if s[0] == '$' else s for s in split[1:]]),
+                name))
         super(QV, self).__init__(name)
 
     @classmethod
     def parent(cls):
+        """Parent context from a sub-query (SELECT and TRAVERSE)"""
         return cls('parent')
 
     @classmethod
     def current(cls):
+        """Current record in context of use (SELECT and TRAVERSE)"""
         return cls('current')
 
     @classmethod
     def parent_current(cls):
+        """Shorthand for current record in parent's context (SELECT and TRAVERSE)"""
         return cls('parent').QV('current')
 
     @classmethod
+    def root(cls):
+        """Root context from a sub-query (SELECT and TRAVERSE)"""
+        return cls('root')
+
+    @classmethod
+    def root_current(cls):
+        """Shorthand for current record in root context (SELECT and TRAVERSE)"""
+        return cls('root').QV('current')
+
+    @classmethod
     def depth(cls):
+        """The current depth of nesting (TRAVERSE)"""
         return cls('depth')
 
     @classmethod
     def path(cls):
+        """String representation of the current (TRAVERSE) path"""
         return cls('path')
 
     @classmethod
     def stack(cls):
+        """List of operations. Use to access the (TRAVERSE) history."""
         return cls('stack')
 
     @classmethod
     def history(cls):
+        """All records traversed, as a Set<ORID> (TRAVERSE)"""
         return cls('history')
 
 class QT(What):
-    """Query token; for substitutions by RetrievalCommand.format()"""
+    """Query token; for substitutions by RetrievalCommand.format() and its
+    overrides
+    :param ref: A token name, for matching keyword arguments
+    """
     def __init__(self, ref=None):
         self.token = ref
 
     def query(self):
+        """Query against a yet-unspecified source"""
         from .query import Query
         return Query(None, (self, ))
 
+    def traverse(self, *what, **kwargs):
+        """Traverse from a yet-unspecified target"""
+        from .traverse import Traverse
+        return Traverse(None, self, *what, **kwargs)
+
+class QS(str):
+    """Query string. Unquoted string substitutes to query tokens"""
+    pass
+
 class FunctionWhat(MethodWhat):
+    """Derived from MethodWhat for the chain of which they might be the
+    beginning
+    """
     def __init__(self, func, args):
         super(FunctionWhat, self).__init__([(func, args)], [])
 
@@ -572,34 +621,41 @@ def custom_function_handle(name, expected=(ArgConverter.Value,)):
 # Record attributes
 
 class RecordAttribute(object):
+    """Base class for attributes which may be predefined for given records"""
     @classmethod
     def create_immutable(cls):
+        """Mark created record attribute instance as read-only"""
         attribute = cls()
         setattr(attribute, '_immutable', True)
         return attribute
 
 class AtThis(RecordAttribute, InstanceOfMixin, RecordMethodMixin, StringMethodWhat):
+    """Denotes the record itself"""
     def __init__(self, chain=[(What.AtThis, tuple())], props=[]):
         super(AtThis, self).__init__(chain, props)
 
-
 class AtRid(RecordAttribute, StringMethodWhat):
+    """The record-id. null for embedded queries"""
     def __init__(self, chain=[(What.AtRid, tuple())], props=[]):
         super(AtRid, self).__init__(chain, props)
 
 class AtClass(RecordAttribute, InstanceOfMixin, RecordMethodMixin, StringMethodWhat):
+    """Class name, for schema-aware types"""
     def __init__(self, chain=[(What.AtClass, tuple())], props=[]):
         super(AtClass, self).__init__(chain, props)
 
 class AtVersion(RecordAttribute, MethodWhat):
+    """Integer record version; starts from zero"""
     def __init__(self, chain=[(What.AtVersion, tuple())], props=[]):
         super(AtVersion, self).__init__(chain, props)
 
 class AtSize(RecordAttribute, MethodWhat):
+    """The number of fields in the document"""
     def __init__(self, chain=[(What.AtSize, tuple())], props=[]):
         super(AtSize, self).__init__(chain, props)
 
 class AtType(RecordAttribute, StringMethodWhat):
+    """The record type"""
     def __init__(self, chain=[(What.AtType, tuple())], props=[]):
         super(AtType, self).__init__(chain, props)
 
@@ -609,3 +665,4 @@ at_rid = AtRid.create_immutable()
 at_version = AtVersion.create_immutable()
 at_size = AtSize.create_immutable()
 at_type = AtType.create_immutable()
+

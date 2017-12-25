@@ -58,6 +58,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
         res = req_msg.prepare( [ "#11:0", "*:2", _test_callback ] ) \
             .send().fetch_response()
 
+        self.assertIn('#11:0', [res])
         assert res._rid == "#11:0"
         assert res._class == 'followed_by'
         assert isinstance(res._in, OrientRecordLink)
@@ -173,7 +174,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( ( cluster, rec_position._rid, rec ) )\
             .send().fetch_response()
 
-        assert update_success[0] != 0
+        self.assertTrue(update_success[0])
 
         if connection.protocol <= 21:
             return unittest.skip("Protocol {!r} does not works well".format(
