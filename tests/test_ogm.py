@@ -906,9 +906,9 @@ class KWArgQueryTest(KWArgQueryTestNode):
     column_1 = String()
     column_2 = Integer()
 
-class OGMKWArgQueryTestCaseBase(unittest.TestCase):
+class OGMKWArgQueryTestCase(unittest.TestCase):
     def __init__(self, *args, **kwargs):
-        super(OGMKWArgQueryTestCaseBase, self).__init__(*args, **kwargs)
+        super(OGMKWArgQueryTestCase, self).__init__(*args, **kwargs)
         self.g = None
 
     def setUp(self):
