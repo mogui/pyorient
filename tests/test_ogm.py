@@ -896,3 +896,79 @@ class OGMTestAbstractField(unittest.TestCase):
             declarative_node(), declarative_relationship(), auto_plural=True)
         self.assertTrue(database_registry['AbstractClass'].abstract)
         self.assertFalse(database_registry['ConcreteClass'].abstract)
+
+KWArgQueryTestNode = declarative_node()
+
+class KWArgQueryTest(KWArgQueryTestNode):
+    element_type = 'kwarg_query_test'
+    element_plural = 'kwarg_query_tests'
+
+    column_1 = String()
+    column_2 = Integer()
+
+class OGMKWArgQueryTestCaseBase(unittest.TestCase):
+    def __init__(self, *args, **kwargs):
+        super(OGMKWArgQueryTestCaseBase, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+
+        g = self.g = Graph(Config.from_url('kwarg_queries', 'root', 'root',
+                                               initial_drop=True))
+
+        g.create_all(KWArgQueryTestNode.registry)
+
+        self.db_data = [
+                {"column_1":"Collection 1", "column_2" : 1},
+                {"column_1":"Collection 1"}, # this will populate a null in column_2
+                {"column_1":"Collection 2", "column_2" : 1},
+                {"column_1":"Collection 2", "column_2" : None},
+            ]
+
+        for data in self.db_data:
+            g.kwarg_query_tests.create(**data)
+
+    def testKWArgBasicQueryTest(self):
+        assert len(KWArgQueryTestNode.registry) == 1
+        g = self.g
+
+        # Validate the setup was ok
+        query_res = g.kwarg_query_tests.query().all()
+        assert len(query_res) == 4, "Expected 4 tuples, retrieved {}".format(len(query_res))
+
+        # Test a query where the kwargs contain a full match
+        query_res = g.kwarg_query_tests.query(**self.db_data[0]).all()
+        assert len(query_res) == 1, "Expected 1 tuple, retrieved {}".format(len(query_res))
+        assert query_res[0].column_1 == self.db_data[0]["column_1"]
+        assert query_res[0].column_2 == self.db_data[0]["column_2"]
+
+        # Test a query where the kwargs contain a partial set of values
+        # Where the kwargs are created using missing values the missing values will be assigned null
+        # Where the query is made with missing values the missing values will match any value
+        query_res = g.kwarg_query_tests.query(**self.db_data[1]).all()
+        assert len(query_res) == 2, "Expected 2 tuples, retrieved {}".format(len(query_res))
+        # allow for tuples returned in either order
+        assert (
+            query_res[0].column_1 == self.db_data[0]["column_1"] and
+            query_res[0].column_2 == self.db_data[0]["column_2"] and
+            query_res[1].column_1 == self.db_data[1]["column_1"] and
+            query_res[1].column_2 is None
+        ) or (
+            query_res[1].column_1 == self.db_data[0]["column_1"] and
+            query_res[1].column_2 == self.db_data[0]["column_2"] and
+            query_res[0].column_1 == self.db_data[1]["column_1"] and
+            query_res[0].column_2 is None
+        ), "Retrieved tuples did not match expected data"
+
+        # Test a query where the kwargs contain a full match
+        query_res = g.kwarg_query_tests.query(**self.db_data[2]).all()
+        assert len(query_res) == 1, "Expected 1 tuple, retrieved {}".format(len(query_res))
+        assert query_res[0].column_1 == self.db_data[2]["column_1"]
+        assert query_res[0].column_2 == self.db_data[2]["column_2"]
+
+        # Test a query where the kwargs contain a full match, where one of the values is None/null
+        query_res = g.kwarg_query_tests.query(**self.db_data[3]).all()
+        assert len(query_res) == 1, "Expected 1 tuple, retrieved {}".format(len(query_res))
+        assert query_res[0].column_1 == self.db_data[3]["column_1"]
+        assert query_res[0].column_2 == self.db_data[3]["column_2"]
+
