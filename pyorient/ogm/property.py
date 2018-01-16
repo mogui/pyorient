@@ -97,6 +97,16 @@ class PropertyEncoder:
         return name
 
     @staticmethod
+    def encode_operator(value):
+        """Encode the correct SQL operator based on the value"""
+
+        # If the value is "None" (SQL null) use " is " all other cases use " = "
+        if value:
+            return ' = '
+        else:
+            return ' is '
+
+    @staticmethod
     def encode_value(value):
         if isinstance(value, decimal.Decimal):
             return u'"{:f}"'.format(value)

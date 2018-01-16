@@ -476,8 +476,10 @@ class Query(object):
 
     def build_wheres(self, params):
         kw_filters = params.get('kw_filters')
-        kw_where = [u' and '.join(u'{0}={1}'
-            .format(PropertyEncoder.encode_name(k), PropertyEncoder.encode_value(v))
+        kw_where = [u' and '.join(u'{0}{1}{2}'
+            .format(PropertyEncoder.encode_name(k),
+                    PropertyEncoder.encode_operator(v),
+                    PropertyEncoder.encode_value(v))
                 for k,v in kw_filters.items())] if kw_filters else []
 
         filter_exp = params.get('filter')
