@@ -107,7 +107,7 @@ class Query(RetrievalCommand, CacheMixin):
 
         new_query = self.from_string(self.compile().format(*[encode(arg) for arg in args], **{k:encode(v) for k,v in kwargs.items()}), self._graph)
         new_query.source_name = self.source_name
-        new_query._class_props = self._class_props 
+        new_query._class_props = self._class_props
         new_query._params = self._params
         return new_query
 
@@ -527,7 +527,8 @@ class Query(RetrievalCommand, CacheMixin):
             (u'(' + str(v) + ')' if isinstance(v, RetrievalCommand) else self.build_what(v))
 
     def build_assign_vertex(self, k, v):
-        return PropertyEncoder.encode_name(k) + u' = ' + \
+        return PropertyEncoder.encode_name(k) + \
+            PropertyEncoder.encode_operator(v) + \
             ArgConverter.convert_to(ArgConverter.Vertex, v, self)
 
     def build_lets(self, params):
@@ -733,4 +734,3 @@ class TempParams(object):
                 del self.params[k]
             else:
                 self.params[k] = v
-

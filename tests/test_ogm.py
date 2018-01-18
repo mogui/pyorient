@@ -1681,7 +1681,7 @@ class OGMTokensCase(unittest.TestCase):
         not_fun = enjoy_query.format(False).all()
         self.assertEqual(len(not_fun), 3)
 
-        next_query = g.next.query().what(outV().as_('o'), inV().as_('i')).filter(OGMTokensCase.Next.probability > 0.5) 
+        next_query = g.next.query().what(outV().as_('o'), inV().as_('i')).filter(OGMTokensCase.Next.probability > 0.5)
         uncached = next_query.query().what(unionall('o', 'i'))
 
         cache = {}
@@ -1709,7 +1709,7 @@ class OGMTokensCase(unittest.TestCase):
 
         cached = token_sub.query().what(unionall('o', 'i')).fetch_plan('*:1', cache)
         self.assertIsInstance(cached.compile(), STR_TYPES)
-        
+
         probable = cached.all()
         self.assertEqual(len(probable), 3)
         for p in probable:
@@ -1817,4 +1817,85 @@ class OGMPrettyCase(unittest.TestCase):
         print(q.pretty())
         print('\n')
 
+class OGMDictQueryTestCase(unittest.TestCase):
 
+    Node = declarative_node()
+
+    class DictQueryTest(Node):
+        element_type = 'dict_query_test'
+        element_plural = 'dict_query_tests'
+
+        column_1 = String()
+        column_2 = String()
+
+    def __init__(self, *args, **kwargs):
+        super(OGMDictQueryTestCase, self).__init__(*args, **kwargs)
+        self.g = None
+
+    def setUp(self):
+
+        g = self.g = Graph(Config.from_url('dict_queries', 'root', 'root',
+                                               initial_drop=True))
+
+        g.create_all(OGMDictQueryTestCase.Node.registry)
+
+        self.db_data = [
+                {"column_1":"Collection 1", "column_2" : "Test"},
+                {"column_1":"Collection 1"}, # this will populate a null in column_2
+                {"column_1":"Collection 2", "column_2" : "Test"},
+                {"column_1":"Collection 2", "column_2" : None},
+                {"column_1":"Collection 3", "column_2" : ""},
+            ]
+
+        for data in self.db_data:
+            g.dict_query_tests.create(**data)
+
+    def testDictBasicQueryTest(self):
+        assert len(OGMDictQueryTestCase.Node.registry) == 1
+        g = self.g
+
+        # Validate the setup was ok
+        query_res = g.dict_query_tests.query().all()
+        assert len(query_res) == 5, "Expected 4 tuples, retrieved {}".format(len(query_res))
+
+        # Test a query where the kwargs contain a full match
+        query_res = g.dict_query_tests.query(**self.db_data[0]).all()
+        assert len(query_res) == 1, "Expected 1 tuple, retrieved {}".format(len(query_res))
+        assert query_res[0].column_1 == self.db_data[0]["column_1"], "Retrieved tuple did not match expected data"
+        assert query_res[0].column_2 == self.db_data[0]["column_2"], "Retrieved tuple did not match expected data"
+
+        # Test a query where the kwargs contain a partial set of values
+        # Where the kwargs are created using missing values the missing values will be assigned null
+        # Where the query is made with missing values the missing values will match any value
+        query_res = g.dict_query_tests.query(**self.db_data[1]).all()
+        assert len(query_res) == 2, "Expected 2 tuples, retrieved {}".format(len(query_res))
+        # allow for tuples returned in either order
+        assert (
+            query_res[0].column_1 == self.db_data[0]["column_1"] and
+            query_res[0].column_2 == self.db_data[0]["column_2"] and
+            query_res[1].column_1 == self.db_data[1]["column_1"] and
+            query_res[1].column_2 is None
+        ) or (
+            query_res[1].column_1 == self.db_data[0]["column_1"] and
+            query_res[1].column_2 == self.db_data[0]["column_2"] and
+            query_res[0].column_1 == self.db_data[1]["column_1"] and
+            query_res[0].column_2 is None
+        ), "Retrieved tuples did not match expected data"
+
+        # Test a query where the kwargs contain a full match
+        query_res = g.dict_query_tests.query(**self.db_data[2]).all()
+        assert len(query_res) == 1, "Expected 1 tuple, retrieved {}".format(len(query_res))
+        assert query_res[0].column_1 == self.db_data[2]["column_1"], "Retrieved tuple did not match expected data"
+        assert query_res[0].column_2 == self.db_data[2]["column_2"], "Retrieved tuple did not match expected data"
+
+        # Test a query where the kwargs contain a full match, where one of the values is None/null
+        query_res = g.dict_query_tests.query(**self.db_data[3]).all()
+        assert len(query_res) == 1, "Expected 1 tuple, retrieved {}".format(len(query_res))
+        assert query_res[0].column_1 == self.db_data[3]["column_1"], "Retrieved tuple did not match expected data"
+        assert query_res[0].column_2 == self.db_data[3]["column_2"], "Retrieved tuple did not match expected data"
+
+        # Test a query where the kwargs contain a full match, where one of the values is an empty string
+        query_res = g.dict_query_tests.query(**self.db_data[4]).all()
+        assert len(query_res) == 1, "Expected 1 tuple, retrieved {}".format(len(query_res))
+        assert query_res[0].column_1 == self.db_data[4]["column_1"], "Retrieved tuple did not match expected data"
+        assert query_res[0].column_2 == self.db_data[4]["column_2"], "Retrieved tuple did not match expected data"
