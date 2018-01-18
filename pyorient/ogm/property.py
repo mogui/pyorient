@@ -106,6 +106,16 @@ class PropertyEncoder:
         return name
 
     @staticmethod
+    def encode_operator(value):
+        """Encode the correct SQL operator based on the value"""
+
+        # If the value is "None" (SQL null) use " is " all other cases use " = "
+        if value is None:
+            return u' is '
+        else:
+            return u' = '
+
+    @staticmethod
     def encode_value(value, expressions):
         from pyorient.ogm.what import What
 
@@ -227,4 +237,3 @@ class PreOp(object):
         :param attr: Name of attribute specifying PreOp
         """
         pass
-
