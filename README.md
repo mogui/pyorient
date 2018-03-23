@@ -36,7 +36,7 @@ Pyorient works with orientdb version 1.7 and later.
 ## How to run tests
 
 - ensure you have `ant` and `nose` installed properly
-- bootstrap orient by running `./ci/ci-start.sh` from project directory   
+- bootstrap orient by running `./ci/start-ci.sh` from project directory   
   *it will download latest orient and make some change on config and database for the tests*
 - run with `nosetests`
 
