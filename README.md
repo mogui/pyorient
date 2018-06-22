@@ -9,7 +9,7 @@
 
 [Orientdb](http://www.orientechnologies.com/) driver for python that uses the binary protocol.
 
-Pyorient works with orientdb version 1.7 and later.
+Pyorient works with orientdb versions from 1.7 to 2.x.
 > **Warning** Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
 
 > **NOTICE** Prior to version 1.4.9 there was a potential SQL injection vulnerability that now is fixed.
