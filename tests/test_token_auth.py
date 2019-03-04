@@ -19,11 +19,12 @@ class TokenAuthTest(unittest.TestCase):
         self.client = pyorient.OrientDB("localhost", 2424)
         client = pyorient.OrientDB("localhost", 2424)
         client.connect("root", "root")
+        client.db_open( 'GratefulDeadConcerts', 'admin', 'admin' )
         if client._connection.protocol < 26:
             self.skipTest("Token not supported in OrientDB < 2.0")
 
-        if client._connection.protocol > 32:
-            self.skipTest("Token not well supported in OrientDB >= 2.2.0")
+        if client._connection.protocol >= 32 and client.version.build < 4:
+            self.skipTest("Token not well supported in OrientDB >= 2.2.0 and < 2.2.4")
 
     def testPrepareConnection(self):
         global old_token
@@ -75,20 +76,6 @@ class TokenAuthTest(unittest.TestCase):
         client.set_session_token( True )
         client.db_open( "GratefulDeadConcerts", "admin", "admin" )
         res1 = client.record_load("#9:1")
-        res2 = client.query( 'select from V where @rid = #9:1' )
-
-        self.assertEqual(
-            res1.oRecordData['name'],
-            res2[0].oRecordData['name']
-        )
-        self.assertEqual(
-            res1.oRecordData['out_sung_by'].get_hash(),
-            res2[0].oRecordData['out_sung_by'].get_hash()
-        )
-        self.assertEqual(
-            res1.oRecordData['out_written_by'].get_hash(),
-            res2[0].oRecordData['out_written_by'].get_hash()
-        )
 
         actual_token = client.get_session_token()
         del client
@@ -96,19 +83,19 @@ class TokenAuthTest(unittest.TestCase):
         #  create a new client
         client = pyorient.OrientDB("localhost", 2424)
         client.set_session_token( actual_token )
-        res3 = client.query( 'select from V where @rid = #9:1' )
+        res3 = client.record_load("#9:1")
 
         self.assertEqual(
-            res2[0].oRecordData['name'],
-            res3[0].oRecordData['name']
+            res1.oRecordData['name'],
+            res3.oRecordData['name']
         )
         self.assertEqual(
-            res2[0].oRecordData['out_sung_by'].get_hash(),
-            res3[0].oRecordData['out_sung_by'].get_hash()
+            res1.oRecordData['out_sung_by'].get_hash(),
+            res3.oRecordData['out_sung_by'].get_hash()
         )
         self.assertEqual(
-            res2[0].oRecordData['out_written_by'].get_hash(),
-            res3[0].oRecordData['out_written_by'].get_hash()
+            res1.oRecordData['out_written_by'].get_hash(),
+            res3.oRecordData['out_written_by'].get_hash()
         )
 
         # set the flag again to true if you want to renew the token

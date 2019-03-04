@@ -9,7 +9,7 @@
 
 [Orientdb](http://www.orientechnologies.com/) driver for python that uses the binary protocol.
 
-Pyorient works with orientdb version 1.7 and later.
+Pyorient works with orientdb versions from 1.7 to 2.x.
 > **Warning** Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
 
 > **NOTICE** Prior to version 1.4.9 there was a potential SQL injection vulnerability that now is fixed.
@@ -18,6 +18,10 @@ Pyorient works with orientdb version 1.7 and later.
 ## Installation
 
 	pip install pyorient
+
+## Documentation
+
+  [OrientDB PyOrient Python Driver](http://orientdb.com/docs/last/PyOrient.html)
 
 ## How to contribute
 
@@ -32,7 +36,7 @@ Pyorient works with orientdb version 1.7 and later.
 ## How to run tests
 
 - ensure you have `ant` and `nose` installed properly
-- bootsrap orient by running `./ci/ci-start.sh` from project directory   
+- bootstrap orient by running `./ci/start-ci.sh` from project directory   
   *it will download latest orient and make some change on config and database for the tests*
 - run with `nosetests`
 
@@ -316,6 +320,10 @@ for food in animal_foods:
 ## Authors
 - [mogui](https://github.com/mogui/)
 - [ostico](https://github.com/ostico/)
+
+## Thanks
+To **Jetbrains** tools support, coded with:    
+[<img src="https://i.imgur.com/LcUZzzW.png" width="70"/>](https://www.jetbrains.com/)
 
 ## Copyright
 
