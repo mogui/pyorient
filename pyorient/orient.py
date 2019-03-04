@@ -57,21 +57,24 @@ class OrientSocket(object):
 
     :param host: hostname of the server to connect
     :param port: integer port of the server
+    :param serialization_type: Whether to use CSV or Binary serialization
+    :param ssl_context: An instance of ssl.SSLContext
 
     '''
-    def __init__(self, host, port, serialization_type=OrientSerialization.CSV ):
-
+    def __init__(self, host, port, serialization_type=OrientSerialization.CSV, ssl_context=None, serialize_props=None ):
         self.connected = False
         self.host = host
-        self.port = port
         self._socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        self.port = port
+        if 2434 <= port <= 2440 and ssl_context:
+            self._socket = ssl_context.wrap_socket(self._socket)
         self.protocol = -1
         self.session_id = -1
         self.auth_token = b''
         self.db_opened = None
         self.serialization_type = serialization_type
         self.in_transaction = False
-        self._props = None
+        self._props = serialize_props if serialize_props else {}
 
     def get_connection(self):
         if not self.connected:
@@ -232,9 +235,9 @@ class OrientDB(object):
         TxCommitMessage="pyorient.messages.commands",
     )
 
-    def __init__(self, host='localhost', port=2424, serialization_type=OrientSerialization.CSV):
+    def __init__(self, host='localhost', port=2424, serialization_type=OrientSerialization.CSV, ssl_context=None, serialize_props=None):
         if not isinstance(host, OrientSocket):
-            connection = OrientSocket(host, port, serialization_type)
+            connection = OrientSocket(host, port, serialization_type, ssl_context, serialize_props)
         else:
             connection = host
 
@@ -438,14 +441,14 @@ class OrientDB(object):
     def update_properties(self):
         '''
         This method fetches the global Properties from the server. The properties are used
-        for deserializing based on propery index if using binary serialization. This method
+        for deserializing based on property index if using binary serialization. This method
         should be called after any manual command that may result in modifications to the
         properties table, for example, "Create property ... " or "Create class .." followed
         by "Create vertex set ... "
         '''
         if self._serialization_type==OrientSerialization.Binary:
-            self._connection._props = {x['id']:[x['name'], type_map[x['type']]] for x in
-                        self.command("select from #0:1")[0].oRecordData['globalProperties']}
+            self._connection._props.update({x['id']:[x['name'], type_map[x['type']]] for x in
+                        self.command("select from #0:1")[0].oRecordData['globalProperties']})
         
     def shutdown(self, *args):
         return self.get_message("ShutdownMessage") \

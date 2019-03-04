@@ -71,7 +71,8 @@ class BaseMessage(object):
             return OrientSerialization.get_impl(self._orientSocket.serialization_type,
                                                 self._orientSocket._props)
         else:
-            return OrientSerialization.get_impl(self._orientSocket.serialization_type)
+            return OrientSerialization.get_impl(self._orientSocket.serialization_type,
+                                                self._orientSocket._props)
 
     def get_orient_socket_instance(self):
         return self._orientSocket
@@ -166,16 +167,19 @@ class BaseMessage(object):
 
             while more:
                 # read num bytes by the field definition
-                exception_class += self._decode_field( FIELD_STRING )
+                if not exception_class:
+                    exception_class += self._decode_field( FIELD_STRING )
+                else:
+                    exception_message += b', %s: ' % self._decode_field( FIELD_STRING )
                 exception_message += self._decode_field( FIELD_STRING )
                 more = self._decode_field( FIELD_BOOLEAN )
 
-                if self.get_protocol() > 18:  # > 18 1.6-snapshot
-                    # read serialized version of exception thrown on server side
-                    # useful only for java clients
-                    serialized_exception = self._decode_field( FIELD_STRING )
-                    # trash
-                    del serialized_exception
+            if self.get_protocol() > 18:  # > 18 1.6-snapshot
+                # read serialized version of exception thrown on server side
+                # useful only for java clients
+                serialized_exception = self._decode_field( FIELD_STRING )
+                # trash
+                del serialized_exception
 
             raise PyOrientCommandException(
                 exception_class.decode( 'utf8' ),
@@ -212,8 +216,18 @@ class BaseMessage(object):
 
                     # reset the nodelist
                     self._node_list = []
-                    for node in payload['members']:
-                        self._node_list.append( OrientNode( node ) )
+                    # TODO FIXME
+                    # For issues https://github.com/mogui/pyorient/issues/250,
+                    #        and https://github.com/mogui/pyorient/issues/251
+                    # Expected payload format appears to have changed.
+                    # Figure out the actual cause of this difference, and avoid
+                    # checking instance type.
+                    if isinstance(payload, list):
+                        for node in payload[1]['members']:
+                            self._node_list.append( OrientNode( node ) )
+                    else:
+                        for node in payload['members']:
+                            self._node_list.append( OrientNode( node ) )
 
                 end_flag = self._decode_field( FIELD_BYTE )
 
@@ -384,8 +398,8 @@ class BaseMessage(object):
                     'content': content, 'version': version}
 
         elif _type['type'] == LINK:
-
-            rid = "#" + str( self._decode_field( _type['struct'][0] ) )
+            # Returning in the format expected by OrientRecordLink, without leading hash
+            rid = str( self._decode_field( _type['struct'][0] ) )
             rid += ":" + str( self._decode_field( _type['struct'][1] ) )
             return rid
 
@@ -474,7 +488,6 @@ class BaseMessage(object):
             else:
                 # bug in orientdb csv serialization in snapshot 2.0
                 class_name, data = self.get_serializer().decode(__res['content'].rstrip())
-
 
             res = OrientRecord(
                 dict(

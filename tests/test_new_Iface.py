@@ -11,7 +11,7 @@ os.environ['DEBUG_VERBOSE'] = "0"
 #     sys.path.insert(0, os.path.realpath('.'))
 
 import pyorient
-from pyorient import OrientRecord
+from pyorient import OrientRecord, OrientRecordLink
 
 class CommandTestCase(unittest.TestCase):
     """ Command Test Case """
@@ -32,13 +32,12 @@ class CommandTestCase(unittest.TestCase):
 
             assert isinstance( result[0], OrientRecord )
             assert len(result) == 10
-            assert result[0]._in != 0
-            assert result[0]._out != 0
+            assert isinstance(result[0]._in, OrientRecordLink )
+            assert isinstance(result[0]._out, OrientRecordLink )
             assert result[0].weight == 1
 
             def _callback(item):
-                assert True
-                assert item != []
+                self.assertTrue(item)
                 assert isinstance( item, OrientRecord )
 
             result = client.query_async("select from followed_by",
@@ -49,8 +48,8 @@ class CommandTestCase(unittest.TestCase):
             res = client.record_load( "#11:0", "*:-1", _callback )
             assert res._rid == "#11:0"
             assert res._class == 'followed_by'
-            assert res._in != 0
-            assert res._out != 0
+            assert isinstance(res._in, OrientRecordLink)
+            assert isinstance(res._out, OrientRecordLink)
 
             session_id = client.connect( "root", "root" )
 

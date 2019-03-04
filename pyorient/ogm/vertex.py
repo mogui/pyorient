@@ -5,9 +5,9 @@ class Vertex(GraphElement):
     Broker = VertexBroker
 
     # TODO
-    # Edge information is carried in vertexes retrieved from database,
-    # as OrientBinaryObject. Can likely optimise these traversals
-    # when we know how to parse these.
+    # Given the recent availability of CSVRidBagDecoder, evaluate the
+    # usefulness of parsing RidBag's supplied with vertices
+
     def outE(self, *edge_classes):
         g = self._graph
         return g.outE(self._id, *edge_classes) if g else None

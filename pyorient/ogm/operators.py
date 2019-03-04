@@ -46,7 +46,7 @@ def and_(a, b):
         return LogicalConnective(Operator.And, (a, b))
     else:
         raise TypeError('Both operands to conjunction must be '
-                        'LogicalConnective objects; got {0} & {1}'.format(
+                        'LogicalConnective objects; got {} & {}'.format(
                             type(a), type(b)))
 
 def or_(a, b):
@@ -54,7 +54,7 @@ def or_(a, b):
         return LogicalConnective(Operator.Or, (a, b))
     else:
         raise TypeError('Both operands to disjunction must be LogicalConnective '
-                        'objects; got {0} | {1}'.format(type(a), type(b)))
+                        'objects; got {} | {}'.format(type(a), type(b)))
 
 class IdentityOperand(object):
     def __eq__(self, value):
@@ -83,9 +83,6 @@ class Operand(RelativeOperand):
     def contains(self, contained):
         return LogicalConnective(Operator.Contains, (self, contained))
 
-    def endswith(self, trailing):
-        return LogicalConnective(Operator.EndsWith, (self, trailing))
-
     def is_(self, value):
         """ Test if a property is null
 
@@ -94,7 +91,7 @@ class Operand(RelativeOperand):
         return LogicalConnective(Operator.Is, (self, value))
 
     def is_not(self, value):
-        """ Test if a property is not nll
+        """ Test if a property is not null
 
         :param value: May (presently?) only be None
         """
@@ -105,6 +102,9 @@ class Operand(RelativeOperand):
 
     def matches(self, expression):
         return LogicalConnective(Operator.Matches, (self, expression))
+
+    def endswith(self, trailing):
+        return LogicalConnective(Operator.EndsWith, (self, trailing))
 
     def startswith(self, leading):
         return LogicalConnective(Operator.StartsWith, (self, leading))
@@ -129,6 +129,10 @@ class ArithmeticMixin(object):
         return ArithmeticOperation(Operator.Div, (self, other))
     def __rdiv__(self, left):
         return ArithmeticOperation(Operator.Div, (left, self))
+    def __truediv__(self, other): # Python 3.x
+        return ArithmeticOperation(Operator.Div, (self, other))
+    def __rtruediv__(self, left): # Python 3.x
+        return ArithmeticOperation(Operator.Div, (left, self))
 
     def __mod__(self, other):
         return ArithmeticOperation(Operator.Mod, (self, other))
@@ -152,12 +156,10 @@ class ArithmeticOperation(ArithmeticMixin, RelativeOperand):
 
 # Record Attributes
 class InstanceOfMixin(object):
-    @classmethod
-    def instanceof(cls, left, right=None):
-        if cls is InstanceOf:
-            return LogicalConnective(Operator.InstanceOf, (left, right))
-        else: # Subclass
-            return LogicalConnective(Operator.InstanceOf, (cls, left))
+    def instanceof(self, left, right=None):
+        if type(self) is not InstanceOfMixin:
+            right = left; left = self
+        return LogicalConnective(Operator.InstanceOf, (left, right))
 
 def instanceof(left, right):
     return InstanceOfMixin.instanceof(left, right)

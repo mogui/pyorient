@@ -16,6 +16,12 @@ class DeclarativeMeta(type):
         if not hasattr(cls, 'registry'):
             cls.registry = OrderedDict()
             cls.decl_root = cls
+
+            cls.Abstract = DeclarativeMetaAbstract.__new__(DeclarativeMetaAbstract,
+                                                   class_name + '.Abstract',
+                                                   bases,
+                                                   { 'registry': cls.registry, 'decl_root': cls }
+                                                   )
         else:
             decl_bases = set(
                 base.decl_root for base in bases
@@ -44,7 +50,7 @@ class DeclarativeMeta(type):
             for prop in cls.__dict__.values():
                 if not isinstance(prop, Property):
                     continue
-                prop._context = cls
+                prop.context = cls
 
             # FIXME Only want bases that correspond to vertex/edge classes.
             cls.registry[cls.registry_name] = cls
@@ -52,12 +58,13 @@ class DeclarativeMeta(type):
         return super(DeclarativeMeta, cls).__init__(class_name, bases, attrs)
 
     def __setattr__(self, name, value):
+        result = super(DeclarativeMeta, self).__setattr__(name, value)
         if isinstance(value, Property):
             if value.context:
                 raise ValueError(
                     'Attempt to add a single Property to multiple classes.')
             value.context = self
-        return super(DeclarativeMeta, self).__setattr__(name, value)
+        return result
 
     def __format__(self, format_spec):
         """Quoted class-name for specifying class as string argument.
@@ -66,6 +73,28 @@ class DeclarativeMeta(type):
         directly.
         """
         return repr(self.registry_name)
+
+class DeclarativeMetaAbstract(DeclarativeMeta):
+    """Private."""
+    def __new__(cls, class_name, bases, attrs):
+        abstract_base = next((base for base in bases
+            if type(base) is DeclarativeMetaAbstract), None)
+
+        discard_abstract = False
+        if abstract_base is not None:
+            if hasattr(abstract_base, 'registry_name'):
+                discard_abstract = True
+            else:
+                # DeclarativeMetaAbstract only a thin wrapper around its base metaclass
+                return type.__new__(cls, class_name,
+                                    (abstract_base.decl_root, ) + tuple(base for base in bases if base is not abstract_base),
+                                    dict(attrs, abstract = True))
+
+        instance = type.__new__(cls, class_name, bases, attrs)
+        if discard_abstract:
+            # Don't inherit abstractness
+            instance.abstract = False
+        return instance
 
 # Enum only in Python >= 3.4
 #class DeclarativeType(Enum):

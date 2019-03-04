@@ -22,6 +22,10 @@ cache:
   - ./docs/build/html/
   - "./ci/environment/"
 
+before_script:
+- sleep 15
+- travis_retry ./ci/environment//orientdb_current/bin/console.sh "CONNECT remote:localhost root root"
+  
 script:
 - nosetests -vv --with-coverage --cover-xml --cover-erase --cover-package=pyorient
 

@@ -5,7 +5,7 @@ import os
 import unittest
 
 from pyorient.exceptions import *
-from pyorient import OrientSocket
+from pyorient import OrientSocket, OrientRecordLink
 from pyorient.messages.database import *
 from pyorient.messages.commands import *
 from pyorient.messages.cluster import *
@@ -58,10 +58,11 @@ class RawMessages_2_TestCase(unittest.TestCase):
         res = req_msg.prepare( [ "#11:0", "*:2", _test_callback ] ) \
             .send().fetch_response()
 
+        self.assertIn('#11:0', [res])
         assert res._rid == "#11:0"
         assert res._class == 'followed_by'
-        assert res._in != 0
-        assert res._out != 0
+        assert isinstance(res._in, OrientRecordLink)
+        assert isinstance(res._out, OrientRecordLink)
 
     def test_record_count_with_no_opened_db(self):
         connection = OrientSocket( "localhost", 2424 )
@@ -173,7 +174,7 @@ class RawMessages_2_TestCase(unittest.TestCase):
             .prepare( ( cluster, rec_position._rid, rec ) )\
             .send().fetch_response()
 
-        assert update_success[0] != 0
+        self.assertTrue(update_success[0])
 
         if connection.protocol <= 21:
             return unittest.skip("Protocol {!r} does not works well".format(

@@ -1,5 +1,6 @@
 import sys
 import time
+import base64
 from datetime import date, datetime
 from decimal import Decimal
 
@@ -7,6 +8,11 @@ try:
     basestring
 except NameError:
     basestring = str
+
+if sys.version_info[0] < 3:
+    iteritems = lambda d: d.iteritems()
+else:
+    iteritems = lambda d: d.items()
 
 class OrientRecord(object):
     """
@@ -36,7 +42,6 @@ class OrientRecord(object):
         return string
 
     def __init__(self, content=None):
-
         self.__rid = None
         self.__version = None
         self.__o_class = None
@@ -44,31 +49,27 @@ class OrientRecord(object):
 
         if not content:
             content = {}
-        for key in content.keys():
+        for key, value in iteritems(content):
             if key == '__rid':  # Ex: select @rid, field from v_class
-                self.__rid = content[ key ]
+                self.__rid = value
                 # self.__rid = OrientRecordLink( content[ key ][ 1: ] )
             elif key == '__version':  # Ex: select @rid, @version from v_class
-                self.__version = content[key]
+                self.__version = value
             elif key == '__o_class':
-                self.__o_class = content[ key ]
+                self.__o_class = value
             elif key[0:1] == '@':
                 # special case dict
                 # { '@my_class': { 'accommodation': 'hotel' } }
                 self.__o_class = key[1:]
-                for _key, _value in content[key].items():
+                for _key, _value in iteritems(value):
                     if isinstance(_value, basestring):
                         self.__o_storage[_key] = self.addslashes( _value )
                     else:
                         self.__o_storage[_key] = _value
             elif key == '__o_storage':
-                self.__o_storage = content[key]
+                self.__o_storage = value
             else:
-                self.__o_storage[key] = content[key]
-
-    def _set_keys(self, content=dict):
-        for key in content.keys():
-                self._set_keys( content[key] )
+                self.__o_storage[key] = value
 
     @property
     def _in(self):
@@ -116,6 +117,21 @@ class OrientRecord(object):
             raise AttributeError( "'OrientRecord' object has no attribute "
                                   "'" + item + "'" )
 
+    def __bool__(self):
+        return True if self.__rid or len(self.__o_storage) else False
+    __nonzero__ = __bool__
+
+    def __len__(self):
+        return len(self.__o_storage)
+
+    def __eq__(self, other):
+        return self.__rid == other or self.__dict__ == other.__dict__
+
+    def __hash__(self):
+        return hash((self.__rid, self.__version, self.__o_class, frozenset(iteritems(self.__o_storage))))
+
+    def __contains__(self, key):
+        return key in self.__o_storage
 
 class OrientRecordLink(object):
     def __init__(self, recordlink):
@@ -127,12 +143,21 @@ class OrientRecordLink(object):
     def __str__(self):
         return self.get_hash()
 
+    # For use as dict key
+    def __hash__(self):
+        return hash(self.__link)
+    def __eq__(self, other):
+        return self.__link == other.__link
+
+    def is_temporary(self):
+        """:return: True for temporary links (with no corresponding record)"""
+        return self.clusterID[0] == '-'
+
     def get(self):
         return self.__link
 
     def get_hash(self):
         return "#%s" % self.__link
-
 
 class OrientBinaryObject(object):
     """
@@ -144,10 +169,12 @@ class OrientBinaryObject(object):
     def get_hash(self):
         return "_" + self.b64 + "_"
 
-    def getBin(self):
-        import base64
-        return base64.b64decode(self.b64)
-
+    if sys.version_info[0] < 3:
+        def getBin(self):
+            return bytearray(base64.b64decode(self.b64))
+    else:
+        def getBin(self):
+            return base64.b64decode(self.b64)
 
 class OrientCluster(object):
     def __init__(self, name, cluster_id, cluster_type=None, segment=None):

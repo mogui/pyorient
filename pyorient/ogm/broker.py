@@ -52,20 +52,30 @@ class Broker(object):
         return self.query(*entities, **filter_by)
 
 class VertexBroker(Broker):
-    def create(self, **kwargs):
-        return self.g.create_vertex(self.element_cls, **kwargs)
+    def create(self, *args, **kwargs):
+        return self.g.create_vertex(self.element_cls, *args, **kwargs)
 
-    def create_command(self, **kwargs):
-        return self.g.create_vertex_command(self.element_cls, **kwargs)
+    def create_command(self, *args, **kwargs):
+        return self.g.create_vertex_command(self.element_cls, *args, **kwargs)
+
+    def update(self):
+        return self.g.update(self.element_cls)
+
+    update_command = update
 
 class EdgeBroker(Broker):
-    def create(self, from_vertex, to_vertex, **kwargs):
+    def create(self, from_vertex, to_vertex, *args, **kwargs):
         return self.g.create_edge(
-            self.element_cls, from_vertex, to_vertex, **kwargs)
+            self.element_cls, from_vertex, to_vertex, *args, **kwargs)
 
-    def create_command(self, from_vertex, to_vertex, **kwargs):
+    def create_command(self, from_vertex, to_vertex, *args, **kwargs):
         return self.g.create_edge_command(
-            self.element_cls, from_vertex, to_vertex, **kwargs)
+            self.element_cls, from_vertex, to_vertex, *args, **kwargs)
+
+    def update(self):
+        return self.g.update_edge(self.element_cls)
+
+    update_command = update
 
 def get_broker(cls):
     for v in cls.__dict__.values():

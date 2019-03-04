@@ -64,7 +64,7 @@ class TokenAuthTest(unittest.TestCase):
         global old_token
         self.client.set_session_token( old_token )
         self.client.connect("root", "root")
-        self.assertNotEquals( old_token, self.client.get_session_token() )
+        self.assertNotEqual( old_token, self.client.get_session_token() )
         res = self.client.db_exists( "GratefulDeadConcerts" )
         self.assertTrue( res )
 
