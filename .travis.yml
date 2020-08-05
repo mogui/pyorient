@@ -1,47 +1,48 @@
-sudo: false
+os: linux
+dist: trusty
 language: python
 python:
-- '2.7'
-- '3.5'
+  - '2.7'
+  - '3.5'
+  - '3.9'
 
-sudo: false
 addons:
   apt:
     packages:
-      - oracle-java8-installer
-      - oracle-java8-set-default
+      - oracle-java9-installer
+      - oracle-java9-set-default
 
 install:
-- pip install coveralls
-- pip install pyorient_native
-- "./ci/start-ci.sh $ORIENTDB_VERSION"
+  - pip install coveralls
+  - pip install pyorient_native
+  - ./ci/start-ci.sh $ORIENTDB_VERSION
 
 cache:
   directories:
   - ./ci/environment/
   - ./docs/build/html/
-  - "./ci/environment/"
+  - ./ci/environment/
 
 script:
-- nosetests -vv --with-coverage --cover-xml --cover-erase --cover-package=pyorient
+  - nosetests -vv --with-coverage --cover-xml --cover-erase --cover-package=pyorient
 
 before_cache:
-- ls -la ./ci/environment/
-- rm -f ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log/*
-- rm -rf ./ci/environment/orientdb-community-$ORIENTDB_VERSION/databases/*
+  - ls -la ./ci/environment/
+  - rm -f ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log/*
+  - rm -rf ./ci/environment/orientdb-community-$ORIENTDB_VERSION/databases/*
 
 after_success:
   - coveralls
-  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "develop" && ./docs/publish.sh
+#  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "develop" && ./docs/publish.sh
 
-deploy:
-  provider: pypi
-  user: mogui
-  password:
-    secure: BpKTrn4PdKZi7Ykq/8gfuzQ5DcrSjEccbljKfS0IQG+9Pp4yeI28DTm8BtCk6Oq+Nj2MtxQnn2m1Uxju7RBsGdblv8YuVhDlFyMqG4zUXECU29Uo0wqP3sCIlClVCoMHeSzi2L7SxPKyx6UvQccEW076z9ZP07uzqjACeGfPcfc=
-  on:
-    tags: true
-    all_branches: true
+#deploy:
+#  provider: pypi
+#  user: mogui
+#  password:
+#    secure: BpKTrn4PdKZi7Ykq/8gfuzQ5DcrSjEccbljKfS0IQG+9Pp4yeI28DTm8BtCk6Oq+Nj2MtxQnn2m1Uxju7RBsGdblv8YuVhDlFyMqG4zUXECU29Uo0wqP3sCIlClVCoMHeSzi2L7SxPKyx6UvQccEW076z9ZP07uzqjACeGfPcfc=
+#  on:
+#    tags: true
+#    all_branches: true
 
 branches:
   except:
@@ -51,5 +52,6 @@ env:
   matrix:
     - ORIENTDB_VERSION=2.2.19
     - ORIENTDB_VERSION=2.2.9
+    - ORIENTDB_VERSION=3.1.1
   global:
     - secure: "FfqHFu2i1X5dIqzIxIGraEZrGSswSE4XVR7Ig9fkfYhbQfhFfZCOaRG95tyoZW7g5S0K2Kiw/oDyIKMPC+5g5PfMv2uvI/LZtokOy5ZewF0SHMjuCA54P+y83uindQMfb6KvPc9h/6tV2eogQGZ1y+juXteb4NRDUxt27NppRwM="
