@@ -47,7 +47,6 @@ class CommandTestCase(unittest.TestCase):
         sql_edge = "create edge from " + rec_position1._rid + " to " + \
                    rec_position2._rid
         res = self.client.command(sql_edge)
-        print res
 
         # print (res[0]._in)
         assert isinstance(res[0]._in,

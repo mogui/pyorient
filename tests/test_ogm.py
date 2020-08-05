@@ -367,8 +367,8 @@ class OGMMoneyTestCase(unittest.TestCase):
         debt = decimal.Decimal(-42.0)
         WalletType.objects.create(amount=debt, amount_imprecise=0)
 
-        print g.query(Wallet)[1]
-        print g.query(Wallet)[2]
+        print g.query(Wallet)[1].amount
+        print g.query(Wallet)[2].amount
         assert g.query(Wallet)[2].amount == -42
 
 class OGMClassTestCase(unittest.TestCase):
