@@ -44,7 +44,7 @@ class CommandTestCase(unittest.TestCase):
         rec_position1 = self.client.record_create(class_id1, rec1)
         rec_position2 = self.client.record_create(class_id1, rec2)
 
-        sql_edge = "create edge str from " + rec_position1._rid + " to " + rec_position2._rid
+        sql_edge = "create edge from " + rec_position1._rid + " to " + rec_position2._rid
         res = self.client.command(sql_edge)
 
         # print (res[0]._in)
