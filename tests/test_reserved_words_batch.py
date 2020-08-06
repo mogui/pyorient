@@ -35,6 +35,8 @@ class CommandTestCase(unittest.TestCase):
 
     def test_reserved_words(self):
 
+        self.setUp()
+
         class_id1 = self.client.command("create class my_v_class extends V")[0]
         class_id2 = self.client.command("create class str extends E")[0]
         rec1 = {'@my_v_class': {'accommodation': 'house', 'work': 'office',
