@@ -27,7 +27,7 @@ class CommandTestCase(unittest.TestCase):
             print(e)
         finally:
             db = self.client.db_create(db_name, pyorient.DB_TYPE_GRAPH,
-                                       pyorient.STORAGE_TYPE_MEMORY)
+                                       pyorient.STORAGE_TYPE_PLOCAL)
 
         self.cluster_info = self.client.db_open(
             db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
@@ -35,8 +35,8 @@ class CommandTestCase(unittest.TestCase):
 
     def test_reserved_words(self):
 
-        self.client.db_create("test_rw", pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
-        self.client.db_open("test_rw", "admin", "admin")
+        #self.client.db_create("test_rw", pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
+        #self.client.db_open("test_rw", "admin", "admin")
 
         class_id1 = self.client.command("create class my_v_class extends V")[0]
         class_id2 = self.client.command("create class str extends E")[0]
