@@ -9,7 +9,8 @@ python:
 addons:
   apt:
     packages:
-      - openjdk-8-jdk
+      - oracle-java9-installer
+      - oracle-java9-set-default
 
 install:
   - pip install coveralls

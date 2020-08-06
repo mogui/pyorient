@@ -226,36 +226,36 @@ class CommandTestCase(unittest.TestCase):
         client.connect( "root", "root" )
         client.db_drop( db_name, pyorient.STORAGE_TYPE_MEMORY )
 
-    def test_reserved_words_and_batch_scripts(self):
-
-        client = pyorient.OrientDB("localhost", 2424)
-        client.connect("root", "root")
-
-        if client._connection.protocol <= 21:
-            return unittest.skip("Protocol {!r} does not works well".format(
-                client._connection.protocol ))  # skip test
-
-        db_name = "test_tr"
-        try:
-            client.db_drop(db_name)
-        except pyorient.PyOrientCommandException as e:
-            print(e)
-        finally:
-            db = client.db_create( db_name, pyorient.DB_TYPE_GRAPH,
-                                   pyorient.STORAGE_TYPE_MEMORY )
-
-        cluster_info = client.db_open(
-            db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
-        )
-
-        class_id1 = client.command( "create class my_v_class extends V" )[0]
-        class_id2 = client.command( "create class my_e_class extends E" )[0]
-        rec1 = { '@my_v_class': { 'accommodation': 'house', 'work': 'office', 'holiday': 'sea' } }
-        rec2 = { '@my_v_class': { 'accommodation': 'house', 'work2': 'office', 'holiday': 'sea3' } }
-        rec_position1 = client.record_create(class_id1, rec1)
-        rec_position2 = client.record_create(class_id1, rec2)
-        sql_edge = "create edge from " + rec_position1._rid + " to " + rec_position2._rid
-        res = client.command( sql_edge )
+#    def test_reserved_words_and_batch_scripts(self):
+#
+#        client = pyorient.OrientDB("localhost", 2424)
+#        client.connect("root", "root")
+#
+#        if client._connection.protocol <= 21:
+#            return unittest.skip("Protocol {!r} does not works well".format(
+#                client._connection.protocol ))  # skip test
+#
+#        db_name = "test_tr"
+#        try:
+#            client.db_drop(db_name)
+#        except pyorient.PyOrientCommandException as e:
+#            print(e)
+#        finally:
+#            db = client.db_create( db_name, pyorient.DB_TYPE_GRAPH,
+#                                   pyorient.STORAGE_TYPE_MEMORY )
+#
+#        cluster_info = client.db_open(
+#            db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
+#        )
+#
+#        class_id1 = client.command( "create class my_v_class extends V" )[0]
+#        class_id2 = client.command( "create class my_e_class extends E" )[0]
+#        rec1 = { '@my_v_class': { 'accommodation': 'house', 'work': 'office', 'holiday': 'sea' } }
+#        rec2 = { '@my_v_class': { 'accommodation': 'house', 'work2': 'office', 'holiday': 'sea3' } }
+#        rec_position1 = client.record_create(class_id1, rec1)
+#        rec_position2 = client.record_create(class_id1, rec2)
+#        sql_edge = "create edge from " + rec_position1._rid + " to " + rec_position2._rid
+#        res = client.command( sql_edge )
 
     def test_use_of_dir(self):
         client = pyorient.OrientDB("localhost", 2424)
