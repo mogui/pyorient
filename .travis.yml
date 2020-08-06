@@ -34,7 +34,7 @@ before_cache:
 
 after_success:
   - coveralls
-  - tail -n 1000 ./log.txt
+  - tail -n 1000 ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log.txt
   - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "develop" #&& ./docs/publish.sh
 
 #deploy:
