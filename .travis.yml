@@ -1,5 +1,5 @@
 os: linux
-dist: trusty
+dist: xenial
 language: python
 python:
   - '2.7'
@@ -29,9 +29,7 @@ script:
 before_cache:
   - ls -la ./ci/environment/
   - ls -la ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log/
-  - tail -n 100 ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log/orient-server.log.0
-  - tail -n 100 ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log/orient-server.log.1
-  - tail -n 100 ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log/orient-server.log.2
+  - tail -n 1000 ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log/orient-server.log.0
   - rm -f ./ci/environment/orientdb-community-$ORIENTDB_VERSION/log/*
   - rm -rf ./ci/environment/orientdb-community-$ORIENTDB_VERSION/databases/*
 
