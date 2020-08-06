@@ -33,13 +33,7 @@ class CommandTestCase(unittest.TestCase):
             db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
         )
 
-    def test_reserved_words(self):
-
-        self.client.db_close()
-        self.client = pyorient.OrientDB("localhost", 2424)
-        self.client.connect("root", "root")
-        self.client.db_create("test_rw", pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_MEMORY)
-        self.client.db_open("test_rw", "admin", "admin", pyorient.DB_TYPE_GRAPH, "")
+    def test_01_test_reserved_words(self):
 
         class_id1 = self.client.command("create class my_v_class extends V")[0]
         class_id2 = self.client.command("create class str extends E")[0]
@@ -109,7 +103,7 @@ class CommandTestCase(unittest.TestCase):
         assert x[0].model == '1123'
         assert x[0].ciao == 1234
 
-    def test_new_projection(self):
+    def test_02_test_new_projection(self):
         rec = {'@Package': {'name': 'foo', 'version': '1.0.0', 'rid': 'this_is_fake'}}
         x = self.client.record_create(9, rec)
         assert x._rid == '#9:0'
@@ -124,7 +118,7 @@ class CommandTestCase(unittest.TestCase):
         assert x.oRecordData['version'] == '1.0.0'
         assert x.oRecordData['rid'] == 'this_is_fake'
 
-    def test_sql_batch(self):
+    def test_03_test_sql_batch(self):
         cmd = "begin;" + \
               "let a = create vertex set script = true;" + \
               "let b = select from v limit 1;" + \
@@ -143,7 +137,7 @@ class CommandTestCase(unittest.TestCase):
         # print (cluster_id[0]._out)
         assert isinstance(edge_result[0]._out, pyorient.OrientRecordLink)
 
-    def test_sql_batch_2(self):
+    def test_04_test_sql_batch_2(self):
 
         cluster_id = self.client.command("create class fb extends V")
         cluster_id = self.client.command("create class response extends V")
@@ -157,7 +151,7 @@ class CommandTestCase(unittest.TestCase):
             "commit;"
         ) )
 
-    def test_sql_batch_3(self):
+    def test_05_test_sql_batch_3(self):
 
         cluster_id = self.client.command("create class fb extends V")
         cluster_id = self.client.command("create class response extends V")
