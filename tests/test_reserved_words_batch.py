@@ -35,7 +35,9 @@ class CommandTestCase(unittest.TestCase):
 
     def test_reserved_words(self):
 
-        self.setUp()
+        self.client.db_create("test_rw", pyorient.DB_TYPE_GRAPH,
+                                   pyorient.STORAGE_TYPE_MEMORY)
+        self.client.db_open("test_rw", "root", "root")
 
         class_id1 = self.client.command("create class my_v_class extends V")[0]
         class_id2 = self.client.command("create class str extends E")[0]
