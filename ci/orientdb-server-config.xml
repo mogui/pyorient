@@ -168,7 +168,7 @@
 
         <!-- LOG: enable/Disable logging. Levels are: finer, fine, finest, info,
             warning -->
-        <entry value="info" name="log.console.level"/>
-        <entry value="info" name="log.file.level"/>
+        <entry value="finest" name="log.console.level"/>
+        <entry value="finest" name="log.file.level"/>
     </properties>
 </orient-server>
