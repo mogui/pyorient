@@ -9,7 +9,7 @@ python:
 addons:
   apt:
     packages:
-      - openjdk-9-jdk
+      - openjdk-8-jdk
 
 install:
   - pip install coveralls
