@@ -33,7 +33,36 @@ class CommandTestCase(unittest.TestCase):
             db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH, ""
         )
 
-    def test_01_test_reserved_words(self):
+    def test_test(self):
+
+        _client = pyorient.OrientDB("localhost", 2424)
+        session_id = _client.connect("root", "root")
+        db_name = "Test"
+
+        # create db if not exists
+        if not _client.db_exists(db_name, pyorient.STORAGE_TYPE_PLOCAL):
+            _client.db_create(db_name, pyorient.DB_TYPE_GRAPH, pyorient.STORAGE_TYPE_PLOCAL)
+
+        # open database
+        _client.db_open(db_name, "root", "root")
+
+        # test
+        class_id1 = _client.command("create class my_v_class extends V")[0]
+        class_id2 = _client.command("create class str extends E")[0]
+        rec1 = {'@my_v_class': {'accommodation': 'house', 'work': 'office',
+                                'holiday': 'sea'}}
+        rec2 = {'@my_v_class': {'accommodation': 'house', 'work2': 'office',
+                                'holiday': 'sea3'}}
+        rec_position1 = _client.record_create(class_id1, rec1)
+        rec_position2 = _client.record_create(class_id1, rec2)
+
+        sql_edge = "create edge from " + rec_position1._rid + " to " + rec_position2._rid
+        res = _client.command(sql_edge)
+
+        # close db again
+        _client.db_close()
+
+    def test_reserved_words(self):
 
         class_id1 = self.client.command("create class my_v_class extends V")[0]
         class_id2 = self.client.command("create class str extends E")[0]
@@ -103,7 +132,7 @@ class CommandTestCase(unittest.TestCase):
         assert x[0].model == '1123'
         assert x[0].ciao == 1234
 
-    def test_02_test_new_projection(self):
+    def test_new_projection(self):
         rec = {'@Package': {'name': 'foo', 'version': '1.0.0', 'rid': 'this_is_fake'}}
         x = self.client.record_create(9, rec)
         assert x._rid == '#9:0'
@@ -118,7 +147,7 @@ class CommandTestCase(unittest.TestCase):
         assert x.oRecordData['version'] == '1.0.0'
         assert x.oRecordData['rid'] == 'this_is_fake'
 
-    def test_03_test_sql_batch(self):
+    def test_sql_batch(self):
         cmd = "begin;" + \
               "let a = create vertex set script = true;" + \
               "let b = select from v limit 1;" + \
@@ -137,7 +166,7 @@ class CommandTestCase(unittest.TestCase):
         # print (cluster_id[0]._out)
         assert isinstance(edge_result[0]._out, pyorient.OrientRecordLink)
 
-    def test_04_test_sql_batch_2(self):
+    def test_sql_batch_2(self):
 
         cluster_id = self.client.command("create class fb extends V")
         cluster_id = self.client.command("create class response extends V")
@@ -151,7 +180,7 @@ class CommandTestCase(unittest.TestCase):
             "commit;"
         ) )
 
-    def test_05_test_sql_batch_3(self):
+    def test_sql_batch_3(self):
 
         cluster_id = self.client.command("create class fb extends V")
         cluster_id = self.client.command("create class response extends V")
