@@ -92,7 +92,7 @@ chmod +x ${ODB_LAUNCHER_SYML}
 echo "--- Starting an instance of OrientDB ---"
 if [ -z "${HANG_UP}" ]; then
     #sh -c ${ODB_LAUNCHER_SYML} </dev/null &>/dev/null &
-    sh -c ${ODB_LAUNCHER_SYML}
+    sh -c ${ODB_LAUNCHER_SYML} </dev/null &
     # Wait a bit for OrientDB to finish the initialization phase.
     sleep 5
     printf "\n=== The CI environment has been initialized ===\n"
