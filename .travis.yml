@@ -52,6 +52,7 @@ env:
   matrix:
     - ORIENTDB_VERSION=2.2.9
     - ORIENTDB_VERSION=2.2.19
+    - ORIENTDB_VERSION=2.2.35
     - ORIENTDB_VERSION=3.1.1
   global:
     - secure: "FfqHFu2i1X5dIqzIxIGraEZrGSswSE4XVR7Ig9fkfYhbQfhFfZCOaRG95tyoZW7g5S0K2Kiw/oDyIKMPC+5g5PfMv2uvI/LZtokOy5ZewF0SHMjuCA54P+y83uindQMfb6KvPc9h/6tV2eogQGZ1y+juXteb4NRDUxt27NppRwM="
