@@ -245,14 +245,14 @@ class CommandTestCase(unittest.TestCase):
 
         cluster_info = client.db_open(db_name, "admin", "admin", pyorient.DB_TYPE_GRAPH)
 
-        class_id1 = client.command( "create class my_v_class extends V" )[0]
-        class_id2 = client.command( "create class my_e_class extends E" )[0]
+        class_id1 = client.command( "create class my_v_class extends V" )[1]
+        class_id2 = client.command( "create class my_e_class extends E" )
+        print class_id2
         rec1 = { '@my_v_class': { 'accommodation': 'house', 'work': 'office', 'holiday': 'sea' } }
         rec2 = { '@my_v_class': { 'accommodation': 'house', 'work2': 'office', 'holiday': 'sea3' } }
         rec_position1 = client.record_create(class_id1, rec1)
         rec_position2 = client.record_create(class_id1, rec2)
-        #sql_edge = "create edge from " + rec_position1._rid + " to " + rec_position2._rid
-        sql_edge = "create edge my_e_class FROM " + rec_position1._rid + " to " + rec_position2._rid
+        sql_edge = "create edge from " + rec_position1._rid + " to " + rec_position2._rid
         res = client.command( sql_edge )
 
     def test_use_of_dir(self):
