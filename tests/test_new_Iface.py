@@ -251,7 +251,7 @@ class CommandTestCase(unittest.TestCase):
         rec2 = { '@my_v_class': { 'accommodation': 'house', 'work2': 'office', 'holiday': 'sea3' } }
         rec_position1 = client.record_create(class_id1, rec1)
         rec_position2 = client.record_create(class_id1, rec2)
-        sql_edge = "create edge from " + rec_position1._rid + " to " + rec_position2._rid
+        sql_edge = "create edge E from " + rec_position1._rid + " to " + rec_position2._rid
         res = client.command( sql_edge )
 
     def test_use_of_dir(self):
