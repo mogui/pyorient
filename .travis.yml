@@ -33,16 +33,16 @@ before_cache:
 
 after_success:
   - coveralls
-  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "develop" #&& ./docs/publish.sh
+  - test $TRAVIS_PULL_REQUEST == "false" && test $TRAVIS_BRANCH == "develop" && ./docs/publish.sh
 
-#deploy:
-#  provider: pypi
-#  user: mogui
-#  password:
-#    secure: BpKTrn4PdKZi7Ykq/8gfuzQ5DcrSjEccbljKfS0IQG+9Pp4yeI28DTm8BtCk6Oq+Nj2MtxQnn2m1Uxju7RBsGdblv8YuVhDlFyMqG4zUXECU29Uo0wqP3sCIlClVCoMHeSzi2L7SxPKyx6UvQccEW076z9ZP07uzqjACeGfPcfc=
-#  on:
-#    tags: true
-#    all_branches: true
+deploy:
+  provider: pypi
+  user: mogui
+  password:
+    secure: BpKTrn4PdKZi7Ykq/8gfuzQ5DcrSjEccbljKfS0IQG+9Pp4yeI28DTm8BtCk6Oq+Nj2MtxQnn2m1Uxju7RBsGdblv8YuVhDlFyMqG4zUXECU29Uo0wqP3sCIlClVCoMHeSzi2L7SxPKyx6UvQccEW076z9ZP07uzqjACeGfPcfc=
+  on:
+    tags: true
+    all_branches: true
 
 branches:
   except:
