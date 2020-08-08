@@ -13,7 +13,7 @@ addons:
       - oracle-java9-set-default
 
 install:
-  - pip install python-coveralls
+  - pip install coveralls
   - pip install pyorient_native
   - ./ci/start-ci.sh $ORIENTDB_VERSION
 
