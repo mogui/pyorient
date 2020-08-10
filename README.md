@@ -1,40 +1,28 @@
 # pyorient
 
-**master**   
-[![Build Status](https://travis-ci.org/mogui/pyorient.svg?branch=master)](https://travis-ci.org/marcauberer/pyorient) [![Coverage Status](https://coveralls.io/repos/mogui/pyorient/badge.svg?branch=master&service=github)](https://coveralls.io/github/marcauberer/pyorient?branch=master)
-
-**develop**   
-[![Build Status](https://travis-ci.org/mogui/pyorient.svg?branch=develop)](https://travis-ci.org/marcauberer/pyorient) [![Coverage Status](https://coveralls.io/repos/mogui/pyorient/badge.svg?branch=develop&service=github)](https://coveralls.io/github/marcauberer/pyorient?branch=develop)
-
+**python2.7-odb3.x branch (Python 2.7 / OrientDB 2.x support)**<br>
+[![Build Status](https://travis-ci.org/marcauberer/pyorient.svg?branch=python-2.7-odb-2.x)](https://travis-ci.org/marcauberer/pyorient)
+[![Coverage Status](https://coveralls.io/repos/github/marcauberer/pyorient/badge.svg?branch=python-2.7-odb-2.x)](https://coveralls.io/github/marcauberer/pyorient?branch=python-2.7-odb-2.x)
 
 [Orientdb](http://www.orientechnologies.com/) driver for python that uses the binary protocol.
 
 Pyorient works with orientdb version 1.7 and later.
-> **Warning** Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
+> **Warning**: This branch includes an old version of pyorient, supporting Python 2.7 & OrientDB 2.x. This version will not be maintained in the future and we recommend you to migrate to the new version, which you can find in the master branch of this repo
 
-> **NOTICE** Prior to version 1.4.9 there was a potential SQL injection vulnerability that now is fixed.
-(see [details](https://github.com/mogui/pyorient/pull/172) , [details](https://github.com/mogui/pyorient/pull/182) )
+> **Warning**: Some issues are experimented with record_create/record_upload and OrientDB < 2.0. These command are strongly discouraged with these versions
+
+> **NOTICE**: Prior to version 1.4.9 there was a potential SQL injection vulnerability that now is fixed.
+(see [details](https://github.com/mogui/pyorient/pull/172), [details](https://github.com/mogui/pyorient/pull/182) )
 
 ## Installation
-
-	pip install pyorient
+```console
+user@local:~$ pip install pyorient
+```
 
 ## Documentation
-
-  [OrientDB PyOrient Python Driver](http://orientdb.com/docs/last/PyOrient.html)
-
-## How to contribute
-
-- Fork the project
-- work on **develop** branch
-- Make your changes
-- Add tests for it. This is important so I don't break it in a future version unintentionally
-- Send me a pull request *(pull request to master will be rejected)*
-- ???
-- PROFIT
+*Documentation will be available soon*
 
 ## How to run tests
-
 - ensure you have `ant` and `nose` installed properly
 - bootstrap orient by running `./ci/ci-start.sh` from project directory   
   *it will download latest orient and make some change on config and database for the tests*
