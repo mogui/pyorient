@@ -1,6 +1,6 @@
 # pyorient
 
-**python2.7-odb3.x branch (Python 2.7 / OrientDB 2.x support)**<br>
+**2.2.x branch (Python 2.7 / OrientDB 2.x support)**<br>
 [![Build Status](https://travis-ci.org/marcauberer/pyorient.svg?branch=python-2.7-odb-2.x)](https://travis-ci.org/marcauberer/pyorient)
 [![Coverage Status](https://coveralls.io/repos/github/marcauberer/pyorient/badge.svg?branch=python-2.7-odb-2.x)](https://coveralls.io/github/marcauberer/pyorient?branch=python-2.7-odb-2.x)
 
