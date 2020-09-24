@@ -24,7 +24,7 @@ user@local:~$ pip install pyorient
 
 ## How to run tests
 - ensure you have `ant` and `nose` installed properly
-- bootstrap orient by running `./ci/ci-start.sh` from project directory   
+- bootstrap orient by running `./ci/start-ci.sh` from project directory   
   *it will download latest orient and make some change on config and database for the tests*
 - run with `nosetests`
 
@@ -308,6 +308,10 @@ for food in animal_foods:
 ## Authors
 - [mogui](https://github.com/mogui/)
 - [ostico](https://github.com/ostico/)
+
+## Thanks
+To **Jetbrains** tools support, coded with:    
+[<img src="https://i.imgur.com/LcUZzzW.png" width="70"/>](https://www.jetbrains.com/)
 
 ## Copyright
 
