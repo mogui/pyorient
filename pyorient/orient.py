@@ -49,7 +49,7 @@ type_map = {'BOOLEAN' :0,
             'ANY' : 23}
 
 class OrientSocket(object):
-    '''Class representing the binary connection to the database, it does all the low level comunication
+    '''Class representing the binary connection to the database, it does all the low level communication
     And holds information on server version and cluster map
 
     .. DANGER::
@@ -438,7 +438,7 @@ class OrientDB(object):
     def update_properties(self):
         '''
         This method fetches the global Properties from the server. The properties are used
-        for deserializing based on propery index if using binary serialization. This method
+        for deserializing based on property index if using binary serialization. This method
         should be called after any manual command that may result in modifications to the
         properties table, for example, "Create property ... " or "Create class .." followed
         by "Create vertex set ... "

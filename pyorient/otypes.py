@@ -246,9 +246,9 @@ class OrientNode(object):
         """
         Represent a server node in a multi clusered configuration
 
-        TODO: extends this object with different listeners if we're going to support in the driver an abstarction of the HTTP protocol, for now we are not interested in that
+        TODO: extends this object with different listeners if we're going to support in the driver an abstraction of the HTTP protocol, for now we are not interested in that
 
-        :param node_dict: dict with starting configs (usaully from a db_open, db_reload record response)
+        :param node_dict: dict with starting configs (usually from a db_open, db_reload record response)
         """
         #: node name
         self.name = None
