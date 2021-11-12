@@ -64,7 +64,7 @@ class BaseMessage(object):
 
     def get_serializer(self):
         """
-        Lazy return of the serialization, we retrive the type from the :class: `OrientSocket <pyorient.orient.OrientSocket>` object
+        Lazy return of the serialization, we retrieve the type from the :class: `OrientSocket <pyorient.orient.OrientSocket>` object
         :return: an Instance of the serializer suitable for decoding or encoding
         """
         if self._orientSocket.serialization_type==OrientSerialization.Binary:
